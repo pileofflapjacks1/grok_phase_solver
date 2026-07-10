@@ -51,9 +51,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/joewagner/grok_phase_solver"
-Documentation = "https://github.com/joewagner/grok_phase_solver/tree/main/docs"
-Repository = "https://github.com/joewagner/grok_phase_solver"
+Homepage = "https://github.com/pileofflapjacks1/grok_phase_solver"
+Documentation = "https://github.com/pileofflapjacks1/grok_phase_solver/tree/main/docs"
+Repository = "https://github.com/pileofflapjacks1/grok_phase_solver"
 
 [project.scripts]
 gps-download-cod = "grok_phase_solver.cli:download_cod_main"
