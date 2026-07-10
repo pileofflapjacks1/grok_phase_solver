@@ -11,7 +11,9 @@
 - [x] Synthetic random organics + degradation suite
 - [x] PhAI interface stub + third_party docs
 - [x] Math overview document
-- [ ] Reproducible baseline numbers on COD 2100301 / synthetic grid
+- [x] Reproducible baseline numbers on COD 2100301 / synthetic grid
+  - Synthetic CF origin-invariant mapCC ≈ 0.87 @ 1.0–1.2 Å
+  - COD 2100301 CF mapCC ≈ 0.83 @ 0.9 Å; degrades at lower resolution
 - [ ] Optional: pure-Python CIF fallback without gemmi
 
 ## Phase 2 — Enhanced synthetic data & training
