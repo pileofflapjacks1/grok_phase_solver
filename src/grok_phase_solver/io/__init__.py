@@ -4,6 +4,8 @@ from .cif import CrystalStructure, load_cif, save_atoms_xyz
 from .cif_pure import load_cif_pure
 from .hkl import ReflectionTable, load_hkl_cif, load_hkl_shelx, write_hkl_simple
 from .mtz import load_mtz, write_mtz_stub
+from .ins import ShelxIns, load_ins, parse_cell_string
+from .experiment import load_experiment, load_reflections, summarize_experiment
 
 __all__ = [
     "CrystalStructure",
@@ -16,4 +18,10 @@ __all__ = [
     "write_hkl_simple",
     "load_mtz",
     "write_mtz_stub",
+    "ShelxIns",
+    "load_ins",
+    "parse_cell_string",
+    "load_experiment",
+    "load_reflections",
+    "summarize_experiment",
 ]

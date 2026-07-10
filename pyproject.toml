@@ -56,6 +56,7 @@ Documentation = "https://github.com/pileofflapjacks1/grok_phase_solver/tree/main
 Repository = "https://github.com/pileofflapjacks1/grok_phase_solver"
 
 [project.scripts]
+gps-solve = "grok_phase_solver.cli:solve_main"
 gps-download-cod = "grok_phase_solver.cli:download_cod_main"
 gps-baseline = "grok_phase_solver.cli:baseline_main"
 

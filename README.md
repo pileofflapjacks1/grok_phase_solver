@@ -1,8 +1,8 @@
 # grok_phase_solver
 
-**AI-driven general solver for the X-ray crystallography phase problem**
+**AI-driven / physics-based phasing assistant for X-ray crystallography**
 
-Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using first-principles physics, classical algorithms (Patterson, direct methods, charge flipping), experimental-phasing hybrids (MIR/MAD/MR), and (Phase 2+) deep learning—extending [PhAI](https://doi.org/10.1126/science.adn2777) toward a general open-source tool.
+Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using first-principles physics, classical algorithms (Patterson, direct methods, charge flipping), experimental-phasing hybrids (MIR/MAD/MR), and optional [PhAI](https://doi.org/10.1126/science.adn2777)-style neural phasing.
 
 \[
 \rho(\mathbf{r})
@@ -10,6 +10,55 @@ Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using 
 \frac{1}{V}\sum_{\mathbf{h}}
 |F(\mathbf{h})|\,e^{i\varphi(\mathbf{h})}\,e^{-2\pi i \mathbf{h}\cdot\mathbf{r}}
 \]
+
+---
+
+## For experimentalists — solve from your data
+
+**Full guide:** [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)
+
+### 1. Install
+
+```bash
+git clone https://github.com/pileofflapjacks1/grok_phase_solver.git
+cd grok_phase_solver
+python -m pip install -e .
+```
+
+### 2. Run on your experiment
+
+```bash
+# SHELX-style pair (recommended)
+gps-solve --hkl mycrystal.hkl --ins mycrystal.ins --out ./solve_out
+
+# Or pass cell + space group explicitly
+gps-solve --hkl mycrystal.hkl \
+  --cell 9.75,8.89,7.57,90,112.7,90 \
+  --sg "P 1 21/c 1" \
+  --out ./solve_out
+```
+
+### 3. Open the results
+
+| File | What it is |
+|------|------------|
+| `solve_out/report.md` | Summary + next steps |
+| `solve_out/density_slice.png` | Quick map view |
+| `solve_out/peaks.csv` | Strong density maxima (trial atoms) |
+| `solve_out/phases.csv` | Phased structure factors |
+
+Then refine in **SHELXL / Olex2** as usual. This tool helps **phase** the data; it does not replace refinement.
+
+### Demo (no lab data)
+
+```bash
+gps-solve --hkl examples/demo_solve/demo.hkl --ins examples/demo_solve/demo.ins \
+  --method charge_flipping --n-iter 100 --out examples/demo_solve/out
+```
+
+**Scope:** strongest for **small molecules** at good resolution. Not a general protein ab initio solver. Always validate with refinement R-factors.
+
+---
 
 ## Cowtan overview (integrated)
 
@@ -61,41 +110,38 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 - Synthetic P1 (~6 atoms): charge-flipping **origin-invariant map CC ≈ 0.87**
 - COD 2100301 @ 0.9 Å: CF **map CC ≈ 0.83**; weaker at 1.2–2.0 Å (documents classical failure → need priors / PhAI)
 
-## Install
+## Install (developers)
 
 ```bash
 cd grok_phase_solver
 python -m pip install -e ".[dev]"
-# Optional ML stack:
-# python -m pip install -e ".[ml]"
+# Optional ML stack (PhAI):
+# python -m pip install -e ".[ml]"   # + weights: third_party/phai/README.md
 ```
 
 Requires Python ≥ 3.10, NumPy, SciPy, Matplotlib, [gemmi](https://gemmi.readthedocs.io/).
 
-## Quick start
+## Developer quick start
 
 ```python
-from grok_phase_solver.io.cif import load_cif
-from grok_phase_solver.solvers.baseline import run_physics_baseline
-from grok_phase_solver.data.synthetic import generate_random_organic
-from grok_phase_solver.data.experimental_phasing import simulate_mir, mir_phase_indication
+from grok_phase_solver.pipeline import solve_structure, export_solution
+from grok_phase_solver.pipeline.solve import SolveConfig
 
-st = generate_random_organic(n_atoms=8, seed=0)
-for method in ["random", "patterson", "direct_methods", "charge_flipping"]:
-    print(run_physics_baseline(st, method=method, d_min=1.2, n_iter=80, verbose=False).summary())
-
-# MIR hybrid features
-mir = simulate_mir(st, heavy_element="AU", n_heavy=1, d_min=1.5)
-phase_est, fom = mir_phase_indication(mir.F_native, mir.F_derivative, mir.F_heavy)
+result = solve_structure(
+    "mycrystal.hkl",
+    ins_path="mycrystal.ins",
+    config=SolveConfig(method="charge_flipping", n_iter=150),
+)
+export_solution(result, "solve_out")
 ```
 
-### CLI
+### Other CLIs
 
 ```bash
+gps-solve --help
 gps-download-cod
-gps-baseline --synthetic --n-atoms 8 --method direct_methods --dmin 1.2
-gps-baseline --cif data/raw/cod/2100301.cif --method charge_flipping
-python scripts/run_phase1_baseline.py
+gps-baseline --synthetic --n-atoms 8 --method charge_flipping --dmin 1.2
+python scripts/run_scoreboard.py
 ```
 
 ## Repository layout
