@@ -196,7 +196,8 @@ See `third_party/phai/README.md`.
 | Multi-method scoreboard | `python scripts/run_scoreboard.py` | [`data/processed/scoreboard.md`](data/processed/scoreboard.md) |
 | **Solvability phase diagram** | `python scripts/run_solvability_diagram.py` | [`data/processed/solvability_diagram.md`](data/processed/solvability_diagram.md) |
 | **Fair PhAI benchmark** | `python scripts/run_fair_phai_benchmark.py` | [`data/processed/fair_phai_benchmark.md`](data/processed/fair_phai_benchmark.md) |
-| Math summary | — | [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md) |
+| **Frontier (RAAR/DM/κ-DM)** | `python scripts/run_frontier_benchmark.py` | [`data/processed/frontier_benchmark.md`](data/processed/frontier_benchmark.md) |
+| Math summary | — | [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 **Headline (strict success = mapCC≥0.7 + peak recovery≥0.5 + R1≤0.45):**
 
