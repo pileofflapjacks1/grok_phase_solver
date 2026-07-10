@@ -1,6 +1,6 @@
 # Roadmap — grok_phase_solver
 
-## Phase 1 — Baseline & data pipeline ✅ (in progress)
+## Phase 1 — Baseline & data pipeline ✅
 
 - [x] Repository structure (`src/`, `data/`, `notebooks/`, `docs/`)
 - [x] I/O: CIF (gemmi), HKL CIF, SHELX-style HKL
@@ -16,16 +16,28 @@
   - COD 2100301 CF mapCC ≈ 0.83 @ 0.9 Å; degrades at lower resolution
 - [ ] Optional: pure-Python CIF fallback without gemmi
 
-## Phase 2 — Enhanced synthetic data & training
+## Phase 1b — Cowtan classical methods ✅
 
-- [ ] Fragment-based molecule builder (COD/ZINC-guided)
+- [x] Review Cowtan ELS (2001); `docs/cowtan_phase_problem_notes.md`
+- [x] Patterson function + peak picking + autocorrelation check
+- [x] Direct methods: E-values, triplets, tangent multi-solution
+- [x] Notebook 02: Patterson & triplet derivations
+- [x] MIR / MAD / MR simulators + hybrid AI test design
+- [x] Wire into baseline API (`patterson`, `direct_methods`)
+
+## Phase 2 — Enhanced synthetic data & training 🚧
+
+- [x] Fragment-based molecule builder (benzene / carboxyl / peptide)
+- [x] Training shard writer (`synthetic_v2.write_training_shard`)
+- [x] Physics-informed losses (NumPy: phase, positivity, modulus, triplets)
 - [ ] Space-group aware packing + clash/energy filters
 - [ ] Millions-scale dataset pipeline (HDF5 / LMDB)
 - [ ] Graph + voxel dual representations
 - [ ] CNN/Transformer hybrid with equivariant layers
-- [ ] Physics-informed losses (positivity, Laplacian atomicity, Fourier consistency)
+- [ ] Torch training loop + triplet auxiliary head
 - [ ] PhAI weight load / reimplementation
 - [ ] Domain-gap metrics (experimental vs synthetic |F|)
+- [ ] Hybrid benchmark CLI
 
 ## Phase 3 — Hybrid solvers & new mathematics
 
@@ -51,4 +63,4 @@
 1. Every ML component has a physics fallback.
 2. Derive losses from first principles; document in `docs/math/`.
 3. Prefer modular APIs (`ReflectionTable`, `CrystalStructure`) over ad-hoc arrays.
-4. MIT/Apache open science; cite PhAI, COD, gemmi, ITC.
+4. MIT/Apache open science; cite PhAI, Cowtan, COD, gemmi, ITC.

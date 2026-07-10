@@ -19,7 +19,9 @@ from grok_phase_solver.physics.density import density_from_structure_factors
 from grok_phase_solver.physics.reciprocal import generate_hkl
 from grok_phase_solver.physics.structure_factors import compute_structure_factors
 from grok_phase_solver.solvers.charge_flipping import charge_flipping_solve
+from grok_phase_solver.solvers.direct_methods import direct_methods_solve
 from grok_phase_solver.solvers.hio import hio_solve
+from grok_phase_solver.solvers.patterson import patterson_solve
 
 
 @dataclass
@@ -136,6 +138,51 @@ def run_physics_baseline(
     elif method == "hio":
         phases_pred, rho_pred, history = hio_solve(
             hkl, amp, structure.cell, n_iter=n_iter, seed=seed, verbose=verbose
+        )
+    elif method == "direct_methods":
+        dm = direct_methods_solve(
+            hkl,
+            amp,
+            structure.cell,
+            n_atoms_approx=max(data["n_atoms_cell"], 4),
+            n_trials=max(20, n_iter // 5),
+            seed=seed,
+            verbose=verbose,
+        )
+        phases_pred = dm.phases_full
+        rho_pred = density_from_structure_factors(
+            hkl, amp * np.exp(1j * phases_pred), structure.cell, d_min=d_min
+        )
+        history = dm.history
+        notes.append(
+            f"direct methods: {dm.history.get('n_strong')} strong, "
+            f"{dm.history.get('n_triplets')} triplets, best FOM={dm.history.get('best_fom'):.3f}"
+        )
+    elif method == "patterson":
+        phases_pred, Pmap, info = patterson_solve(
+            hkl, amp, structure.cell, seed=seed, verbose=verbose
+        )
+        # Evaluate density from random phases but store Patterson map stats
+        rho_pred = density_from_structure_factors(
+            hkl, amp * np.exp(1j * phases_pred), structure.cell, d_min=d_min
+        )
+        history = {
+            "n_peaks": len(info["peaks"]),
+            "patterson_max": float(np.max(Pmap)),
+        }
+        # Peak recovery vs true vectors
+        score = None
+        try:
+            from grok_phase_solver.physics.patterson import patterson_peak_recovery_score
+
+            score = patterson_peak_recovery_score(info["peaks"], data["fracs"])
+            history["vector_recovery"] = score
+        except Exception:
+            pass
+        notes.append(
+            "Patterson: interatomic vectors only (not general phases); "
+            f"peaks={len(info['peaks'])}"
+            + (f", vector_recovery={score:.2f}" if score is not None else "")
         )
     elif method == "random":
         phases_pred = rng.uniform(-np.pi, np.pi, size=len(amp))

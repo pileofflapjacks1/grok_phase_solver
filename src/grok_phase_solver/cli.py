@@ -42,8 +42,12 @@ def baseline_main(argv: list[str] | None = None) -> None:
     p.add_argument("--cif", type=str, default=None, help="Path to CIF")
     p.add_argument("--synthetic", action="store_true", help="Use synthetic structure")
     p.add_argument("--n-atoms", type=int, default=10)
-    p.add_argument("--method", type=str, default="charge_flipping",
-                   choices=["charge_flipping", "hio", "random"])
+    p.add_argument(
+        "--method",
+        type=str,
+        default="charge_flipping",
+        choices=["charge_flipping", "hio", "random", "direct_methods", "patterson"],
+    )
     p.add_argument("--dmin", type=float, default=1.2)
     p.add_argument("--n-iter", type=int, default=100)
     p.add_argument("--seed", type=int, default=0)

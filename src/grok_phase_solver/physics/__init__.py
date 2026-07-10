@@ -4,6 +4,7 @@ from .form_factors import atomic_form_factor, form_factor_table
 from .structure_factors import compute_structure_factors, structure_factors_from_density
 from .density import density_from_structure_factors, grid_coordinates
 from .reciprocal import generate_hkl, d_spacing, resolution_shells
+from .patterson import patterson_from_amplitudes, find_patterson_peaks, autocorrelation_density
 
 __all__ = [
     "atomic_form_factor",
@@ -15,4 +16,7 @@ __all__ = [
     "generate_hkl",
     "d_spacing",
     "resolution_shells",
+    "patterson_from_amplitudes",
+    "find_patterson_peaks",
+    "autocorrelation_density",
 ]

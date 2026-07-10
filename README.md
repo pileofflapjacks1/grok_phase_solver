@@ -2,7 +2,7 @@
 
 **AI-driven general solver for the X-ray crystallography phase problem**
 
-Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using first-principles physics, classical iterative algorithms, and (Phase 2+) deep learning—extending ideas from [PhAI](https://doi.org/10.1126/science.adn2777) toward a general open-source tool for small molecules to macromolecules.
+Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using first-principles physics, classical algorithms (Patterson, direct methods, charge flipping), experimental-phasing hybrids (MIR/MAD/MR), and (Phase 2+) deep learning—extending [PhAI](https://doi.org/10.1126/science.adn2777) toward a general open-source tool.
 
 \[
 \rho(\mathbf{r})
@@ -11,27 +11,58 @@ Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using 
 |F(\mathbf{h})|\,e^{i\varphi(\mathbf{h})}\,e^{-2\pi i \mathbf{h}\cdot\mathbf{r}}
 \]
 
+## Cowtan overview (integrated)
+
+Pedagogical backbone: **Kevin Cowtan**, *Phase Problem in X-ray Crystallography, and Its Solution* (Encyclopedia of Life Sciences, 2001). Full notes: [`docs/cowtan_phase_problem_notes.md`](docs/cowtan_phase_problem_notes.md).
+
+| Classical approach | When it works | In this repo |
+|--------------------|---------------|--------------|
+| **Patterson** | Few atoms / heavy atoms; map of interatomic vectors from \(\|F\|^2\) | `physics/patterson.py`, `solvers/patterson.py` |
+| **Direct methods** | Atomic resolution; triplet invariants \(\varphi_h+\varphi_k+\varphi_{-h-k}\approx 0\) | `solvers/direct_methods.py` |
+| **MIR** | Isomorphous heavy-atom derivatives | `data/experimental_phasing.simulate_mir` |
+| **MAD** | Anomalous scatterers, multi-λ (e.g. SeMet) | `simulate_mad` |
+| **MR** | Homologous model | `simulate_mr` |
+| **Phase improvement** | Solvent flatten, NCS, iterate | HIO positivity; Phase 3 envelopes |
+| **Charge flipping / HIO** | Ab initio density constraints | `solvers/charge_flipping.py`, `hio.py` |
+
+Derivations (Patterson identity, Cochran triplets): [`notebooks/02_patterson_and_triplets.md`](notebooks/02_patterson_and_triplets.md).  
+Hybrid AI test matrix: [`docs/hybrid_ai_tests.md`](docs/hybrid_ai_tests.md).
+
 ## Status
 
-**Phase 1 (current):** data pipeline, physics baselines, metrics, COD samples, PhAI integration hooks, math documentation.
+| Phase | Focus | State |
+|-------|--------|--------|
+| **1** | I/O, CF/HIO, COD samples, metrics, math docs | ✅ |
+| **1b** | Cowtan classical baselines (Patterson, DM), MIR/MAD/MR sim | ✅ |
+| **2** | Fragment synthetic data, physics losses, NN training | 🚧 started |
+| **3** | Hybrid loops, envelopes, generative models | 📋 |
+| **4** | Eval vs SHELX/Phenix, viz, arXiv | 📋 |
 
 | Component | State |
 |-----------|--------|
 | CIF / HKL I/O (gemmi) | ✅ |
 | Structure factors + density FFT | ✅ |
+| Patterson map + peak pick | ✅ |
+| Direct methods (E-values, triplets, tangent) | ✅ |
 | Charge flipping / HIO | ✅ |
-| Metrics (MPE, map CC, FSC, R) | ✅ |
-| COD download + samples | ✅ |
-| Synthetic data (minimal) | ✅ |
-| PhAI weights | 🔌 interface only (ERDA archive) |
-| Neural training | 🚧 Phase 2 |
+| MIR / MAD / MR simulators | ✅ |
+| Metrics (origin-inv. map CC, MPE, FSC, R) | ✅ |
+| Fragment synthetic shards (Phase 2) | ✅ |
+| Physics-informed losses (NumPy) | ✅ |
+| PhAI weights | 🔌 ERDA archive interface |
+| Full torch training loop | 🚧 |
+
+### Baseline highlights (Phase 1)
+
+- Synthetic P1 (~6 atoms): charge-flipping **origin-invariant map CC ≈ 0.87**
+- COD 2100301 @ 0.9 Å: CF **map CC ≈ 0.83**; weaker at 1.2–2.0 Å (documents classical failure → need priors / PhAI)
 
 ## Install
 
 ```bash
 cd grok_phase_solver
 python -m pip install -e ".[dev]"
-# Optional ML stack (Phase 2):
+# Optional ML stack:
 # python -m pip install -e ".[ml]"
 ```
 
@@ -43,29 +74,23 @@ Requires Python ≥ 3.10, NumPy, SciPy, Matplotlib, [gemmi](https://gemmi.readth
 from grok_phase_solver.io.cif import load_cif
 from grok_phase_solver.solvers.baseline import run_physics_baseline
 from grok_phase_solver.data.synthetic import generate_random_organic
+from grok_phase_solver.data.experimental_phasing import simulate_mir, mir_phase_indication
 
-# Synthetic ab initio test
 st = generate_random_organic(n_atoms=8, seed=0)
-result = run_physics_baseline(st, method="charge_flipping", d_min=1.2, n_iter=100)
-print(result.summary())
+for method in ["random", "patterson", "direct_methods", "charge_flipping"]:
+    print(run_physics_baseline(st, method=method, d_min=1.2, n_iter=80, verbose=False).summary())
 
-# From COD CIF
-st = load_cif("data/raw/cod/2100301.cif")
-result = run_physics_baseline(st, method="charge_flipping", d_min=1.2)
-print(result.summary())
+# MIR hybrid features
+mir = simulate_mir(st, heavy_element="AU", n_heavy=1, d_min=1.5)
+phase_est, fom = mir_phase_indication(mir.F_native, mir.F_derivative, mir.F_heavy)
 ```
 
 ### CLI
 
 ```bash
-# Download curated COD samples (CIF + HKL when available)
 gps-download-cod
-
-# Run a baseline
-gps-baseline --synthetic --n-atoms 8 --method charge_flipping --dmin 1.2
+gps-baseline --synthetic --n-atoms 8 --method direct_methods --dmin 1.2
 gps-baseline --cif data/raw/cod/2100301.cif --method charge_flipping
-
-# Full Phase-1 demonstration
 python scripts/run_phase1_baseline.py
 ```
 
@@ -74,37 +99,22 @@ python scripts/run_phase1_baseline.py
 ```text
 src/grok_phase_solver/
   io/           # CIF, HKL, ReflectionTable
-  physics/      # form factors, Fcalc, density, reciprocal geometry
-  solvers/      # charge flipping, HIO, baseline pipeline
+  physics/      # form factors, Fcalc, density, Patterson, reciprocal
+  solvers/      # CF, HIO, direct methods, Patterson, baseline API
   metrics/      # phase error, map CC, FSC, R-factor
-  data/         # COD download, synthetic generation
-  models/       # PhAI interface (weights optional)
-data/
-  raw/cod/      # sample CIFs / HKL
-  processed/    # baseline JSON outputs
-docs/
-  math/         # phase problem overview & proofs
-  roadmap.md
-notebooks/      # math + baseline walkthrough
-third_party/phai/  # where to place official PhAI weights
+  data/         # COD, synthetic v1/v2, MIR/MAD/MR
+  models/       # PhAI interface, physics losses
+docs/           # math, Cowtan notes, hybrid AI tests, roadmap
+notebooks/      # 01 baseline, 02 Patterson & triplets
+data/raw/cod/   # COD 2100301, 2017775 (+ experimental HKL)
 tests/
-scripts/
 ```
-
-## Physics baselines
-
-1. **Charge flipping** (Oszlányi–Sütő) — flip low density; reimpose \(|F|\)  
-2. **HIO** (Fienup) — hybrid input–output with positivity  
-3. **Random phases** — null baseline for metrics  
-
-Every neural component will keep a physics fallback (project principle).
 
 ## PhAI integration
 
-Official code and weights:  
 https://erda.ku.dk/archives/e3be15d017d8c4fe81402da833e26894/published-archive.html  
 
-See `third_party/phai/README.md` and `grok_phase_solver.models.phai_interface`.
+See `third_party/phai/README.md`.
 
 ```bibtex
 @article{Larsen2024PhAI,
@@ -114,22 +124,29 @@ See `third_party/phai/README.md` and `grok_phase_solver.models.phai_interface`.
   year    = {2024},
   doi     = {10.1126/science.adn2777}
 }
+@incollection{Cowtan2001Phase,
+  author    = {Cowtan, Kevin},
+  title     = {Phase Problem in X-ray Crystallography, and Its Solution},
+  booktitle = {Encyclopedia of Life Sciences},
+  year      = {2001}
+}
 ```
 
 ## Sample data (COD)
 
 | COD ID | System | Role |
 |--------|--------|------|
-| [2100301](https://www.crystallography.net/cod/2100301.html) | C₇H₅NO₄, P2₁/c | Small organic, PhAI-relevant SG |
-| [2017775](https://www.crystallography.net/cod/2017775.html) | Roxithromycin, P2₁2₁2₁ | Larger molecule + experimental HKL |
-
-Data from the [Crystallography Open Database](https://www.crystallography.net/).
+| [2100301](https://www.crystallography.net/cod/2100301.html) | C₇H₅NO₄, P2₁/c | Small organic |
+| [2017775](https://www.crystallography.net/cod/2017775.html) | Roxithromycin | Larger + experimental HKL |
 
 ## Documentation
 
-- [Math overview](docs/math/phase_problem_overview.md) — Fourier analysis, constraints, algorithms, metrics  
-- [Roadmap](docs/roadmap.md) — Phases 1–4  
-- [Notebook 01](notebooks/01_math_and_baseline.md) — worked pipeline  
+- [Math overview](docs/math/phase_problem_overview.md)
+- [Baseline failure modes](docs/math/baseline_failure_modes.md)
+- [Cowtan notes](docs/cowtan_phase_problem_notes.md)
+- [Hybrid AI tests](docs/hybrid_ai_tests.md)
+- [Roadmap](docs/roadmap.md)
+- [Notebook 01](notebooks/01_math_and_baseline.md) · [Notebook 02](notebooks/02_patterson_and_triplets.md)
 
 ## Tests
 
@@ -140,9 +157,9 @@ pytest -q
 ## License
 
 MIT — see [LICENSE](LICENSE).  
-Third-party data/models retain their original licenses and citation requirements.
+Third-party data/models retain original licenses. Cowtan ELS article cited, not redistributed.
 
 ## Contributing
 
-Iterate: **Plan → Code → Test → Analyze math → Refine → Commit.**  
-Open issues/PRs for new solvers, space groups, or loss functions with physics derivations.
+**Plan → Code → Test → Analyze math → Refine → Commit.**  
+Every ML component keeps a physics fallback.
