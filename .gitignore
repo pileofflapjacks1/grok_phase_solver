@@ -26,12 +26,13 @@ data/synthetic/*
 data/processed/*
 !data/processed/.gitkeep
 
-# ML weights
-third_party/phai/weights/
-third_party/phai/upstream/
+# ML weights (PhAI_model.pth ~162MB — download locally; do not commit)
+third_party/phai/weights/*.pth
+third_party/phai/weights/**/*.pth
 *.pt
 *.pth
 *.ckpt
+.tmp/
 
 # OS / IDE
 .DS_Store

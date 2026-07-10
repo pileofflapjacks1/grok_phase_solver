@@ -143,6 +143,14 @@ See `third_party/phai/README.md`.
 | [2100301](https://www.crystallography.net/cod/2100301.html) | C₇H₅NO₄, P2₁/c | Small organic |
 | [2017775](https://www.crystallography.net/cod/2017775.html) | Roxithromycin | Larger + experimental HKL |
 
+## Scoreboard (latest)
+
+Run `python scripts/run_scoreboard.py` after downloading PhAI weights (`third_party/phai/README.md`).
+
+Results: [`data/processed/scoreboard.md`](data/processed/scoreboard.md).
+
+On COD 2100301 Fcalc (origin-invariant map CC): charge flipping ≈ **0.84 @ 0.9Å**; weaker at lower resolution. PhAI is integrated and runs; fair comparison to the Science paper requires matching their data prep (scaling/merging).
+
 ## Documentation
 
 - [Math overview](docs/math/phase_problem_overview.md)

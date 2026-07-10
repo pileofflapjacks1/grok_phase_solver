@@ -1,0 +1,297 @@
+[
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "random",
+    "mapCC_OI": 0.28525607507615375,
+    "MPE_OI_deg": 81.90423470815246
+  },
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "charge_flipping",
+    "mapCC_OI": 0.9481283230954719,
+    "MPE_OI_deg": 59.16241500133066,
+    "seconds": 2.052119255065918,
+    "final_R": 0.17639322903025756
+  },
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "phase_recycle",
+    "mapCC_OI": 0.5095111087243118,
+    "MPE_OI_deg": 78.1616780747458,
+    "seconds": 0.2488851547241211,
+    "final_R": 2.1601884828080259e-16
+  },
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "direct_methods",
+    "mapCC_OI": 0.4528238777482613,
+    "MPE_OI_deg": 71.2612773883502,
+    "seconds": 15.776122093200684,
+    "dm_fom": 0.9999977287294882
+  },
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "phai",
+    "mapCC_OI": 0.3062858325839701,
+    "MPE_OI_deg": 75.33521463148521,
+    "seconds": 12.055867910385132,
+    "n_mapped": 392
+  },
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "phai+CF",
+    "mapCC_OI": 0.9117496759781235,
+    "MPE_OI_deg": 78.82544127345926,
+    "seconds": 0.7287659645080566
+  },
+  {
+    "dataset": "synth_n5",
+    "d_min": 1.0,
+    "method": "phai+recycle",
+    "mapCC_OI": 0.3124459801194281,
+    "MPE_OI_deg": 75.15268562312603,
+    "seconds": 0.1027381420135498
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "random",
+    "mapCC_OI": 0.21155358396070628,
+    "MPE_OI_deg": 87.06538233215052
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "charge_flipping",
+    "mapCC_OI": 0.8352549286307428,
+    "MPE_OI_deg": 87.92182884308465,
+    "seconds": 9.616480112075806,
+    "final_R": 0.23686967931046057
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "phase_recycle",
+    "mapCC_OI": 0.34748698246358245,
+    "MPE_OI_deg": 84.87533100043535,
+    "seconds": 1.203063726425171,
+    "final_R": 2.0819192556387825e-16
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "direct_methods",
+    "mapCC_OI": 0.30719531667145206,
+    "MPE_OI_deg": 87.28808159577969,
+    "seconds": 9.010775089263916,
+    "dm_fom": 0.9973892872532972
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "phai",
+    "mapCC_OI": 0.324545716757179,
+    "MPE_OI_deg": 76.96235667742785,
+    "seconds": 10.307449102401733,
+    "n_mapped": 1688
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "phai+CF",
+    "mapCC_OI": 0.6699065733976877,
+    "MPE_OI_deg": 69.41020031313961,
+    "seconds": 5.361664056777954
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 0.9,
+    "method": "phai+recycle",
+    "mapCC_OI": 0.32444256341287137,
+    "MPE_OI_deg": 77.12122490897416,
+    "seconds": 0.6998867988586426
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "random",
+    "mapCC_OI": 0.2972038294165385,
+    "MPE_OI_deg": 87.3805213711622
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "charge_flipping",
+    "mapCC_OI": 0.3639549613586486,
+    "MPE_OI_deg": 84.3815769390953,
+    "seconds": 3.745443820953369,
+    "final_R": 0.48168952016428873
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "phase_recycle",
+    "mapCC_OI": 0.45664496986568526,
+    "MPE_OI_deg": 83.42453609818529,
+    "seconds": 0.5497510433197021,
+    "final_R": 2.4077658439886246e-16
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "direct_methods",
+    "mapCC_OI": 0.3463219679983312,
+    "MPE_OI_deg": 87.37312667709064,
+    "seconds": 7.550369024276733,
+    "dm_fom": 0.9815045988431692
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "phai",
+    "mapCC_OI": 0.3230703149587893,
+    "MPE_OI_deg": 77.43223019250127,
+    "seconds": 10.36856198310852,
+    "n_mapped": 896
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "phai+CF",
+    "mapCC_OI": 0.3665907278507176,
+    "MPE_OI_deg": 81.6694957867268,
+    "seconds": 3.3315811157226562
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.2,
+    "method": "phai+recycle",
+    "mapCC_OI": 0.3230295184805173,
+    "MPE_OI_deg": 77.25269440514958,
+    "seconds": 0.659459114074707
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "random",
+    "mapCC_OI": 0.3873979320894651,
+    "MPE_OI_deg": 84.39942120550576
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "charge_flipping",
+    "mapCC_OI": 0.30703027170790614,
+    "MPE_OI_deg": 74.55014874497974,
+    "seconds": 1.8739731311798096,
+    "final_R": 0.5241929874900104
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "phase_recycle",
+    "mapCC_OI": 0.4628928063548884,
+    "MPE_OI_deg": 82.0135229373904,
+    "seconds": 0.23039603233337402,
+    "final_R": 1.5648817230685048e-16
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "direct_methods",
+    "mapCC_OI": 0.4518603661717512,
+    "MPE_OI_deg": 78.22053566767727,
+    "seconds": 10.366091966629028,
+    "dm_fom": 0.9995987686888023
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "phai",
+    "mapCC_OI": 0.3958060335893708,
+    "MPE_OI_deg": 70.77365027997182,
+    "seconds": 15.30384612083435,
+    "n_mapped": 474
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "phai+CF",
+    "mapCC_OI": 0.31896458596585314,
+    "MPE_OI_deg": 78.02864726221046,
+    "seconds": 0.9827120304107666
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 1.5,
+    "method": "phai+recycle",
+    "mapCC_OI": 0.39399471083471294,
+    "MPE_OI_deg": 71.08945563797359,
+    "seconds": 0.20064496994018555
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "random",
+    "mapCC_OI": 0.4858528734441328,
+    "MPE_OI_deg": 77.45209675428701
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "charge_flipping",
+    "mapCC_OI": 0.5381429456366746,
+    "MPE_OI_deg": 75.77404571863163,
+    "seconds": 0.6990458965301514,
+    "final_R": 0.5435807537851248
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "phase_recycle",
+    "mapCC_OI": 0.5655772110113908,
+    "MPE_OI_deg": 65.09621549688674,
+    "seconds": 0.08531475067138672,
+    "final_R": 2.5302494189497264e-16
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "direct_methods",
+    "mapCC_OI": 0.47007010670280513,
+    "MPE_OI_deg": 73.64772207602033,
+    "seconds": 3.154033899307251,
+    "dm_fom": 0.7937664288617233
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "phai",
+    "mapCC_OI": 0.4870292406141943,
+    "MPE_OI_deg": 72.56306369505866,
+    "seconds": 9.020440101623535,
+    "n_mapped": 204
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "phai+CF",
+    "mapCC_OI": 0.49537336001546384,
+    "MPE_OI_deg": 74.65528367138782,
+    "seconds": 0.7045259475708008
+  },
+  {
+    "dataset": "COD_2100301",
+    "d_min": 2.0,
+    "method": "phai+recycle",
+    "mapCC_OI": 0.483466780117609,
+    "MPE_OI_deg": 74.75032281370964,
+    "seconds": 0.10132789611816406
+  }
+]

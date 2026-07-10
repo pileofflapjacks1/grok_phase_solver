@@ -110,33 +110,28 @@ class PhAIInterface:
 
     @property
     def available(self) -> bool:
-        """True if torch is installed and weights file exists."""
+        """True if torch+einops installed and PhAI_model.pth is present."""
         try:
-            import torch  # noqa: F401
-        except ImportError:
+            from grok_phase_solver.models.phai_runner import phai_available
+
+            return phai_available()
+        except Exception:
             return False
-        wp = self.config.weights_path
-        if wp is None:
-            # Search default location
-            candidates = list(Path(self.config.third_party_dir).glob("**/*.{pt,pth,ckpt}"))
-            return len(candidates) > 0
-        return Path(wp).exists()
 
     def load(self) -> None:
-        """Load official or reimplemented weights (Phase 2)."""
+        """Load official PhAI weights via PhAIRunner."""
+        from grok_phase_solver.models.phai_runner import PhAIRunner
+
         if not self.available:
             raise FileNotFoundError(
-                "PhAI weights not found. Download from:\n"
-                f"  {PHAI_ERDA_URL}\n"
-                f"and place checkpoints under {self.config.third_party_dir}/\n"
-                "Also install torch: pip install 'grok-phase-solver[ml]'"
+                "PhAI weights not found. Download PhAI_model.pth:\n"
+                "  cd third_party/phai/weights && gdown 1_eleZ6dBvdKQQeZwxeOJ82g5lPVzmb2M\n"
+                f"Full archive: {PHAI_ERDA_URL}\n"
+                "Also: pip install torch einops"
             )
-        # Placeholder for actual load
-        raise NotImplementedError(
-            "Official PhAI weight loader will be wired in Phase 2 once "
-            f"checkpoints are present under {self.config.third_party_dir}/. "
-            f"See {PHAI_ERDA_URL}"
-        )
+        wp = self.config.weights_path
+        self._runner = PhAIRunner(weights_path=wp, device=self.config.device)
+        self._loaded = True
 
     def predict_phases(
         self,
@@ -144,14 +139,13 @@ class PhAIInterface:
         amplitudes: np.ndarray,
         cell: np.ndarray,
     ) -> np.ndarray:
-        """
-        Predict phases (radians) from amplitudes.
-
-        Requires loaded model. Use :meth:`seed_phases` for a safe fallback.
-        """
+        """Predict phases (radians) from amplitudes using official PhAI."""
         if not self._loaded:
             self.load()
-        raise NotImplementedError("PhAI forward pass pending weight integration")
+        phases, _info = self._runner.predict(
+            hkl, amplitudes, n_cycles=self.config.n_recycle, random_init=True
+        )
+        return phases
 
     def seed_phases(
         self,

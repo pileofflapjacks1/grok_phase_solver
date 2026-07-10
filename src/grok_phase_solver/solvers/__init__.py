@@ -9,6 +9,7 @@ from .difference_patterson import locate_heavy_atom_vectors, difference_patterso
 from .mir_blow_crick import combine_mir_phases, single_isomorphous_replacement
 from .density_modification import density_modification_cycle, solvent_flatten
 from .hybrid import hybrid_phase_retrieval, blend_phases
+from .phase_recycle import phase_recycle, fourier_modulus_projection
 
 __all__ = [
     "charge_flipping_solve",
@@ -27,4 +28,6 @@ __all__ = [
     "solvent_flatten",
     "hybrid_phase_retrieval",
     "blend_phases",
+    "phase_recycle",
+    "fourier_modulus_projection",
 ]

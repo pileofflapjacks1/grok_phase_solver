@@ -1,41 +1,54 @@
 # PhAI third-party integration
 
-## Official source
+## Official sources
 
-**Paper:** Larsen, A. S., Rekis, T. & Madsen, A. Ø. (2024). *PhAI: A deep-learning approach to solve the crystallographic phase problem.* Science **385**, 522–528.  
-DOI: [10.1126/science.adn2777](https://doi.org/10.1126/science.adn2777)
+**Paper:** Larsen, A. S., Rekis, T. & Madsen, A. Ø. (2024). *PhAI: A deep-learning approach to solve the crystallographic phase problem.* Science **385**, 522–528. doi:[10.1126/science.adn2777](https://doi.org/10.1126/science.adn2777)
 
-**Code & data archive (ERDA, University of Copenhagen):**  
-https://erda.ku.dk/archives/e3be15d017d8c4fe81402da833e26894/published-archive.html
+**Public test notebook / code:** https://github.com/AndersOMadsen/PhAI  
 
-The archive includes training code, analysis scripts, training data, and model parameters.
+**Full archive (training data, ~9.7 GB):**  
+https://erda.ku.dk/archives/e3be15d017d8c4fe81402da833e26894/published-archive.html  
+(`PhAI.zip`)
 
-## How to integrate
+## Quick install (public weights)
 
-1. Download the ERDA archive (requires browser / their download UI).
-2. Extract model checkpoints and example scripts into this directory, e.g.:
-
-```text
-third_party/phai/
-  README.md          # this file
-  weights/           # place *.pt / *.ckpt here
-  upstream/          # optional: vendored training/inference scripts
-```
-
-3. Install ML extras:
+From the authors’ Colab notebook (Google Drive):
 
 ```bash
-pip install 'grok-phase-solver[ml]'
+cd third_party/phai/weights
+# Requires: pip install gdown torch einops
+gdown 1_eleZ6dBvdKQQeZwxeOJ82g5lPVzmb2M   # one of the notebook artifacts
+gdown 14lqkA_Frfy8WpoYyJ-v2sfKkhfPTlNFO
+gdown 10U-JUhNQKvoYCRPAv5k-iC2D5vdq6MxM
+gdown 1Str3GWahzB1QZtpU2obBj-KSbH9JCV8P
+# Rename the .pth file to PhAI_model.pth if needed
+ls -la
 ```
 
-4. Point `PhAIConfig.weights_path` or `third_party_dir` at the checkpoints.
+Public Python helpers are vendored under `upstream/` (from `PhAI_files_public`).
 
-## License note
+## Use in grok_phase_solver
 
-Respect the license and citation requirements of the PhAI authors when
-redistributing weights or code. This repository does **not** vendor their
-binaries by default; we provide an interface and physics baselines that
-can be seeded by PhAI predictions once weights are present.
+```python
+from grok_phase_solver.models.phai_runner import phai_available, PhAIRunner
+
+if phai_available():
+    runner = PhAIRunner(device="cpu")
+    phases, info = runner.predict(hkl, amplitudes, n_cycles=5)
+```
+
+Or run the full scoreboard:
+
+```bash
+python scripts/run_scoreboard.py
+```
+
+## Limitations (do not ignore)
+
+- Public model is **oriented to P2₁/c** and a fixed reciprocal grid (`max_index=10`).
+- Not a general macromolecular phaser.
+- Always reimpose observed `|F|` and consider hybrid CF/recycle polish after PhAI.
+- Respect the authors’ license and cite the Science paper.
 
 ## Citation
 
