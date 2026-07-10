@@ -9,6 +9,14 @@ from .experimental_phasing import (
     mir_phase_indication,
     hybrid_feature_stack_mir,
 )
+from .wilson import wilson_plot, domain_gap_wilson
+from .synthetic_v2 import (
+    generate_fragment_structure,
+    write_training_shard,
+    apply_partial_occupancy,
+    add_heavy_atom,
+    make_centrosymmetric_copy,
+)
 
 __all__ = [
     "download_cod_cif",
@@ -21,4 +29,11 @@ __all__ = [
     "simulate_mr",
     "mir_phase_indication",
     "hybrid_feature_stack_mir",
+    "wilson_plot",
+    "domain_gap_wilson",
+    "generate_fragment_structure",
+    "write_training_shard",
+    "apply_partial_occupancy",
+    "add_heavy_atom",
+    "make_centrosymmetric_copy",
 ]

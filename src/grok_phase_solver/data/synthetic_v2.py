@@ -42,6 +42,34 @@ _FRAGMENTS: Dict[str, List[Tuple[str, Tuple[float, float, float]]]] = {
         ("O", (0.50, 1.10, 0.00)),
         ("C", (1.20, -0.90, 0.00)),
     ],
+    "imidazole": [
+        ("N", (0.00, 1.10, 0.00)),
+        ("C", (1.05, 0.40, 0.00)),
+        ("N", (0.65, -0.90, 0.00)),
+        ("C", (-0.65, -0.90, 0.00)),
+        ("C", (-1.05, 0.40, 0.00)),
+    ],
+    "phosphate": [
+        ("P", (0.00, 0.00, 0.00)),
+        ("O", (1.50, 0.00, 0.00)),
+        ("O", (-0.50, 1.40, 0.00)),
+        ("O", (-0.50, -1.40, 0.00)),
+        ("O", (0.00, 0.00, 1.50)),
+    ],
+    "water": [
+        ("O", (0.00, 0.00, 0.00)),
+        ("H", (0.76, 0.59, 0.00)),
+        ("H", (-0.76, 0.59, 0.00)),
+    ],
+    "chloro_phenyl": [
+        ("C", (0.00, 0.00, 0.00)),
+        ("C", (1.40, 0.00, 0.00)),
+        ("C", (2.10, 1.21, 0.00)),
+        ("C", (1.40, 2.42, 0.00)),
+        ("C", (0.00, 2.42, 0.00)),
+        ("C", (-0.70, 1.21, 0.00)),
+        ("CL", (2.10, 3.70, 0.00)),
+    ],
 }
 
 
@@ -180,3 +208,132 @@ def write_training_shard(
     }
     out_path.with_suffix(".json").write_text(json.dumps(meta, indent=2))
     return out_path
+
+
+def apply_partial_occupancy(
+    structure: CrystalStructure,
+    frac_disordered: float = 0.2,
+    occ_range: Tuple[float, float] = (0.4, 0.9),
+    seed: int = 0,
+) -> CrystalStructure:
+    """Randomly reduce occupancy on a subset of atoms (disorder model)."""
+    rng = np.random.default_rng(seed)
+    atoms = []
+    for a in structure.atoms:
+        occ = a.occupancy
+        if rng.random() < frac_disordered and a.element.upper() != "H":
+            occ = float(rng.uniform(*occ_range))
+        atoms.append(
+            AtomSite(a.label, a.element, a.fract.copy(), occupancy=occ, u_iso=a.u_iso, b_iso=a.b_iso)
+        )
+    return CrystalStructure(
+        name=structure.name + "_occ",
+        cell=structure.cell.copy(),
+        space_group_hm=structure.space_group_hm,
+        atoms=atoms,
+        z=structure.z,
+        wavelength=structure.wavelength,
+    )
+
+
+def add_heavy_atom(
+    structure: CrystalStructure,
+    element: str = "BR",
+    seed: int = 0,
+) -> CrystalStructure:
+    """Insert one heavy atom at a random fractional site (for MIR/HA tests)."""
+    rng = np.random.default_rng(seed)
+    atoms = list(structure.atoms)
+    atoms.append(
+        AtomSite(
+            label=f"{element}1",
+            element=element,
+            fract=rng.random(3),
+            occupancy=1.0,
+            u_iso=0.04,
+        )
+    )
+    return CrystalStructure(
+        name=structure.name + f"_{element}",
+        cell=structure.cell.copy(),
+        space_group_hm=structure.space_group_hm,
+        atoms=atoms,
+        z=structure.z,
+        wavelength=structure.wavelength,
+    )
+
+
+def generate_p1_packed(
+    n_atoms: int = 12,
+    seed: int = 0,
+    min_dist: float = 1.2,
+    volume_per_atom: float = 18.0,
+) -> CrystalStructure:
+    """
+    Space-group P1 packing with hard-sphere clash rejection.
+
+    Not a full space-group sampler; P−1 inversion twin can be added via
+    ``make_centrosymmetric_copy``. Correctness: all atoms in [0,1)³, no
+    pairs closer than min_dist (Cartesian min-image).
+    """
+    return generate_random_organic(
+        n_atoms=n_atoms, seed=seed, space_group="P1", min_dist=min_dist, volume_per_atom=volume_per_atom
+    )
+
+
+def make_centrosymmetric_copy(structure: CrystalStructure) -> CrystalStructure:
+    """
+    Expand asymmetric unit by inversion through origin → P-1 contents.
+
+    Atoms at r and −r (mod 1). Does not change space_group label to a full
+    IT setting with centering ops beyond listing both sites in P1 cell —
+    for Fcalc tests of centrosymmetric phases (0/π).
+    """
+    atoms = list(structure.atoms)
+    for a in structure.atoms:
+        inv = (-a.fract) % 1.0
+        # skip near-duplicate
+        if np.linalg.norm((inv - a.fract + 0.5) % 1.0 - 0.5) < 1e-3:
+            continue
+        atoms.append(
+            AtomSite(
+                label=a.label + "_i",
+                element=a.element,
+                fract=inv,
+                occupancy=a.occupancy,
+                u_iso=a.u_iso,
+                b_iso=a.b_iso,
+            )
+        )
+    return CrystalStructure(
+        name=structure.name + "_P-1",
+        cell=structure.cell.copy(),
+        space_group_hm="P-1",
+        atoms=atoms,
+        z=structure.z,
+        wavelength=structure.wavelength,
+    )
+
+
+# Pseudocode for Phase-2 scale generation (documented algorithm)
+GENERATOR_PSEUDOCODE = """
+Algorithm GeneratePhysicallyValidShard(N, d_min, seed):
+  rng ← Seed(seed)
+  for i in 1..N:
+    // 1. Lattice: sample a,b,c,angles consistent with chosen crystal system
+    cell ← SampleLattice(system ∈ {triclinic, monoclinic, orthorhombic})
+    // 2. Composition: draw fragments from library with chemistry weights
+    frags ← SampleFragments(library, n ~ Poisson(λ))
+    // 3. Pack: place with clash checks (min distance ≥ covalent radii sum)
+    atoms ← Pack(frags, cell, min_dist)
+    // 4. Optional: partial occ, heavy atoms, thermal B from Wilson prior
+    atoms ← ApplyDisorder(atoms, p_occ)
+    // 5. Expand by space-group operators (gemmi)
+    atoms_cell ← ExpandASU(atoms, space_group)
+    // 6. Structure factors: F(h) = Σ occ f(s) T(B) exp(2πi h·r)
+    hkl ← GenerateHKL(cell, d_min)
+    F ← ComputeF(hkl, atoms_cell, cell)
+    // 7. Emit (|F|, φ_true, cell, meta) for supervised / self-supervised training
+    yield {hkl, |F|, angle(F), cell, meta}
+  Validate: Wilson plot slope ≈ −2B; ⟨E²⟩≈1; Friedel F(−h)=F(h)* for real density
+"""

@@ -1,0 +1,13 @@
+{
+  "n_structures": 5,
+  "epochs_per": 40,
+  "d_min": 1.5,
+  "final_losses": [
+    0.5465141662431431,
+    0.5456093973113213,
+    0.5449748675820165,
+    0.5448025969586451,
+    0.5453230790486678
+  ],
+  "note": "Supervised on synthetic \u03c6_true. Transfer to experimental |F| is unproven. Use as seed for hybrid CF/DM polish, not as a claimed general solver."
+}

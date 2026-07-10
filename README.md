@@ -30,13 +30,17 @@ Hybrid AI test matrix: [`docs/hybrid_ai_tests.md`](docs/hybrid_ai_tests.md).
 
 ## Status
 
+See **[`TODO.md`](TODO.md)** for the full phase checklist.
+
 | Phase | Focus | State |
 |-------|--------|--------|
 | **1** | I/O, CF/HIO, COD samples, metrics, math docs | ✅ |
-| **1b** | Cowtan classical baselines (Patterson, DM), MIR/MAD/MR sim | ✅ |
-| **2** | Fragment synthetic data, physics losses, NN training | 🚧 started |
-| **3** | Hybrid loops, envelopes, generative models | 📋 |
-| **4** | Eval vs SHELX/Phenix, viz, arXiv | 📋 |
+| **1b** | Cowtan classical (Patterson, DM, MIR Blow–Crick, Δ-Patterson) | ✅ |
+| **2** | Fragment synth, Wilson gap, PhaseMLP, hybrid benchmark | ✅ core / 🚧 scale |
+| **3** | Hybrid seed+polish, solvent flatten, uniqueness docs | ✅ core / 🚧 research |
+| **4** | Plots, arXiv skeleton, CI | ✅ core / 🚧 external tools |
+
+**Honest limit:** This framework implements *correct classical mathematics* and hybrid testbeds. It does **not** claim a general solution of the phase problem for proteins.
 
 | Component | State |
 |-----------|--------|

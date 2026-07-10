@@ -60,6 +60,7 @@ def charge_flipping_solve(
     d_min: Optional[float] = None,
     sampling: float = 3.0,
     phase_init: Optional[np.ndarray] = None,
+    centrosymmetric: bool = False,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
@@ -128,9 +129,12 @@ def charge_flipping_solve(
 
         # Fourier modulus projection
         phases = np.angle(F_new)
+        # Centrosymmetric structures: F real ⇒ φ ∈ {0, π} (origin-dependent overall sign)
+        if centrosymmetric:
+            phases = np.where(np.cos(phases) >= 0.0, 0.0, np.pi)
         # Randomize weak phases only in early iterations (escape local minima),
         # then freeze to allow refinement — classic CF schedule.
-        if weak_fraction > 0 and it < max(10, n_iter // 3):
+        if weak_fraction > 0 and it < max(10, n_iter // 3) and not centrosymmetric:
             phases[weak_mask] = rng.uniform(-np.pi, np.pi, size=n_weak)
 
         # R-factor vs observed amplitudes

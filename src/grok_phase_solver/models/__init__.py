@@ -8,6 +8,8 @@ from .losses import (
     triplet_fom_loss,
     combined_phase_loss,
 )
+from .phase_mlp import PhaseMLP, reflection_features, train_phase_mlp_on_structure
+from .representations import voxelize_amplitudes, patterson_voxel, reflection_graph
 
 __all__ = [
     "PhAIConfig",
@@ -18,4 +20,10 @@ __all__ = [
     "fourier_modulus_loss",
     "triplet_fom_loss",
     "combined_phase_loss",
+    "PhaseMLP",
+    "reflection_features",
+    "train_phase_mlp_on_structure",
+    "voxelize_amplitudes",
+    "patterson_voxel",
+    "reflection_graph",
 ]
