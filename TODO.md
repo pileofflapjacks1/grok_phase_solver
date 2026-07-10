@@ -117,13 +117,23 @@ AI-driven general solver for the X-ray crystallography phase problem.
 
 ---
 
+## End-user pipeline (scientists)
+
+- [x] `gps-solve` CLI for experimental HKL (+ INS/cell/SG)
+- [x] Loaders: SHELX hkl/ins, CIF HKL, MTZ
+- [x] Exports: phases, density, peaks, report.md
+- [x] User guide + demo (`docs/USER_GUIDE.md`, `examples/demo_solve/`)
+- [ ] SHELXL-style `.res` trial model export
+- [ ] GUI / web upload
+
 ## Immediate next actions (honest priority)
 
-1. [ ] Download PhAI weights from ERDA when available; wire loader  
-2. [ ] Scale synthetic generation offline; track Wilson domain-gap to COD  
-3. [ ] Torch training with equivariant / graph models (optional GPU)  
-4. [ ] Protein-oriented envelope + MR+AF2 hybrid demo  
-5. [ ] External validation vs SHELX on shared small-molecule set  
+1. [x] PhAI weights runner + scoreboard  
+2. [x] Scientist-facing `gps-solve` pipeline  
+3. [ ] Improve auto method + PhAI |F| prep for experimental HKL  
+4. [ ] Peak → SHELXL `.res` fragment export  
+5. [ ] External validation vs SHELXD  
+6. [ ] Scale synthetic generation; Wilson domain-gap  
 
 ---
 
@@ -131,14 +141,13 @@ AI-driven general solver for the X-ray crystallography phase problem.
 
 | Area | Path |
 |------|------|
+| **User solve** | `gps-solve`, `pipeline/solve.py`, `docs/USER_GUIDE.md` |
 | Package | `src/grok_phase_solver/` |
 | Classical solvers | `solvers/{patterson,direct_methods,charge_flipping,hio,baseline}.py` |
 | Diff. Patterson / MIR | `solvers/{difference_patterson,mir_blow_crick}.py` |
-| Hybrid / DM | `solvers/{hybrid,density_modification}.py` |
+| Hybrid / DM | `solvers/{hybrid,density_modification,phase_recycle}.py` |
 | Physics | `physics/{structure_factors,density,patterson,parseval,form_factors}.py` |
-| Phase-2 synth | `data/synthetic_v2.py`, `data/wilson.py` |
-| MLP | `models/phase_mlp.py` |
-| Benchmark | `scripts/run_hybrid_benchmark.py` |
+| Benchmark | `scripts/run_scoreboard.py` |
 | Math | `docs/math/`, notebooks 01–03 |
 | COD samples | `data/raw/cod/` |
 
