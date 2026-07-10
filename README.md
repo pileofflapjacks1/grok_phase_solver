@@ -189,13 +189,20 @@ See `third_party/phai/README.md`.
 | [2100301](https://www.crystallography.net/cod/2100301.html) | C₇H₅NO₄, P2₁/c | Small organic |
 | [2017775](https://www.crystallography.net/cod/2017775.html) | Roxithromycin | Larger + experimental HKL |
 
-## Scoreboard (latest)
+## Scoreboard & solvability (research)
 
-Run `python scripts/run_scoreboard.py` after downloading PhAI weights (`third_party/phai/README.md`).
+| Report | Command | Output |
+|--------|---------|--------|
+| Multi-method scoreboard | `python scripts/run_scoreboard.py` | [`data/processed/scoreboard.md`](data/processed/scoreboard.md) |
+| **Solvability phase diagram** | `python scripts/run_solvability_diagram.py` | [`data/processed/solvability_diagram.md`](data/processed/solvability_diagram.md) |
+| **Fair PhAI benchmark** | `python scripts/run_fair_phai_benchmark.py` | [`data/processed/fair_phai_benchmark.md`](data/processed/fair_phai_benchmark.md) |
+| Math summary | — | [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md) |
 
-Results: [`data/processed/scoreboard.md`](data/processed/scoreboard.md).
+**Headline (strict success = mapCC≥0.7 + peak recovery≥0.5 + R1≤0.45):**
 
-On COD 2100301 Fcalc (origin-invariant map CC): charge flipping ≈ **0.84 @ 0.9Å**; weaker at lower resolution. PhAI is integrated and runs; fair comparison to the Science paper requires matching their data prep (scaling/merging).
+- Synthetic frontier: CF success ~28% overall; collapses for large \(N\) / low resolution.  
+- Fair PhAI (official merge + /max \|F\|): **PhAI mapCC > CF** on COD 2016452 Fcalc; **`phai_fair+CF` solves** 2016452 @ 0.9 Å (mapCC 0.87).  
+- PhAI weights: local `third_party/phai/weights/PhAI_model.pth` (gitignored; see `third_party/phai/README.md`).
 
 ## Documentation
 
