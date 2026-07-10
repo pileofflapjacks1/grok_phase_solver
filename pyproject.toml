@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grok-phase-solver"
+version = "0.1.0"
+description = "AI-driven general solver for the X-ray crystallography phase problem"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+  { name = "Grok Phase Solver Contributors" }
+]
+keywords = [
+  "crystallography",
+  "phase-problem",
+  "phase-retrieval",
+  "X-ray",
+  "deep-learning",
+  "Fourier",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Scientific/Engineering :: Chemistry",
+]
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "matplotlib>=3.7",
+  "gemmi>=0.6",
+]
+
+[project.optional-dependencies]
+ml = [
+  "torch>=2.0",
+]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+  "ruff>=0.1",
+  "jupyter>=1.0",
+  "ipykernel>=6.0",
+]
+all = [
+  "grok-phase-solver[ml,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/joewagner/grok_phase_solver"
+Documentation = "https://github.com/joewagner/grok_phase_solver/tree/main/docs"
+Repository = "https://github.com/joewagner/grok_phase_solver"
+
+[project.scripts]
+gps-download-cod = "grok_phase_solver.cli:download_cod_main"
+gps-baseline = "grok_phase_solver.cli:baseline_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

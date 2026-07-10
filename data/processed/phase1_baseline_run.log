@@ -1,0 +1,108 @@
+======================================================================
+grok_phase_solver — Phase 1 baseline run
+======================================================================
+
+[1] COD samples
+  OK /Users/joe/Projects/grok_phase_solver/data/raw/cod/2100301.cif (10672 bytes)
+  OK /Users/joe/Projects/grok_phase_solver/data/raw/cod/2017775.cif (45746 bytes)
+  OK /Users/joe/Projects/grok_phase_solver/data/raw/cod/2017775.hkl (964014 bytes)
+
+[2] Synthetic structure baselines
+
+  CrystalStructure('synth_n6_s42', SG='P1', cell=[8.072149078264367, 11.010185439379677, 4.0, 90.0, 110.92104087178092, 90.0], Z=1, natoms=6, V=332.07 Å³)
+Running random on synth_n6_s42: 1368 reflections, d_min=1.0 Å
+[random] synth_n6_s42 @ 1.00 Å  Nrefl=1368  MPE=89.1°  MPE_oi=85.7°  mapCC=0.189  R=0.000
+  note: random phases (null baseline)
+  note: mapCC_fixed_origin=0.030, shift=(4, 25, 6)
+Running charge_flipping on synth_n6_s42: 1368 reflections, d_min=1.0 Å
+  CF iter    0  R=0.5384  neg=0.490
+  CF iter   20  R=0.1906  neg=0.690
+  CF iter   40  R=0.1688  neg=0.695
+  CF iter   60  R=0.1683  neg=0.685
+  CF iter   80  R=0.1692  neg=0.683
+  CF iter   99  R=0.1682  neg=0.682
+[charge_flipping] synth_n6_s42 @ 1.00 Å  Nrefl=1368  MPE=89.0°  MPE_oi=81.8°  mapCC=0.869  R=0.168
+  note: mapCC_fixed_origin=0.024, shift=(3, 4, 2)
+Running hio on synth_n6_s42: 1368 reflections, d_min=1.0 Å
+  HIO iter    0  R=0.0000  neg=0.490
+  HIO iter   20  R=0.5300  neg=0.538
+  HIO iter   40  R=0.5358  neg=0.541
+  HIO iter   60  R=0.5357  neg=0.528
+  HIO iter   80  R=0.5025  neg=0.520
+  HIO iter   99  R=0.5081  neg=0.523
+[hio] synth_n6_s42 @ 1.00 Å  Nrefl=1368  MPE=93.5°  MPE_oi=82.0°  mapCC=0.222  R=0.508
+  note: mapCC_fixed_origin=-0.058, shift=(9, 1, 3)
+
+  CrystalStructure('synth_n8_s42', SG='P1', cell=[8.072149078264367, 11.010185439379677, 4.0, 90.0, 110.92104087178092, 90.0], Z=1, natoms=8, V=332.07 Å³)
+Running random on synth_n8_s42: 820 reflections, d_min=1.2 Å
+[random] synth_n8_s42 @ 1.20 Å  Nrefl=820  MPE=88.0°  MPE_oi=84.5°  mapCC=0.208  R=0.000
+  note: random phases (null baseline)
+  note: mapCC_fixed_origin=0.021, shift=(16, 14, 6)
+Running charge_flipping on synth_n8_s42: 820 reflections, d_min=1.2 Å
+  CF iter    0  R=0.5268  neg=0.498
+  CF iter   20  R=0.1880  neg=0.691
+  CF iter   40  R=0.1714  neg=0.689
+  CF iter   60  R=0.1540  neg=0.687
+  CF iter   80  R=0.1531  neg=0.682
+  CF iter  100  R=0.1512  neg=0.681
+  CF iter  119  R=0.1500  neg=0.683
+[charge_flipping] synth_n8_s42 @ 1.20 Å  Nrefl=820  MPE=88.6°  MPE_oi=73.7°  mapCC=0.867  R=0.150
+  note: mapCC_fixed_origin=-0.027, shift=(8, 26, 1)
+Running hio on synth_n8_s42: 820 reflections, d_min=1.2 Å
+  HIO iter    0  R=0.0000  neg=0.498
+  HIO iter   20  R=0.5101  neg=0.534
+  HIO iter   40  R=0.5016  neg=0.529
+  HIO iter   60  R=0.4948  neg=0.533
+  HIO iter   80  R=0.4988  neg=0.513
+  HIO iter  100  R=0.4878  neg=0.525
+  HIO iter  119  R=0.5015  neg=0.525
+[hio] synth_n8_s42 @ 1.20 Å  Nrefl=820  MPE=87.1°  MPE_oi=84.1°  mapCC=0.231  R=0.501
+  note: mapCC_fixed_origin=0.021, shift=(5, 4, 9)
+
+[3] COD 2100301 (dinicotinic acid) Fcalc baseline
+  CrystalStructure('2100301', SG='P121/c1', cell=[9.7116, 11.1347, 6.4421, 90.0, 108.595, 90.0], Z=4, natoms=17, V=660.26 Å³)
+  Expanded cell atoms=68, reflections@1.2Å=1530
+Running random on 2100301: 1530 reflections, d_min=1.2 Å
+[random] 2100301 @ 1.20 Å  Nrefl=1530  MPE=92.9°  MPE_oi=87.4°  mapCC=0.297  R=0.000
+  note: random phases (null baseline)
+  note: mapCC_fixed_origin=0.007, shift=(16, 1, 11)
+Running charge_flipping on 2100301: 1530 reflections, d_min=1.2 Å
+  CF iter    0  R=0.5945  neg=0.500
+  CF iter   20  R=0.4794  neg=0.559
+  CF iter   40  R=0.4753  neg=0.542
+  CF iter   60  R=0.4835  neg=0.551
+  CF iter   80  R=0.4442  neg=0.559
+  CF iter   99  R=0.4817  neg=0.548
+[charge_flipping] 2100301 @ 1.20 Å  Nrefl=1530  MPE=88.8°  MPE_oi=84.4°  mapCC=0.364  R=0.482
+  note: mapCC_fixed_origin=0.120, shift=(22, 24, 0)
+
+  Resolution series (charge flipping)
+    [charge_flipping] 2100301 @ 0.90 Å  Nrefl=3646  MPE=91.6°  MPE_oi=88.0°  mapCC=0.833  R=0.238
+    [charge_flipping] 2100301 @ 1.20 Å  Nrefl=1530  MPE=88.0°  MPE_oi=84.2°  mapCC=0.378  R=0.481
+    [charge_flipping] 2100301 @ 1.50 Å  Nrefl=778  MPE=88.1°  MPE_oi=74.7°  mapCC=0.281  R=0.540
+    [charge_flipping] 2100301 @ 2.00 Å  Nrefl=318  MPE=84.7°  MPE_oi=78.0°  mapCC=0.475  R=0.507
+
+[4] COD 2017775 experimental HKL
+  Reflections: 28457
+  |F| range: 0.00 – 212.10
+  Cell: [11.624 16.748 24.018 90.    90.    90.   ]
+  SG: 'P 21 21 21'
+  Resolution: 0.45 – 13.74 Å
+
+[5] PhAI integration status
+  {'paper_doi': '10.1126/science.adn2777', 'erda_url': 'https://erda.ku.dk/archives/e3be15d017d8c4fe81402da833e26894/published-archive.html', 'weights_available': False, 'config': PhAIConfig(weights_path=None, device='cpu', n_recycle=3, d_min=2.0, space_group='P21/c', third_party_dir='third_party/phai', meta={}), 'architecture_notes': 'call describe_phai_architecture()'}
+
+PhAI architecture summary (Larsen et al., Science 2024)
+=======================================================
+
+Problem
+-------
+Input:  observed amplitudes |F(hkl)| (often incomplete / low resolution ~2 Å)
+Output: phases φ(hkl), or equivalently a phased density map
+
+Network design (high level)
+---------------------------
+1. Reflection features: amplitudes (normalized), Miller indices, resolution...
+
+Wrote /Users/joe/Projects/grok_phase_solver/data/processed/phase1_baseline_results.json
+Done.
