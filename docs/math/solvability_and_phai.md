@@ -118,4 +118,4 @@ Secondary: **COD 2100301** (P2₁/c).
 6. [x] Free-FOM v2 calibration + rewrite trust-region (`docs/math/free_fom.md`)  
 7. [ ] Experimental HKL (not only Fcalc) with same success metrics at scale  
 8. [ ] Larger equivariant nets / fine-tune PhAI on hard cells  
-9. [ ] Solvability failure taxonomy (selection vs optimization vs information)
+9. [x] Solvability failure taxonomy (selection vs optimization vs information) — `docs/math/failure_taxonomy.md`

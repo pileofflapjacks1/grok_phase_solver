@@ -1,0 +1,2015 @@
+{
+  "results": [
+    {
+      "n_atoms": 4,
+      "d_min": 0.9,
+      "structure_seed": 0,
+      "n_refl": 864,
+      "refl_per_atom": 216.0,
+      "mean_kappa": 3.7999678041902634,
+      "n_triplets": 3912,
+      "mapcc_best_trial": 0.861881326870063,
+      "mapcc_fom_pick": 0.6951585581560198,
+      "composite_best_trial": 0.8277641640062504,
+      "composite_fom_pick": 0.8701258506834815,
+      "composite_true": 0.8683827424330466,
+      "composite_random": 0.5012476859412117,
+      "R_pos_true": 0.0996780055697038,
+      "R_pos_random": 0.298066342368132,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": 1.0,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": true,
+        "B_basin": false
+      },
+      "reasons": [
+        "Solved (best mapCC=0.86); free-FOM pick mapCC=0.70 was suboptimal among trials",
+        "Selection: free-FOM pick mapCC=0.70 but best trial mapCC=0.86 (FOM missed better basin)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.7869850409010336,
+          "composite": 0.8649625426897214,
+          "R_pos": 0.15161650653094594,
+          "excess_kurtosis": 96.79356181407574
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.707407201492699,
+          "composite": 0.8667196279789655,
+          "R_pos": 0.15181321735918535,
+          "excess_kurtosis": 101.67261511158976
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.6951585581560198,
+          "composite": 0.8701258506834815,
+          "R_pos": 0.14196165490754972,
+          "excess_kurtosis": 103.13321601975085
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.8208067503094455,
+          "composite": 0.83479724751533,
+          "R_pos": 0.1550269940206626,
+          "excess_kurtosis": 39.955294049829035
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.8494825744422766,
+          "composite": 0.8345723976965802,
+          "R_pos": 0.15288755119680786,
+          "excess_kurtosis": 39.02072166125165
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.861881326870063,
+          "composite": 0.8277641640062504,
+          "R_pos": 0.15909201657193228,
+          "excess_kurtosis": 37.44113726741996
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 4,
+      "d_min": 0.9,
+      "structure_seed": 1,
+      "n_refl": 1412,
+      "refl_per_atom": 353.0,
+      "mean_kappa": 4.613963626513252,
+      "n_triplets": 3646,
+      "mapcc_best_trial": 0.9388922161626071,
+      "mapcc_fom_pick": 0.924385994427374,
+      "composite_best_trial": 0.8748561394785073,
+      "composite_fom_pick": 0.8751510048255887,
+      "composite_true": 0.8775984595088626,
+      "composite_random": 0.49436551183067357,
+      "R_pos_true": 0.09035969031492283,
+      "R_pos_random": 0.3118450470009051,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": false,
+        "B_basin": false
+      },
+      "reasons": [
+        "Best mapCC=0.94 \u2265 0.7 (map solved)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.9217236843682657,
+          "composite": 0.8736273528771932,
+          "R_pos": 0.10997981254615576,
+          "excess_kurtosis": 84.50402865941601
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.924385994427374,
+          "composite": 0.8751510048255887,
+          "R_pos": 0.10800939172505183,
+          "excess_kurtosis": 84.94890514681455
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.9388922161626071,
+          "composite": 0.8748561394785073,
+          "R_pos": 0.10982700606958759,
+          "excess_kurtosis": 84.82677864669718
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.9091327678563972,
+          "composite": 0.8482225163845561,
+          "R_pos": 0.14598513479692954,
+          "excess_kurtosis": 63.68108370519374
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.8838742878735826,
+          "composite": 0.8515534183054545,
+          "R_pos": 0.14272380390070372,
+          "excess_kurtosis": 65.58422263664603
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.8526611640017663,
+          "composite": 0.8487213205821234,
+          "R_pos": 0.14348974057075864,
+          "excess_kurtosis": 64.30438213093984
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 4,
+      "d_min": 0.9,
+      "structure_seed": 2,
+      "n_refl": 1748,
+      "refl_per_atom": 437.0,
+      "mean_kappa": 5.898624847081519,
+      "n_triplets": 5000,
+      "mapcc_best_trial": 0.9129565628452417,
+      "mapcc_fom_pick": 0.8387196757755304,
+      "composite_best_trial": 0.8825145726879688,
+      "composite_fom_pick": 0.8849859010389286,
+      "composite_true": 0.885890244022114,
+      "composite_random": 0.5000933983035741,
+      "R_pos_true": 0.07700876269034526,
+      "R_pos_random": 0.3074288203488007,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": 1.0,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": true,
+        "B_basin": false
+      },
+      "reasons": [
+        "Solved (best mapCC=0.91); free-FOM pick mapCC=0.84 was suboptimal among trials",
+        "Selection: free-FOM pick mapCC=0.84 but best trial mapCC=0.91 (FOM missed better basin)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.8387196757755304,
+          "composite": 0.8849859010389286,
+          "R_pos": 0.1077297614441256,
+          "excess_kurtosis": 141.05322948809723
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.8539731383441941,
+          "composite": 0.8833528342584097,
+          "R_pos": 0.1112666796999153,
+          "excess_kurtosis": 144.2197426982388
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.9129565628452417,
+          "composite": 0.8825145726879688,
+          "R_pos": 0.10584069408135699,
+          "excess_kurtosis": 110.54357390453085
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.830304967610474,
+          "composite": 0.8609003258077879,
+          "R_pos": 0.14314621467452818,
+          "excess_kurtosis": 85.24041664726141
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.8720949863511084,
+          "composite": 0.8610878924574824,
+          "R_pos": 0.14239930731740552,
+          "excess_kurtosis": 85.86884290559215
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.865774497646286,
+          "composite": 0.8601909676963833,
+          "R_pos": 0.14382695933231582,
+          "excess_kurtosis": 84.50752488093381
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 6,
+      "d_min": 1.0,
+      "structure_seed": 0,
+      "n_refl": 604,
+      "refl_per_atom": 100.66666666666667,
+      "mean_kappa": 2.6203055704728557,
+      "n_triplets": 4136,
+      "mapcc_best_trial": 0.9400279136035189,
+      "mapcc_fom_pick": 0.7680062399242563,
+      "composite_best_trial": 0.8302782748587897,
+      "composite_fom_pick": 0.8493141653895625,
+      "composite_true": 0.8379935644348588,
+      "composite_random": 0.4983036547937436,
+      "R_pos_true": 0.09938739737808157,
+      "R_pos_random": 0.2844405888415829,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": 1.0,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": true,
+        "B_basin": false
+      },
+      "reasons": [
+        "Solved (best mapCC=0.94); free-FOM pick mapCC=0.77 was suboptimal among trials",
+        "Selection: free-FOM pick mapCC=0.77 but best trial mapCC=0.94 (FOM missed better basin)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.7680062399242563,
+          "composite": 0.8493141653895625,
+          "R_pos": 0.1626764106279814,
+          "excess_kurtosis": 58.77829857067266
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.9400279136035189,
+          "composite": 0.8302782748587897,
+          "R_pos": 0.1257533704480652,
+          "excess_kurtosis": 24.13162956774618
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.7119605872523909,
+          "composite": 0.8486470897077647,
+          "R_pos": 0.15767302038241798,
+          "excess_kurtosis": 60.25370181983996
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.3645795943608723,
+          "composite": 0.5081160171864274,
+          "R_pos": 0.269331636810548,
+          "excess_kurtosis": -0.14597865592240655
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.3251852105575991,
+          "composite": 0.512003232166969,
+          "R_pos": 0.26060391008287787,
+          "excess_kurtosis": -0.012888300444327427
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.3125448304867396,
+          "composite": 0.5133686784404667,
+          "R_pos": 0.2808225103030243,
+          "excess_kurtosis": 0.16493352625596192
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 6,
+      "d_min": 1.0,
+      "structure_seed": 1,
+      "n_refl": 998,
+      "refl_per_atom": 166.33333333333334,
+      "mean_kappa": 3.547982755687426,
+      "n_triplets": 3598,
+      "mapcc_best_trial": 0.9157133902992902,
+      "mapcc_fom_pick": 0.6736122043634777,
+      "composite_best_trial": 0.8558331876485094,
+      "composite_fom_pick": 0.8593402226465996,
+      "composite_true": 0.8612707056020544,
+      "composite_random": 0.5052771040169511,
+      "R_pos_true": 0.09978678972685324,
+      "R_pos_random": 0.28364579882172936,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": 1.0,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": true,
+        "B_basin": false
+      },
+      "reasons": [
+        "Solved (best mapCC=0.92); free-FOM pick mapCC=0.67 was suboptimal among trials",
+        "Selection: free-FOM pick mapCC=0.67 but best trial mapCC=0.92 (FOM missed better basin)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.8717711561637975,
+          "composite": 0.8559260263150942,
+          "R_pos": 0.11662120805829383,
+          "excess_kurtosis": 38.9110939824294
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.9157133902992902,
+          "composite": 0.8558331876485094,
+          "R_pos": 0.11353321041628134,
+          "excess_kurtosis": 39.23685758442842
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.6736122043634777,
+          "composite": 0.8593402226465996,
+          "R_pos": 0.15377967942150633,
+          "excess_kurtosis": 113.8052544773623
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.3100234429057291,
+          "composite": 0.5288531918147041,
+          "R_pos": 0.26968606316708504,
+          "excess_kurtosis": 0.5282704259126092
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.28391652053520466,
+          "composite": 0.5490826538747388,
+          "R_pos": 0.29761834801355536,
+          "excess_kurtosis": 1.310860304095578
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.24675028394877344,
+          "composite": 0.5297117932808197,
+          "R_pos": 0.26558529022878075,
+          "excess_kurtosis": 0.39031172254280033
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 6,
+      "d_min": 1.0,
+      "structure_seed": 2,
+      "n_refl": 1234,
+      "refl_per_atom": 205.66666666666666,
+      "mean_kappa": 4.099229865821907,
+      "n_triplets": 3152,
+      "mapcc_best_trial": 0.9390899887092318,
+      "mapcc_fom_pick": 0.7105970679939707,
+      "composite_best_trial": 0.8616264866768066,
+      "composite_fom_pick": 0.8706946287220506,
+      "composite_true": 0.8672350759049051,
+      "composite_random": 0.4965611987414763,
+      "R_pos_true": 0.0843867841580207,
+      "R_pos_random": 0.2918611506850021,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": 1.0,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": true,
+        "B_basin": false
+      },
+      "reasons": [
+        "Solved (best mapCC=0.94); free-FOM pick mapCC=0.71 was suboptimal among trials",
+        "Selection: free-FOM pick mapCC=0.71 but best trial mapCC=0.94 (FOM missed better basin)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.9390899887092318,
+          "composite": 0.8616264866768066,
+          "R_pos": 0.10699229158161945,
+          "excess_kurtosis": 50.01849941564591
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.7105970679939707,
+          "composite": 0.8706946287220506,
+          "R_pos": 0.13103583339367733,
+          "excess_kurtosis": 145.89160432069187
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.70103897010738,
+          "composite": 0.8706289982147528,
+          "R_pos": 0.13062127790149158,
+          "excess_kurtosis": 146.63969183378586
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.8770121926640374,
+          "composite": 0.839040273813161,
+          "R_pos": 0.13212416956959888,
+          "excess_kurtosis": 40.66990261652476
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.8540982068587138,
+          "composite": 0.8398309926244211,
+          "R_pos": 0.1332489797502653,
+          "excess_kurtosis": 40.8873067058562
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.8739762240951543,
+          "composite": 0.8419003894123089,
+          "R_pos": 0.1363681289697791,
+          "excess_kurtosis": 41.01280648778763
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 8,
+      "d_min": 0.9,
+      "structure_seed": 0,
+      "n_refl": 868,
+      "refl_per_atom": 108.5,
+      "mean_kappa": 2.9402871292801547,
+      "n_triplets": 3672,
+      "mapcc_best_trial": 0.6091641991143196,
+      "mapcc_fom_pick": 0.5904873133043127,
+      "composite_best_trial": 0.8517200113888072,
+      "composite_fom_pick": 0.853554006209465,
+      "composite_true": 0.8235877688469677,
+      "composite_random": 0.49350338613078754,
+      "R_pos_true": 0.10590667221902314,
+      "R_pos_random": 0.307484449918352,
+      "solved_strict": false,
+      "primary": "near",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": false,
+        "B_basin": false,
+        "near_solved": true
+      },
+      "reasons": [
+        "Near-solved: best mapCC=0.61 in [0.55,0.7) \u2014 useful basin, needs more iterations/polish/prior rather than more information alone"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.6091641991143196,
+          "composite": 0.8517200113888072,
+          "R_pos": 0.17859619280893055,
+          "excess_kurtosis": 93.75772128738323
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.5904873133043127,
+          "composite": 0.853554006209465,
+          "R_pos": 0.1721449014252877,
+          "excess_kurtosis": 99.23551016573342
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.5841798241849693,
+          "composite": 0.8534309873335494,
+          "R_pos": 0.17156398965458394,
+          "excess_kurtosis": 91.19699085607205
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.2848679554348632,
+          "composite": 0.509737295514884,
+          "R_pos": 0.28739407233921516,
+          "excess_kurtosis": 0.08655263833396942
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.2952961936249519,
+          "composite": 0.5175158946732138,
+          "R_pos": 0.2731503164909467,
+          "excess_kurtosis": 0.3052785864067933
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.24363866339961326,
+          "composite": 0.4995337963680933,
+          "R_pos": 0.30211780881358685,
+          "excess_kurtosis": -0.12389381203428007
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 8,
+      "d_min": 0.9,
+      "structure_seed": 1,
+      "n_refl": 1412,
+      "refl_per_atom": 176.5,
+      "mean_kappa": 3.475142192739703,
+      "n_triplets": 2254,
+      "mapcc_best_trial": 0.9548679427064224,
+      "mapcc_fom_pick": 0.6257488726319901,
+      "composite_best_trial": 0.8537165720481362,
+      "composite_fom_pick": 0.8591043355131651,
+      "composite_true": 0.8572722339096315,
+      "composite_random": 0.4927086409817922,
+      "R_pos_true": 0.10672359347500202,
+      "R_pos_random": 0.3147010952472416,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": 1.0,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": true,
+        "B_basin": false
+      },
+      "reasons": [
+        "Solved (best mapCC=0.95); free-FOM pick mapCC=0.63 was suboptimal among trials",
+        "Selection: free-FOM pick mapCC=0.63 but best trial mapCC=0.95 (FOM missed better basin)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.9548679427064224,
+          "composite": 0.8537165720481362,
+          "R_pos": 0.1207143499709526,
+          "excess_kurtosis": 44.03243498767873
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.8925205901105745,
+          "composite": 0.8556719262441119,
+          "R_pos": 0.11931081687031489,
+          "excess_kurtosis": 44.62666435229625
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.6257488726319901,
+          "composite": 0.8591043355131651,
+          "R_pos": 0.15708788120337266,
+          "excess_kurtosis": 169.95258615965352
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.21789806380960525,
+          "composite": 0.5193446324950046,
+          "R_pos": 0.28628054658984503,
+          "excess_kurtosis": 0.25574758472117054
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.19424560208087327,
+          "composite": 0.5029773290272936,
+          "R_pos": 0.28508998247424416,
+          "excess_kurtosis": -0.12232497546598742
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.20011425767581384,
+          "composite": 0.5079982088810486,
+          "R_pos": 0.291656792028818,
+          "excess_kurtosis": -0.01643400651027216
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 8,
+      "d_min": 0.9,
+      "structure_seed": 2,
+      "n_refl": 1748,
+      "refl_per_atom": 218.5,
+      "mean_kappa": 4.311950142081009,
+      "n_triplets": 2684,
+      "mapcc_best_trial": 0.9669300376184669,
+      "mapcc_fom_pick": 0.933577645684592,
+      "composite_best_trial": 0.865075847665298,
+      "composite_fom_pick": 0.8652282802227153,
+      "composite_true": 0.8667107099499016,
+      "composite_random": 0.49773876930190525,
+      "R_pos_true": 0.09270903424614299,
+      "R_pos_random": 0.3151722018582735,
+      "solved_strict": true,
+      "primary": "solved",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": false,
+        "B_basin": false
+      },
+      "reasons": [
+        "Best mapCC=0.97 \u2265 0.7 (map solved)"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.9669300376184669,
+          "composite": 0.865075847665298,
+          "R_pos": 0.1125960933466948,
+          "excess_kurtosis": 59.14060979784647
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.933577645684592,
+          "composite": 0.8652282802227153,
+          "R_pos": 0.11253785044078601,
+          "excess_kurtosis": 59.45987371796615
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.8387874408275762,
+          "composite": 0.861589903302742,
+          "R_pos": 0.14956342283682783,
+          "excess_kurtosis": 148.59878215034652
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.2590639156618319,
+          "composite": 0.5289418144721161,
+          "R_pos": 0.27832701180007824,
+          "excess_kurtosis": 0.28498117204961115
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.8874643216961967,
+          "composite": 0.84082035709108,
+          "R_pos": 0.13861475097610623,
+          "excess_kurtosis": 50.31424418572395
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.8382193356548951,
+          "composite": 0.8384472449592616,
+          "R_pos": 0.1445686947148444,
+          "excess_kurtosis": 49.776879133088734
+        }
+      ],
+      "region": "easy"
+    },
+    {
+      "n_atoms": 12,
+      "d_min": 1.5,
+      "structure_seed": 0,
+      "n_refl": 282,
+      "refl_per_atom": 23.5,
+      "mean_kappa": 1.2640247465780572,
+      "n_triplets": 1824,
+      "mapcc_best_trial": 0.5192083576848083,
+      "mapcc_fom_pick": 0.5192083576848083,
+      "composite_best_trial": 0.8055260590317731,
+      "composite_fom_pick": 0.8055260590317731,
+      "composite_true": 0.7497630626864931,
+      "composite_random": 0.4985976605454443,
+      "R_pos_true": 0.07486005043375298,
+      "R_pos_random": 0.28464848310085983,
+      "solved_strict": false,
+      "primary": "B+C",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": false,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Basin: best multistart mapCC=0.52 < 0.55; trial free FOM (0.806) exceeds true (0.750) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.48505726492824497,
+          "composite": 0.8032170424663514,
+          "R_pos": 0.23470421004763053,
+          "excess_kurtosis": 35.08921876916604
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.47946952548588107,
+          "composite": 0.8039154485251009,
+          "R_pos": 0.23265530312381086,
+          "excess_kurtosis": 33.33762460093279
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.5192083576848083,
+          "composite": 0.8055260590317731,
+          "R_pos": 0.2354816588994977,
+          "excess_kurtosis": 35.28718384997155
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.27566270119395164,
+          "composite": 0.5041114019996604,
+          "R_pos": 0.2550215826659622,
+          "excess_kurtosis": -0.17782058384714627
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.3067171223577286,
+          "composite": 0.5250915289715523,
+          "R_pos": 0.2212776491294709,
+          "excess_kurtosis": 0.1810713403784061
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.27385386570623194,
+          "composite": 0.516766873598437,
+          "R_pos": 0.23366593460770252,
+          "excess_kurtosis": -0.04948079579375175
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 12,
+      "d_min": 1.5,
+      "structure_seed": 1,
+      "n_refl": 298,
+      "refl_per_atom": 24.833333333333332,
+      "mean_kappa": 1.7430841325777484,
+      "n_triplets": 1110,
+      "mapcc_best_trial": 0.638343062875949,
+      "mapcc_fom_pick": 0.638343062875949,
+      "composite_best_trial": 0.8058892962555542,
+      "composite_fom_pick": 0.8058892962555542,
+      "composite_true": 0.7618024678644696,
+      "composite_random": 0.5052661431024515,
+      "R_pos_true": 0.09646693579965168,
+      "R_pos_random": 0.2622998625973742,
+      "solved_strict": false,
+      "primary": "near",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": false,
+        "B_basin": false,
+        "near_solved": true
+      },
+      "reasons": [
+        "Near-solved: best mapCC=0.64 in [0.55,0.7) \u2014 useful basin, needs more iterations/polish/prior rather than more information alone"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.5476659918203216,
+          "composite": 0.798757330542517,
+          "R_pos": 0.24857976301269247,
+          "excess_kurtosis": 34.22585673624109
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.638343062875949,
+          "composite": 0.8058892962555542,
+          "R_pos": 0.23732649260840763,
+          "excess_kurtosis": 33.148722856351796
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.5729240911780853,
+          "composite": 0.8015013786254578,
+          "R_pos": 0.2550746932215571,
+          "excess_kurtosis": 33.076996546178606
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.3559539407565233,
+          "composite": 0.5238486564447592,
+          "R_pos": 0.22860293301524745,
+          "excess_kurtosis": 0.06509188794505727
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.31260012417281097,
+          "composite": 0.5137856015686096,
+          "R_pos": 0.24275762962471234,
+          "excess_kurtosis": -0.005246477330247856
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.35550189637610774,
+          "composite": 0.5233436180136323,
+          "R_pos": 0.23506014239222942,
+          "excess_kurtosis": -0.016380788539526847
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 12,
+      "d_min": 1.5,
+      "structure_seed": 2,
+      "n_refl": 368,
+      "refl_per_atom": 30.666666666666668,
+      "mean_kappa": 1.6604350795256153,
+      "n_triplets": 1646,
+      "mapcc_best_trial": 0.6489998608973475,
+      "mapcc_fom_pick": 0.6036756472720045,
+      "composite_best_trial": 0.8230583013921835,
+      "composite_fom_pick": 0.8255221301038191,
+      "composite_true": 0.7897532991043493,
+      "composite_random": 0.4959087932857436,
+      "R_pos_true": 0.08361141586125573,
+      "R_pos_random": 0.27481561177108904,
+      "solved_strict": false,
+      "primary": "near",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": false,
+        "B_basin": false,
+        "near_solved": true
+      },
+      "reasons": [
+        "Near-solved: best mapCC=0.65 in [0.55,0.7) \u2014 useful basin, needs more iterations/polish/prior rather than more information alone"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.6036756472720045,
+          "composite": 0.8255221301038191,
+          "R_pos": 0.21187001381834308,
+          "excess_kurtosis": 46.96418068011429
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.6489998608973475,
+          "composite": 0.8230583013921835,
+          "R_pos": 0.21496446162012842,
+          "excess_kurtosis": 45.22957318496431
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.6036882769957878,
+          "composite": 0.8234264471703996,
+          "R_pos": 0.2141850756801237,
+          "excess_kurtosis": 47.3428170117619
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.3186672710578707,
+          "composite": 0.5093491175595337,
+          "R_pos": 0.24700970517537096,
+          "excess_kurtosis": -0.09372412259132368
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.31932539147362854,
+          "composite": 0.518130782891852,
+          "R_pos": 0.24250970643255712,
+          "excess_kurtosis": 0.06036858112885435
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.2987586757823951,
+          "composite": 0.5111679721113721,
+          "R_pos": 0.2412097421121807,
+          "excess_kurtosis": -0.16429435146611526
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 12,
+      "d_min": 2.0,
+      "structure_seed": 0,
+      "n_refl": 118,
+      "refl_per_atom": 9.833333333333334,
+      "mean_kappa": 1.2944913694940328,
+      "n_triplets": 236,
+      "mapcc_best_trial": 0.4669672481189536,
+      "mapcc_fom_pick": 0.46118857603702923,
+      "composite_best_trial": 0.5097103300695552,
+      "composite_fom_pick": 0.7438738770350646,
+      "composite_true": 0.6157492278584004,
+      "composite_random": 0.5048560833066835,
+      "R_pos_true": 0.09265055599435684,
+      "R_pos_random": 0.23910128742212808,
+      "solved_strict": false,
+      "primary": "A+B",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": true,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": true,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Selection: free FOM ranks a wrong map above true phases (FOM inversion)",
+        "Basin: best multistart mapCC=0.47 < 0.55; trial free FOM (0.744) exceeds true (0.616) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.46118857603702923,
+          "composite": 0.7438738770350646,
+          "R_pos": 0.24844211551671672,
+          "excess_kurtosis": 12.809845998037918
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.43621610890634144,
+          "composite": 0.7419628265680438,
+          "R_pos": 0.2481404010989967,
+          "excess_kurtosis": 12.583246315820714
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.4427730839310317,
+          "composite": 0.7408964598307636,
+          "R_pos": 0.258691183115636,
+          "excess_kurtosis": 12.143891759313988
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.43485079448346503,
+          "composite": 0.49479702977089096,
+          "R_pos": 0.2641651332735517,
+          "excess_kurtosis": -0.40453617414504484
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.4669672481189536,
+          "composite": 0.5097103300695552,
+          "R_pos": 0.22350990545460453,
+          "excess_kurtosis": -0.12959594620269366
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.38669284461473824,
+          "composite": 0.5259795178429044,
+          "R_pos": 0.21972898893046502,
+          "excess_kurtosis": -0.06783195861459212
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 12,
+      "d_min": 2.0,
+      "structure_seed": 1,
+      "n_refl": 118,
+      "refl_per_atom": 9.833333333333334,
+      "mean_kappa": 1.516665556767809,
+      "n_triplets": 204,
+      "mapcc_best_trial": 0.4750624795803524,
+      "mapcc_fom_pick": 0.4750624795803524,
+      "composite_best_trial": 0.6885716982589807,
+      "composite_fom_pick": 0.6885716982589807,
+      "composite_true": 0.6178280959916214,
+      "composite_random": 0.49573089979474483,
+      "R_pos_true": 0.09419103246128033,
+      "R_pos_random": 0.24288603998638378,
+      "solved_strict": false,
+      "primary": "A+B",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": true,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": true,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Selection: free FOM ranks a wrong map above true phases (FOM inversion)",
+        "Basin: best multistart mapCC=0.48 < 0.55; trial free FOM (0.689) exceeds true (0.618) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.4750624795803524,
+          "composite": 0.6885716982589807,
+          "R_pos": 0.26768590908727896,
+          "excess_kurtosis": 8.17858907029044
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.43273460671280817,
+          "composite": 0.6686260209701318,
+          "R_pos": 0.3014805055221921,
+          "excess_kurtosis": 7.285541530312413
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.42788619164861685,
+          "composite": 0.6696007155238987,
+          "R_pos": 0.3044084449517171,
+          "excess_kurtosis": 7.4603141368720784
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.4426150505859158,
+          "composite": 0.5166522200948986,
+          "R_pos": 0.1707515785432177,
+          "excess_kurtosis": -0.5741450037775704
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.3725898383866138,
+          "composite": 0.511807820194821,
+          "R_pos": 0.2579040279881341,
+          "excess_kurtosis": 0.12649552859864777
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.37548917361791323,
+          "composite": 0.5161685951657506,
+          "R_pos": 0.19778318004687245,
+          "excess_kurtosis": -0.3657161709108845
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 12,
+      "d_min": 2.0,
+      "structure_seed": 2,
+      "n_refl": 148,
+      "refl_per_atom": 12.333333333333334,
+      "mean_kappa": 1.4192385592559256,
+      "n_triplets": 250,
+      "mapcc_best_trial": 0.48617273084253304,
+      "mapcc_fom_pick": 0.47184142864165385,
+      "composite_best_trial": 0.5297023747999783,
+      "composite_fom_pick": 0.760603794708235,
+      "composite_true": 0.6589532206252794,
+      "composite_random": 0.4972106950304215,
+      "R_pos_true": 0.10187187755241332,
+      "R_pos_random": 0.245260621901894,
+      "solved_strict": false,
+      "primary": "B+C",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": false,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Basin: best multistart mapCC=0.49 < 0.55; trial free FOM (0.761) exceeds true (0.659) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.4546020566199211,
+          "composite": 0.759310901572466,
+          "R_pos": 0.26614991574971,
+          "excess_kurtosis": 18.66872210467182
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.4651292534896091,
+          "composite": 0.7597401970157707,
+          "R_pos": 0.26792377988379945,
+          "excess_kurtosis": 18.982652302420135
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.47184142864165385,
+          "composite": 0.760603794708235,
+          "R_pos": 0.27564145205357543,
+          "excess_kurtosis": 18.731210419738865
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.4804261472237161,
+          "composite": 0.51382214280008,
+          "R_pos": 0.21351538518358798,
+          "excess_kurtosis": -0.26869035779083195
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.48617273084253304,
+          "composite": 0.5297023747999783,
+          "R_pos": 0.18405709749631416,
+          "excess_kurtosis": -0.18624264375471666
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.46459909367716257,
+          "composite": 0.5439782437974182,
+          "R_pos": 0.23663339125880323,
+          "excess_kurtosis": 0.7395848405672165
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 16,
+      "d_min": 1.5,
+      "structure_seed": 0,
+      "n_refl": 374,
+      "refl_per_atom": 23.375,
+      "mean_kappa": 1.2828968567609678,
+      "n_triplets": 2054,
+      "mapcc_best_trial": 0.5564926693902202,
+      "mapcc_fom_pick": 0.5564926693902202,
+      "composite_best_trial": 0.8246752142798706,
+      "composite_fom_pick": 0.8246752142798706,
+      "composite_true": 0.7572114520830958,
+      "composite_random": 0.502925851111338,
+      "R_pos_true": 0.0886087665405625,
+      "R_pos_random": 0.26593154192863794,
+      "solved_strict": false,
+      "primary": "near",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": true,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": false,
+        "C_information": false,
+        "A_selection": false,
+        "B_basin": false,
+        "near_solved": true
+      },
+      "reasons": [
+        "Near-solved: best mapCC=0.56 in [0.55,0.7) \u2014 useful basin, needs more iterations/polish/prior rather than more information alone"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.5084106155986221,
+          "composite": 0.8245520547839996,
+          "R_pos": 0.225745205642811,
+          "excess_kurtosis": 55.588060186616616
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.5564926693902202,
+          "composite": 0.8246752142798706,
+          "R_pos": 0.2224228573931,
+          "excess_kurtosis": 51.01740562229136
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.5325443389808079,
+          "composite": 0.8244202991617022,
+          "R_pos": 0.2302480570085951,
+          "excess_kurtosis": 52.110611936568105
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.29215357531222935,
+          "composite": 0.503939817344652,
+          "R_pos": 0.2624709380288014,
+          "excess_kurtosis": -0.20087361275340854
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.3466515040569344,
+          "composite": 0.5178593831975481,
+          "R_pos": 0.24237493668441407,
+          "excess_kurtosis": 0.15250577702670798
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.3158891165192776,
+          "composite": 0.5372617487458773,
+          "R_pos": 0.2257189378119432,
+          "excess_kurtosis": 0.3538606932256019
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 16,
+      "d_min": 1.5,
+      "structure_seed": 1,
+      "n_refl": 350,
+      "refl_per_atom": 21.875,
+      "mean_kappa": 1.3524185960536563,
+      "n_triplets": 1624,
+      "mapcc_best_trial": 0.5158128903320799,
+      "mapcc_fom_pick": 0.4864921503757544,
+      "composite_best_trial": 0.8199695659370249,
+      "composite_fom_pick": 0.8210322656316842,
+      "composite_true": 0.7409611570013712,
+      "composite_random": 0.501687012647421,
+      "R_pos_true": 0.09018721313092064,
+      "R_pos_random": 0.26644821103068345,
+      "solved_strict": false,
+      "primary": "B+C",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": false,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Basin: best multistart mapCC=0.52 < 0.55; trial free FOM (0.821) exceeds true (0.741) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.4864921503757544,
+          "composite": 0.8210322656316842,
+          "R_pos": 0.24150219536223233,
+          "excess_kurtosis": 49.79925207654503
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.5059683060207665,
+          "composite": 0.8200680614291477,
+          "R_pos": 0.2356981530608016,
+          "excess_kurtosis": 48.20306776142387
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.5158128903320799,
+          "composite": 0.8199695659370249,
+          "R_pos": 0.2434141101535493,
+          "excess_kurtosis": 48.12898870441726
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.2662311830483637,
+          "composite": 0.5199319052281889,
+          "R_pos": 0.24416992476055643,
+          "excess_kurtosis": 0.008146089561064773
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.31489097922650977,
+          "composite": 0.5153553380404854,
+          "R_pos": 0.23878311523174445,
+          "excess_kurtosis": -0.14471175827084748
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.27467662939901805,
+          "composite": 0.5050541841600564,
+          "R_pos": 0.24458533245028433,
+          "excess_kurtosis": -0.2378716403519454
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 16,
+      "d_min": 1.5,
+      "structure_seed": 2,
+      "n_refl": 368,
+      "refl_per_atom": 23.0,
+      "mean_kappa": 1.3180149006625044,
+      "n_triplets": 1610,
+      "mapcc_best_trial": 0.5326172536204461,
+      "mapcc_fom_pick": 0.5217531679417645,
+      "composite_best_trial": 0.8101775495528875,
+      "composite_fom_pick": 0.8167128078247381,
+      "composite_true": 0.740433672162364,
+      "composite_random": 0.4950710762346312,
+      "R_pos_true": 0.0752399653335367,
+      "R_pos_random": 0.2678616802155473,
+      "solved_strict": false,
+      "primary": "B+C",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": false,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": false,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Basin: best multistart mapCC=0.53 < 0.55; trial free FOM (0.817) exceeds true (0.740) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.5217531679417645,
+          "composite": 0.8167128078247381,
+          "R_pos": 0.2379576643907932,
+          "excess_kurtosis": 47.07213768471573
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.5326172536204461,
+          "composite": 0.8101775495528875,
+          "R_pos": 0.2543795235227072,
+          "excess_kurtosis": 47.72872829676735
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.5088053662549495,
+          "composite": 0.8119837676326064,
+          "R_pos": 0.24450058181123188,
+          "excess_kurtosis": 46.691523688125606
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.27015804065679433,
+          "composite": 0.5174704025386229,
+          "R_pos": 0.2452592966446137,
+          "excess_kurtosis": 0.04649289634591547
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.3674537194409493,
+          "composite": 0.5330103355954234,
+          "R_pos": 0.24458587015768185,
+          "excess_kurtosis": 0.45474170260012814
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.38464147295064616,
+          "composite": 0.502004296872479,
+          "R_pos": 0.25620033990986146,
+          "excess_kurtosis": -0.24635398139547293
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 20,
+      "d_min": 1.5,
+      "structure_seed": 0,
+      "n_refl": 470,
+      "refl_per_atom": 23.5,
+      "mean_kappa": 1.0570990673098666,
+      "n_triplets": 3424,
+      "mapcc_best_trial": 0.43845034532246185,
+      "mapcc_fom_pick": 0.4151606520118033,
+      "composite_best_trial": 0.8254909432651107,
+      "composite_fom_pick": 0.82686677645998,
+      "composite_true": 0.7411807548266208,
+      "composite_random": 0.5049123188608342,
+      "R_pos_true": 0.08488518687430471,
+      "R_pos_random": 0.26254796500548416,
+      "solved_strict": false,
+      "primary": "A+B",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": true,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": true,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Selection: free FOM ranks a wrong map above true phases (FOM inversion)",
+        "Basin: best multistart mapCC=0.44 < 0.55; trial free FOM (0.827) exceeds true (0.741) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 0,
+          "mapcc_oi": 0.40926140018416723,
+          "composite": 0.8239475684447747,
+          "R_pos": 0.24066094564928364,
+          "excess_kurtosis": 67.35842650959236
+        },
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.4151606520118033,
+          "composite": 0.82686677645998,
+          "R_pos": 0.23776222548612816,
+          "excess_kurtosis": 67.32479025169596
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.43845034532246185,
+          "composite": 0.8254909432651107,
+          "R_pos": 0.2431853533579426,
+          "excess_kurtosis": 67.97624087595834
+        },
+        {
+          "method": "raar",
+          "seed": 3,
+          "mapcc_oi": 0.3132911131914292,
+          "composite": 0.5366912814924045,
+          "R_pos": 0.21761278428913017,
+          "excess_kurtosis": 0.4022618065620853
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.28931845244375387,
+          "composite": 0.5106256088714255,
+          "R_pos": 0.24079115744716786,
+          "excess_kurtosis": -0.13117164039843354
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.32148306682749217,
+          "composite": 0.521625922852313,
+          "R_pos": 0.2270756548198246,
+          "excess_kurtosis": -0.04382687743387281
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 20,
+      "d_min": 1.5,
+      "structure_seed": 1,
+      "n_refl": 430,
+      "refl_per_atom": 21.5,
+      "mean_kappa": 1.0970019092665424,
+      "n_triplets": 2776,
+      "mapcc_best_trial": 0.3836428409995895,
+      "mapcc_fom_pick": 0.37730312774814545,
+      "composite_best_trial": 0.8154113584725315,
+      "composite_fom_pick": 0.8161460850191361,
+      "composite_true": 0.7177478893430438,
+      "composite_random": 0.5047012767600664,
+      "R_pos_true": 0.08484538245569295,
+      "R_pos_random": 0.2507462318666955,
+      "solved_strict": false,
+      "primary": "A+B",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": true,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": true,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Selection: free FOM ranks a wrong map above true phases (FOM inversion)",
+        "Basin: best multistart mapCC=0.38 < 0.55; trial free FOM (0.816) exceeds true (0.718) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 1,
+          "mapcc_oi": 0.37730312774814545,
+          "composite": 0.8161460850191361,
+          "R_pos": 0.24534875925403746,
+          "excess_kurtosis": 57.02973593081234
+        },
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.3707339237158732,
+          "composite": 0.8144603710708384,
+          "R_pos": 0.24835894700475938,
+          "excess_kurtosis": 55.39269855608951
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.3836428409995895,
+          "composite": 0.8154113584725315,
+          "R_pos": 0.24816802507246027,
+          "excess_kurtosis": 56.08334547093798
+        },
+        {
+          "method": "raar",
+          "seed": 4,
+          "mapcc_oi": 0.35193427198466554,
+          "composite": 0.5286358133986707,
+          "R_pos": 0.2492987119561842,
+          "excess_kurtosis": 0.3808507197376225
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.2411608955665107,
+          "composite": 0.5063307599743764,
+          "R_pos": 0.2361601005823376,
+          "excess_kurtosis": -0.2836078805907296
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.28963699139967214,
+          "composite": 0.5199384138172921,
+          "R_pos": 0.21867926093728074,
+          "excess_kurtosis": -0.11328558160098545
+        }
+      ],
+      "region": "hard"
+    },
+    {
+      "n_atoms": 20,
+      "d_min": 1.5,
+      "structure_seed": 2,
+      "n_refl": 398,
+      "refl_per_atom": 19.9,
+      "mean_kappa": 1.209083733440962,
+      "n_triplets": 1960,
+      "mapcc_best_trial": 0.4936397611458454,
+      "mapcc_fom_pick": 0.4146651132381464,
+      "composite_best_trial": 0.8110811821453479,
+      "composite_fom_pick": 0.8156508533568091,
+      "composite_true": 0.713517574817119,
+      "composite_random": 0.5013674412172702,
+      "R_pos_true": 0.08398384383326433,
+      "R_pos_random": 0.254313856062193,
+      "solved_strict": false,
+      "primary": "A+B",
+      "flags": {
+        "info_low_rpa": false,
+        "info_low_kappa": false,
+        "info_true_fom_weak": false,
+        "info_true_R_not_better": false,
+        "found_good_basin": false,
+        "fom_missed_best_cc": false,
+        "fom_inversion_vs_true": true,
+        "search_missed_true_fom": false,
+        "degeneracy": true,
+        "C_information": true,
+        "A_selection": true,
+        "B_basin": true,
+        "near_solved": false
+      },
+      "reasons": [
+        "Selection: free FOM ranks a wrong map above true phases (FOM inversion)",
+        "Basin: best multistart mapCC=0.49 < 0.55; trial free FOM (0.816) exceeds true (0.714) \u2014 wrong basins look better by free FOM (coupled selection issue)",
+        "Information: degenerate free-FOM landscape across diverse wrong maps"
+      ],
+      "trials": [
+        {
+          "method": "cf",
+          "seed": 2,
+          "mapcc_oi": 0.4335344253687077,
+          "composite": 0.8119722386914002,
+          "R_pos": 0.24944968782089877,
+          "excess_kurtosis": 48.35805722359474
+        },
+        {
+          "method": "cf",
+          "seed": 3,
+          "mapcc_oi": 0.4146651132381464,
+          "composite": 0.8156508533568091,
+          "R_pos": 0.2469026942675974,
+          "excess_kurtosis": 49.22822543622407
+        },
+        {
+          "method": "cf",
+          "seed": 4,
+          "mapcc_oi": 0.4936397611458454,
+          "composite": 0.8110811821453479,
+          "R_pos": 0.25837843758945145,
+          "excess_kurtosis": 49.46839516578733
+        },
+        {
+          "method": "raar",
+          "seed": 5,
+          "mapcc_oi": 0.27561967055067693,
+          "composite": 0.5183048489403643,
+          "R_pos": 0.24031677917112207,
+          "excess_kurtosis": -0.062000989694372954
+        },
+        {
+          "method": "raar",
+          "seed": 6,
+          "mapcc_oi": 0.2517037330236301,
+          "composite": 0.5071143045530381,
+          "R_pos": 0.26029883210309995,
+          "excess_kurtosis": -0.04373845678850019
+        },
+        {
+          "method": "raar",
+          "seed": 7,
+          "mapcc_oi": 0.2937776470666862,
+          "composite": 0.5299231521759994,
+          "R_pos": 0.2655042262033391,
+          "excess_kurtosis": 0.7935323965253676
+        }
+      ],
+      "region": "hard"
+    }
+  ],
+  "summary": {
+    "n": 21,
+    "counts": {
+      "solved": 8,
+      "near": 4,
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "A+B": 5,
+      "B+C": 4,
+      "unknown": 0
+    },
+    "rates": {
+      "solved": 0.38095238095238093,
+      "near": 0.19047619047619047,
+      "A": 0.0,
+      "B": 0.0,
+      "C": 0.0,
+      "A+B": 0.23809523809523808,
+      "B+C": 0.19047619047619047,
+      "unknown": 0.0
+    },
+    "by_region": {
+      "easy": {
+        "solved": 8,
+        "near": 1
+      },
+      "hard": {
+        "B+C": 4,
+        "near": 3,
+        "A+B": 5
+      },
+      "other": {}
+    },
+    "mean_best_mapcc": 0.6759491942257023,
+    "mean_refl_per_atom": 106.01507936507936,
+    "summary_easy": {
+      "n": 9,
+      "counts": {
+        "solved": 8,
+        "near": 1,
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "A+B": 0,
+        "B+C": 0,
+        "unknown": 0
+      },
+      "rates": {
+        "solved": 0.8888888888888888,
+        "near": 0.1111111111111111,
+        "A": 0.0,
+        "B": 0.0,
+        "C": 0.0,
+        "A+B": 0.0,
+        "B+C": 0.0,
+        "unknown": 0.0
+      },
+      "by_region": {
+        "easy": {
+          "solved": 8,
+          "near": 1
+        },
+        "hard": {},
+        "other": {}
+      },
+      "mean_best_mapcc": 0.8932803975476846,
+      "mean_refl_per_atom": 220.24074074074073
+    },
+    "summary_hard": {
+      "n": 12,
+      "counts": {
+        "solved": 0,
+        "near": 3,
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "A+B": 5,
+        "B+C": 4,
+        "unknown": 0
+      },
+      "rates": {
+        "solved": 0.0,
+        "near": 0.25,
+        "A": 0.0,
+        "B": 0.0,
+        "C": 0.0,
+        "A+B": 0.4166666666666667,
+        "B+C": 0.3333333333333333,
+        "unknown": 0.0
+      },
+      "by_region": {
+        "easy": {},
+        "hard": {
+          "B+C": 4,
+          "near": 3,
+          "A+B": 5
+        },
+        "other": {}
+      },
+      "mean_best_mapcc": 0.5129507917342155,
+      "mean_refl_per_atom": 20.345833333333335
+    }
+  },
+  "seconds": 93.30239486694336,
+  "config": {
+    "n_starts": 3,
+    "n_iter": 60,
+    "methods": [
+      "cf",
+      "raar"
+    ],
+    "easy": [
+      [
+        4,
+        0.9
+      ],
+      [
+        6,
+        1.0
+      ],
+      [
+        8,
+        0.9
+      ]
+    ],
+    "hard": [
+      [
+        12,
+        1.5
+      ],
+      [
+        12,
+        2.0
+      ],
+      [
+        16,
+        1.5
+      ],
+      [
+        20,
+        1.5
+      ]
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "note": "Primary labels: solved | A (selection) | B (basin) | C (information) | A+B | B+C | unknown. See docs/math/failure_taxonomy.md."
+}

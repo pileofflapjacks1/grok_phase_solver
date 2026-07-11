@@ -292,7 +292,8 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | Physics-recycle net (hard cells) | `python scripts/train_recycle_net.py` | [`recycle_net.md`](data/processed/recycle_net.md) |
 | COD 2016452 PhAI hybrids | `python scripts/run_cod_hybrid_benchmark.py` | [`cod_hybrid_benchmark.md`](data/processed/cod_hybrid_benchmark.md) |
 | Free-FOM calibration | `python scripts/calibrate_free_fom.py` | [`free_fom_calibration.md`](data/processed/free_fom_calibration.md) |
-| Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
+| Failure taxonomy (A/B/C) | `python scripts/run_failure_taxonomy.py` | [`failure_taxonomy.md`](data/processed/failure_taxonomy.md) |
+| Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 ### Headlines (reproducible reports)
 
@@ -300,6 +301,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 - **Fair PhAI:** with official-style prep, PhAI mapCC exceeds CF on COD 2016452 Fcalc; **`phai+CF` solves** 2016452 @ 0.9 Å under strict criteria (mapCC ≈ 0.87).
 - **Conditional polish:** free-FOM gate **accepts** helpful CF polish at high res; **rejects** RAAR when it would destroy a good PhAI prior (important at 1.2–2.0 Å).
 - **Free FOM v2:** fixed vacuous post-modulus \(R\); uses positivity residual \(R_+\), kurtosis/peakiness, conservative gate (composite↑ **and** \(R_+\) not worse). See [`docs/math/free_fom.md`](docs/math/free_fom.md).
+- **Failure taxonomy:** hard-region failures are mostly **A+B / B+C** (wrong maps outscore truth by free FOM *and* multistart never enters a good basin / degenerate landscape) — not pure free-FOM bugs on easy cells. See [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md).
 - **Ensemble:** multistart CF+RAAR improves some easy cases; hard region remains **0%** strict success (honest ceiling for pure classical multistart).
 - **DiffMap retune:** charge-flip \(P_S\) + β≈0.5 beats default positivity DiffMap on free FOM; still trails CF on truth mapCC in many cells.
 - **Recycle net:** PhaseMLP trained on hard synthetic cells; physics recycle enforces \|F\| consistency — supervised prior, not a claimed general solver.

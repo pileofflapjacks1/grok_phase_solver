@@ -139,7 +139,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 1. [x] PhAI weights runner + scoreboard  
 2. [x] Scientist-facing `gps-solve` pipeline  
 3. [x] Free-FOM science fix + calibration (v2)  
-4. [ ] Solvability failure taxonomy (bad FOM vs wrong basin vs underdetermined)  
+4. [x] Solvability failure taxonomy A/B/C (`metrics/failure_taxonomy.py`)  
 5. [ ] Improve auto method + PhAI |F| prep for experimental HKL  
 6. [ ] Peak → SHELXL `.res` fragment export  
 7. [ ] External validation vs SHELXD  
