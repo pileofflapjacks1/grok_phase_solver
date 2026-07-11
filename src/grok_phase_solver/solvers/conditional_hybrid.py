@@ -13,7 +13,16 @@ import numpy as np
 
 from grok_phase_solver.physics.density import density_from_structure_factors
 from grok_phase_solver.solvers.charge_flipping import charge_flipping_solve
-from grok_phase_solver.solvers.free_fom import free_fom, should_accept_polish
+from grok_phase_solver.solvers.free_fom import (
+    DEFAULT_MAX_R_POS_REGRESSION,
+    DEFAULT_MIN_DELTA,
+    DEFAULT_REWRITE_DISP,
+    DEFAULT_REWRITE_MIN_R_IMPROVE,
+    compare_fom,
+    free_fom,
+    phase_displacement,
+    should_accept_polish,
+)
 from grok_phase_solver.solvers.iterative_retrieval import difference_map_solve, raar_solve
 from grok_phase_solver.solvers.phase_recycle import phase_recycle
 
@@ -27,11 +36,13 @@ def conditional_polish(
     n_iter: int = 80,
     seed: int = 0,
     d_min: Optional[float] = None,
-    min_delta: float = 0.01,
+    min_delta: float = DEFAULT_MIN_DELTA,
+    max_R_pos_regression: float = DEFAULT_MAX_R_POS_REGRESSION,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
-    Start from phases_seed; run polish; keep polished result only if free FOM rises.
+    Start from phases_seed; run polish; keep polished result only if free FOM rises
+    without a serious R₊ regression (see ``should_accept_polish``).
 
     Returns (phases, density, info).
     """
@@ -73,19 +84,37 @@ def conditional_polish(
         raise ValueError(polish)
 
     fom1 = free_fom(hkl, amp, ph, cell, density=rho)
-    accept = should_accept_polish(fom0, fom1, min_delta=min_delta)
+    disp = phase_displacement(phases_seed, ph, weights=amp)
+    accept = should_accept_polish(
+        fom0,
+        fom1,
+        min_delta=min_delta,
+        max_R_pos_regression=max_R_pos_regression,
+        phase_disp=disp,
+        rewrite_disp_threshold=DEFAULT_REWRITE_DISP,
+        rewrite_min_R_improve=DEFAULT_REWRITE_MIN_R_IMPROVE,
+    )
     info = {
         "accepted_polish": accept,
         "polish": polish,
         "fom_seed": fom0,
         "fom_polished": fom1,
         "fom_final": fom1 if accept else fom0,
+        "fom_delta": compare_fom(fom0, fom1),
+        "phase_displacement": disp,
         "history": hist,
+        "gate": {
+            "min_delta": min_delta,
+            "max_R_pos_regression": max_R_pos_regression,
+            "rewrite_disp_threshold": DEFAULT_REWRITE_DISP,
+            "rewrite_min_R_improve": DEFAULT_REWRITE_MIN_R_IMPROVE,
+            "fom_version": fom0.get("fom_version"),
+        },
     }
     if verbose:
         print(
-            f"  conditional {polish}: seed composite={fom0['composite']:.3f} "
-            f"→ polished={fom1['composite']:.3f}  accept={accept}"
+            f"  conditional {polish}: composite {fom0['composite']:.3f}→{fom1['composite']:.3f} "
+            f"R₊ {fom0['R_pos']:.3f}→{fom1['R_pos']:.3f} disp={disp:.3f} accept={accept}"
         )
     if accept:
         return ph, rho, info

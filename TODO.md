@@ -94,6 +94,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Beamline-style degradations already in synthetic suite (noise, completeness, wedge)
 - [x] RAAR / DiffMap / ER projectors (`solvers/iterative_retrieval.py`)
 - [x] Free FOM + conditional hybrid polish (`free_fom.py`, `conditional_hybrid.py`)
+- [x] Free FOM v2: fix vacuous \(R\), \(R_+\) residual, atomicity scores, calibrated gate (`docs/math/free_fom.md`)
 - [x] Multistart ensemble CF+RAAR free-FOM pick (`ensemble.py`)
 - [x] DiffMap retune grid (β, charge-flip \(P_S\), δσ)
 - [x] Physics-recycle net on hard cells (`recycle_net.py`)
@@ -137,10 +138,12 @@ AI-driven general solver for the X-ray crystallography phase problem.
 
 1. [x] PhAI weights runner + scoreboard  
 2. [x] Scientist-facing `gps-solve` pipeline  
-3. [ ] Improve auto method + PhAI |F| prep for experimental HKL  
-4. [ ] Peak → SHELXL `.res` fragment export  
-5. [ ] External validation vs SHELXD  
-6. [ ] Scale synthetic generation; Wilson domain-gap  
+3. [x] Free-FOM science fix + calibration (v2)  
+4. [ ] Solvability failure taxonomy (bad FOM vs wrong basin vs underdetermined)  
+5. [ ] Improve auto method + PhAI |F| prep for experimental HKL  
+6. [ ] Peak → SHELXL `.res` fragment export  
+7. [ ] External validation vs SHELXD  
+8. [ ] Scale synthetic generation; Wilson domain-gap  
 
 ---
 

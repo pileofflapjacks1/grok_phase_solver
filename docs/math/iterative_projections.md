@@ -63,11 +63,13 @@ Tangent formula weights use \(\kappa\) and \(I_1(\kappa)/I_0(\kappa) = \mathbb{E
 
 ## Conditional hybrid
 
-Apply classical polish to a neural/classical seed only if the **truth-free composite FOM** increases (`conditional_hybrid.py`). Prevents CF from destroying a good PhAI prior (observed in fair PhAI benchmarks).
+Apply classical polish to a neural/classical seed only if the free FOM **improves without R₊ regression** (`conditional_hybrid.py`, free-FOM v2). Prevents CF from destroying a good PhAI prior (observed in fair PhAI benchmarks). See [`free_fom.md`](free_fom.md).
 
 ## Multistart ensemble + free FOM
 
 `ensemble_solve` / `ensemble_cf_raar` run several independent CF and RAAR starts and select the trial with highest free-FOM composite (`free_fom.py`). Selection is truth-free (usable on experimental data); success rates vs synthetic truth are reported only for analysis.
+
+**v2 note:** composite uses positivity residual \(R_+ = R(|\mathcal{F}\max(\rho,0)|,|F_{\mathrm{obs}}|)\), atomicity (kurtosis, peakiness), and a conservative accept gate — not the old vacuous post-modulus \(R\).
 
 ## Difference Map retune
 

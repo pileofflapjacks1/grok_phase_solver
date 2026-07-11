@@ -115,5 +115,7 @@ Secondary: **COD 2100301** (P2₁/c).
 3. [x] Physics-recycle net on hard region: `recycle_net.py`, `scripts/train_recycle_net.py`  
 4. [x] COD 2016452 PhAI+RAAR conditional hybrid: `scripts/run_cod_hybrid_benchmark.py`  
 5. [x] DiffMap retune (β, charge-flip \(P_S\)): `retune_difference_map`, `scripts/run_diffmap_retune.py`  
-6. [ ] Experimental HKL (not only Fcalc) with same success metrics at scale  
-7. [ ] Larger equivariant nets / fine-tune PhAI on hard cells
+6. [x] Free-FOM v2 calibration + rewrite trust-region (`docs/math/free_fom.md`)  
+7. [ ] Experimental HKL (not only Fcalc) with same success metrics at scale  
+8. [ ] Larger equivariant nets / fine-tune PhAI on hard cells  
+9. [ ] Solvability failure taxonomy (selection vs optimization vs information)

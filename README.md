@@ -135,7 +135,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | RAAR | `solvers/iterative_retrieval.py` | Luke 2005; β + positivity or charge-flip |
 | Difference Map | same | Elser 2003; grid-search retune for β, \(P_S\), δσ |
 | Error reduction (ER) | same | Alternating \(P_S P_M\) |
-| Free FOM | `solvers/free_fom.py` | Truth-free ranking (positivity, skew, R) |
+| Free FOM v2 | `solvers/free_fom.py` | Positivity residual \(R_+\), atomicity, calibrated gate ([math note](docs/math/free_fom.md)) |
 | Multistart ensemble | `solvers/ensemble.py` | CF+RAAR starts → free-FOM pick |
 | Conditional hybrid | `solvers/conditional_hybrid.py` | Polish seed only if free FOM improves |
 | Phase recycle | `solvers/phase_recycle.py` | Fourier modulus projection loop |
@@ -291,13 +291,15 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | DiffMap retune (β, \(P_S\), δσ) | `python scripts/run_diffmap_retune.py` | [`diffmap_retune.md`](data/processed/diffmap_retune.md) |
 | Physics-recycle net (hard cells) | `python scripts/train_recycle_net.py` | [`recycle_net.md`](data/processed/recycle_net.md) |
 | COD 2016452 PhAI hybrids | `python scripts/run_cod_hybrid_benchmark.py` | [`cod_hybrid_benchmark.md`](data/processed/cod_hybrid_benchmark.md) |
-| Math write-ups | — | [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
+| Free-FOM calibration | `python scripts/calibrate_free_fom.py` | [`free_fom_calibration.md`](data/processed/free_fom_calibration.md) |
+| Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 ### Headlines (reproducible reports)
 
 - **Solvability cliff:** classical methods work on small \(N\) / high resolution; success collapses for large \(N\) / low \(d_{\min}\).
 - **Fair PhAI:** with official-style prep, PhAI mapCC exceeds CF on COD 2016452 Fcalc; **`phai+CF` solves** 2016452 @ 0.9 Å under strict criteria (mapCC ≈ 0.87).
 - **Conditional polish:** free-FOM gate **accepts** helpful CF polish at high res; **rejects** RAAR when it would destroy a good PhAI prior (important at 1.2–2.0 Å).
+- **Free FOM v2:** fixed vacuous post-modulus \(R\); uses positivity residual \(R_+\), kurtosis/peakiness, conservative gate (composite↑ **and** \(R_+\) not worse). See [`docs/math/free_fom.md`](docs/math/free_fom.md).
 - **Ensemble:** multistart CF+RAAR improves some easy cases; hard region remains **0%** strict success (honest ceiling for pure classical multistart).
 - **DiffMap retune:** charge-flip \(P_S\) + β≈0.5 beats default positivity DiffMap on free FOM; still trails CF on truth mapCC in many cells.
 - **Recycle net:** PhaseMLP trained on hard synthetic cells; physics recycle enforces \|F\| consistency — supervised prior, not a claimed general solver.

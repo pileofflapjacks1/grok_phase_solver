@@ -17,7 +17,14 @@ from .iterative_retrieval import (
     retune_difference_map,
 )
 from .conditional_hybrid import conditional_polish, phai_conditional_solve
-from .free_fom import free_fom
+from .free_fom import (
+    free_fom,
+    should_accept_polish,
+    positivity_residual,
+    phase_displacement,
+    rank_phase_sets,
+    DEFAULT_WEIGHTS,
+)
 from .ensemble import ensemble_solve, ensemble_cf_raar
 from .recycle_net import recycle_net_solve, train_recycle_net_hard, load_recycle_net
 
@@ -48,6 +55,11 @@ __all__ = [
     "conditional_polish",
     "phai_conditional_solve",
     "free_fom",
+    "should_accept_polish",
+    "positivity_residual",
+    "phase_displacement",
+    "rank_phase_sets",
+    "DEFAULT_WEIGHTS",
     "ensemble_solve",
     "ensemble_cf_raar",
     "recycle_net_solve",
