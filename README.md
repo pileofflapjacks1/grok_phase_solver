@@ -2,14 +2,14 @@
 
 **AI-driven / physics-based phasing assistant for X-ray crystallography**
 
-Recover phases \(\varphi(hkl)\) from experimental amplitudes \(|F(hkl)|\) using first-principles physics, classical algorithms (Patterson, direct methods, charge flipping, RAAR, Difference Map), experimental-phasing hybrids (MIR/MAD/MR), multistart ensembles, conditional neural–classical hybrids, and optional [PhAI](https://doi.org/10.1126/science.adn2777)-style neural phasing.
+Recover phases $\varphi(hkl)$ from experimental amplitudes $|F(hkl)|$ using first-principles physics, classical algorithms (Patterson, direct methods, charge flipping, RAAR, Difference Map), experimental-phasing hybrids (MIR/MAD/MR), multistart ensembles, conditional neural–classical hybrids, and optional [PhAI](https://doi.org/10.1126/science.adn2777)-style neural phasing.
 
-\[
+$$
 \rho(\mathbf{r})
 =
 \frac{1}{V}\sum_{\mathbf{h}}
 |F(\mathbf{h})|\,e^{i\varphi(\mathbf{h})}\,e^{-2\pi i \mathbf{h}\cdot\mathbf{r}}
-\]
+$$
 
 ---
 
@@ -69,8 +69,8 @@ Pedagogical backbone: **Kevin Cowtan**, *Phase Problem in X-ray Crystallography,
 
 | Classical approach | When it works | In this repo |
 |--------------------|---------------|--------------|
-| **Patterson** | Few atoms / heavy atoms; map of interatomic vectors from \(\|F\|^2\) | `physics/patterson.py`, `solvers/patterson.py` |
-| **Direct methods** | Atomic resolution; triplet invariants \(\varphi_h+\varphi_k+\varphi_{-h-k}\approx 0\) | `solvers/direct_methods.py` (κ-weighted) |
+| **Patterson** | Few atoms / heavy atoms; map of interatomic vectors from $|F|^2$ | `physics/patterson.py`, `solvers/patterson.py` |
+| **Direct methods** | Atomic resolution; triplet invariants $\varphi_h+\varphi_k+\varphi_{-h-k}\approx 0$ | `solvers/direct_methods.py` (κ-weighted) |
 | **MIR** | Isomorphous heavy-atom derivatives | `data/experimental_phasing.simulate_mir` |
 | **MAD** | Anomalous scatterers, multi-λ (e.g. SeMet) | `simulate_mad` |
 | **MR** | Homologous model | `simulate_mr` |
@@ -96,7 +96,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | **3** | Hybrid seed+polish, RAAR/DiffMap, ensemble, recycle net, uniqueness | ✅ core / 🚧 research |
 | **4** | Plots, arXiv skeleton, CI, solvability + PhAI scoreboards | ✅ core / 🚧 external tools |
 
-**Honest limit:** This framework implements *correct classical mathematics* and hybrid testbeds. It does **not** claim a general solution of the phase problem for proteins. Hard synthetic cells (\(n \ge 12\), \(d_{\min} \ge 1.5\,\text{Å}\)) remain largely unsolved under strict success criteria.
+**Honest limit:** This framework implements *correct classical mathematics* and hybrid testbeds. It does **not** claim a general solution of the phase problem for proteins. Hard synthetic cells ($n \ge 12$, $d_{\min} \ge 1.5\,\text{Å}$) remain largely unsolved under strict success criteria.
 
 | Component | State |
 |-----------|--------|
@@ -105,7 +105,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | Patterson map + peak pick | ✅ |
 | Direct methods (E-values, κ-triplets, tangent multi-start) | ✅ |
 | Charge flipping / HIO / ER | ✅ |
-| RAAR, Difference Map (+ charge-flip \(P_S\), β retune) | ✅ |
+| RAAR, Difference Map (+ charge-flip $P_S$, β retune) | ✅ |
 | Multistart ensemble (CF+RAAR, free-FOM pick) | ✅ |
 | Free FOM + conditional hybrid polish | ✅ |
 | MIR / MAD / MR simulators + Blow–Crick | ✅ |
@@ -136,9 +136,9 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | Algorithm | Module | Notes |
 |-----------|--------|--------|
 | RAAR | `solvers/iterative_retrieval.py` | Luke 2005; β + positivity or charge-flip |
-| Difference Map | same | Elser 2003; grid-search retune for β, \(P_S\), δσ |
-| Error reduction (ER) | same | Alternating \(P_S P_M\) |
-| Free FOM v2 | `solvers/free_fom.py` | Positivity residual \(R_+\), atomicity, calibrated gate ([math note](docs/math/free_fom.md)) |
+| Difference Map | same | Elser 2003; grid-search retune for β, $P_S$, δσ |
+| Error reduction (ER) | same | Alternating $P_S P_M$ |
+| Free FOM v2 | `solvers/free_fom.py` | Positivity residual $R_+$, atomicity, calibrated gate ([math note](docs/math/free_fom.md)) |
 | Multistart ensemble | `solvers/ensemble.py` | CF+RAAR starts → free-FOM pick |
 | Conditional hybrid | `solvers/conditional_hybrid.py` | Polish seed only if free FOM improves |
 | **AI-PhaSeed** | `solvers/ai_phaseed.py` | AI seed → strong-\|E\| extension → free-FOM polish |
@@ -305,7 +305,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | Fair PhAI benchmark | `python scripts/run_fair_phai_benchmark.py` | [`fair_phai_benchmark.md`](data/processed/fair_phai_benchmark.md) |
 | Frontier (RAAR / DiffMap / κ-DM) | `python scripts/run_frontier_benchmark.py` | [`frontier_benchmark.md`](data/processed/frontier_benchmark.md) |
 | Multistart ensemble CF+RAAR | `python scripts/run_ensemble_benchmark.py` | [`ensemble_benchmark.md`](data/processed/ensemble_benchmark.md) |
-| DiffMap retune (β, \(P_S\), δσ) | `python scripts/run_diffmap_retune.py` | [`diffmap_retune.md`](data/processed/diffmap_retune.md) |
+| DiffMap retune (β, $P_S$, δσ) | `python scripts/run_diffmap_retune.py` | [`diffmap_retune.md`](data/processed/diffmap_retune.md) |
 | Physics-recycle net (hard cells) | `python scripts/train_recycle_net.py` | [`recycle_net.md`](data/processed/recycle_net.md) |
 | COD 2016452 PhAI hybrids | `python scripts/run_cod_hybrid_benchmark.py` | [`cod_hybrid_benchmark.md`](data/processed/cod_hybrid_benchmark.md) |
 | Free-FOM calibration | `python scripts/calibrate_free_fom.py` | [`free_fom_calibration.md`](data/processed/free_fom_calibration.md) |
@@ -318,13 +318,13 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 
 ### Headlines (reproducible reports)
 
-- **Solvability cliff:** classical methods work on small \(N\) / high resolution; success collapses for large \(N\) / low \(d_{\min}\).
+- **Solvability cliff:** classical methods work on small $N$ / high resolution; success collapses for large $N$ / low $d_{\min}$.
 - **Fair PhAI:** with official-style prep, PhAI mapCC exceeds CF on COD 2016452 Fcalc; **`phai+CF` solves** 2016452 @ 0.9 Å under strict criteria (mapCC ≈ 0.87).
 - **Conditional polish:** free-FOM gate **accepts** helpful CF polish at high res; **rejects** RAAR when it would destroy a good PhAI prior (important at 1.2–2.0 Å).
-- **Free FOM v2:** fixed vacuous post-modulus \(R\); uses positivity residual \(R_+\), kurtosis/peakiness, conservative gate (composite↑ **and** \(R_+\) not worse). See [`docs/math/free_fom.md`](docs/math/free_fom.md).
+- **Free FOM v2:** fixed vacuous post-modulus $R$; uses positivity residual $R_+$, kurtosis/peakiness, conservative gate (composite↑ **and** $R_+$ not worse). See [`docs/math/free_fom.md`](docs/math/free_fom.md).
 - **Failure taxonomy:** with free-FOM v2.1 (anti-false-atomicity), calibration **FOM inversion → 0%**; hard-region failures shift toward **B+C** (basin + degeneracy). PhAI seeding on synthetic P1 hard cells helps modestly (see `phai_taxonomy.md`). Docs: [`failure_taxonomy.md`](docs/math/failure_taxonomy.md).
 - **Ensemble:** multistart CF+RAAR improves some easy cases; hard region remains **0%** strict success (honest ceiling for pure classical multistart).
-- **DiffMap retune:** charge-flip \(P_S\) + β≈0.5 beats default positivity DiffMap on free FOM; still trails CF on truth mapCC in many cells.
+- **DiffMap retune:** charge-flip $P_S$ + β≈0.5 beats default positivity DiffMap on free FOM; still trails CF on truth mapCC in many cells.
 - **Recycle net:** PhaseMLP trained on hard synthetic cells; physics recycle enforces \|F\| consistency — supervised prior, not a claimed general solver.
 
 ## Documentation
