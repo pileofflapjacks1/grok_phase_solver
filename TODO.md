@@ -141,6 +141,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 3. [x] Free-FOM science fix + calibration (v2)  
 4. [x] Solvability failure taxonomy A/B/C (`metrics/failure_taxonomy.py`)  
 4b. [x] Free-FOM v2.1 anti-false-atomicity + PhAI-seeded taxonomy  
+4c. [x] AI-PhaSeed (PhAI seed + phase extension + free-FOM polish)  
 5. [ ] Improve auto method + PhAI |F| prep for experimental HKL  
 6. [ ] Peak → SHELXL `.res` fragment export  
 7. [ ] External validation vs SHELXD  

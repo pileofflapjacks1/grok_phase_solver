@@ -27,6 +27,12 @@ from .free_fom import (
 )
 from .ensemble import ensemble_solve, ensemble_cf_raar
 from .recycle_net import recycle_net_solve, train_recycle_net_hard, load_recycle_net
+from .ai_phaseed import (
+    ai_phaseed_solve,
+    phai_phaseed_solve,
+    select_seed_indices,
+    phase_extend,
+)
 
 __all__ = [
     "charge_flipping_solve",
@@ -65,4 +71,8 @@ __all__ = [
     "recycle_net_solve",
     "train_recycle_net_hard",
     "load_recycle_net",
+    "ai_phaseed_solve",
+    "phai_phaseed_solve",
+    "select_seed_indices",
+    "phase_extend",
 ]

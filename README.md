@@ -138,6 +138,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | Free FOM v2 | `solvers/free_fom.py` | Positivity residual \(R_+\), atomicity, calibrated gate ([math note](docs/math/free_fom.md)) |
 | Multistart ensemble | `solvers/ensemble.py` | CF+RAAR starts → free-FOM pick |
 | Conditional hybrid | `solvers/conditional_hybrid.py` | Polish seed only if free FOM improves |
+| **AI-PhaSeed** | `solvers/ai_phaseed.py` | AI seed → strong-\|E\| extension → free-FOM polish |
 | Phase recycle | `solvers/phase_recycle.py` | Fourier modulus projection loop |
 | Physics-recycle net | `solvers/recycle_net.py` | PhaseMLP inside recycle (hard cells) |
 
@@ -190,6 +191,8 @@ from grok_phase_solver.solvers import (
     retune_difference_map,
     recycle_net_solve,
     load_recycle_net,
+    phai_phaseed_solve,
+    ai_phaseed_solve,
 )
 
 # Multistart CF + RAAR; pick by free FOM (no ground truth needed)
@@ -198,6 +201,11 @@ phases, rho, info = ensemble_cf_raar(hkl, amplitudes, cell, n_starts=5, n_iter=1
 # Seed → polish only if free FOM improves
 phases, rho, info = conditional_polish(
     hkl, amplitudes, cell, phases_seed, polish="raar", n_iter=80
+)
+
+# AI-PhaSeed: PhAI fair → strong-|E| extension → free-FOM–gated CF
+phases, rho, info = phai_phaseed_solve(
+    hkl, amplitudes, cell, n_extend=15, polish="charge_flipping", n_starts=2
 )
 
 # DiffMap with retuned charge-flip projector
@@ -294,6 +302,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | Free-FOM calibration | `python scripts/calibrate_free_fom.py` | [`free_fom_calibration.md`](data/processed/free_fom_calibration.md) |
 | Failure taxonomy (A/B/C) | `python scripts/run_failure_taxonomy.py` | [`failure_taxonomy.md`](data/processed/failure_taxonomy.md) |
 | PhAI-seeded taxonomy | `python scripts/run_phai_taxonomy.py` | [`phai_taxonomy.md`](data/processed/phai_taxonomy.md) |
+| AI-PhaSeed benchmark | `python scripts/run_ai_phaseed_benchmark.py` | [`ai_phaseed_benchmark.md`](data/processed/ai_phaseed_benchmark.md) |
 | Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 ### Headlines (reproducible reports)
