@@ -67,18 +67,25 @@ gps-solve \
 
 | `--method` | When to use |
 |------------|-------------|
-| `auto` (default) | PhAI+CF if P2₁/c and weights present; else charge flipping |
-| `charge_flipping` | Robust default for small molecules at good resolution |
-| `phai` / `phai+cf` | Small-molecule P2₁/c-style (needs PhAI weights) |
-| `recycle` | Fast positivity recycling (low-res exploration) |
+| `auto` (default) | Smart pick: AI-PhaSeed if P2₁/c+PhAI; ensemble at high res; else CF |
+| `charge_flipping` | Robust classical default |
+| `ensemble` | Multistart CF+RAAR ranked by free FOM (good high-res) |
+| `phai_phaseed` | **AI-PhaSeed**: PhAI seed → phase extension → free-FOM polish |
+| `phai+cf_cond` | PhAI + CF only if free FOM accepts polish |
+| `phai` / `phai+cf` | PhAI alone or unconditional CF polish (needs weights) |
+| `hard_p1_phaseed` | Domain-matched hard-P1 prior + AI-PhaSeed (synthetic-trained) |
+| `raar` / `recycle` / `hio` | Projection / positivity variants |
 | `direct_methods` | Educational multi-start triplets (not SHELXD-strength) |
 
 Examples:
 
 ```bash
-gps-solve --hkl data.hkl --ins data.ins --method charge_flipping --n-iter 200 --out out_cf
-gps-solve --hkl data.hkl --ins data.ins --method auto --dmin 1.0 --out out_hires
+gps-solve --hkl data.hkl --ins data.ins --method auto --n-iter 150 --out out_auto
+gps-solve --hkl data.hkl --ins data.ins --method phai_phaseed --out out_phaseed
+gps-solve --hkl data.hkl --ins data.ins --method ensemble --n-starts 4 --out out_ens
 ```
+
+`auto` policy (simplified): P2₁/c + PhAI weights → `phai_phaseed`; high resolution → `ensemble`; else `charge_flipping`. Free-FOM composite is written into diagnostics.
 
 ---
 
@@ -86,12 +93,13 @@ gps-solve --hkl data.hkl --ins data.ins --method auto --dmin 1.0 --out out_hires
 
 | File | Use |
 |------|-----|
-| **`report.md`** | Summary, warnings, next steps |
+| **`report.md`** | Summary, free FOM, warnings, next steps |
 | **`phases.csv`** | h, k, l, \|F\|, phase (°), A, B |
 | **`structure_factors.F`** | Complex F for custom tools |
 | **`density.npz`** | Electron density grid + cell |
 | **`density_slice.png`** | Quick visual check |
 | **`peaks.csv` / `peaks.xyz`** | Strongest density maxima (trial atoms) |
+| **`trial.res`** | SHELXL-style trial model (Q/C peaks) for Olex2 |
 | **`solve_summary.json`** | Machine-readable log |
 
 ---
@@ -107,11 +115,11 @@ This tool **phases** data and suggests **density peaks**. It does **not** replac
 **Typical path:**
 
 1. Open `density_slice.png` and `peaks.csv`.  
-2. Load `peaks.xyz` or coordinates into Olex2 / ShelXle / PyMOL.  
+2. Load **`trial.res`** in Olex2 / ShelXle (or `peaks.xyz` in PyMOL).  
 3. Assign C/N/O/… from chemistry and residual maps.  
 4. Refine against your intensities with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
 
-If the map is uninterpretable: check cell/SG, try more iterations, improve resolution/completeness, or use classical SHELXD / experimental phasing.
+If the map is uninterpretable: check cell/SG, try `--method ensemble` or `phai_phaseed`, improve resolution/completeness, or use classical SHELXD / experimental phasing.
 
 ---
 

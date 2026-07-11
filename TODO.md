@@ -143,10 +143,12 @@ AI-driven general solver for the X-ray crystallography phase problem.
 4b. [x] Free-FOM v2.1 anti-false-atomicity + PhAI-seeded taxonomy  
 4c. [x] AI-PhaSeed (PhAI seed + phase extension + free-FOM polish)  
 4d. [x] Domain-matched hard-P1 prior (OI training + free-FOM origin search)  
-5. [ ] Improve auto method + PhAI |F| prep for experimental HKL  
-6. [ ] Peak → SHELXL `.res` fragment export  
-7. [ ] External validation vs SHELXD  
-8. [ ] Scale synthetic generation; Wilson domain-gap  
+5. [x] Improve auto method + wire AI-PhaSeed / ensemble into `gps-solve`  
+6. [x] Peak → SHELXL `.res` fragment export (`trial.res`)  
+7. [x] Experimental HKL scoreboard (COD 2017775 + controls)  
+8. [ ] External validation vs SHELXD  
+9. [ ] Scale synthetic generation; Wilson domain-gap  
+10. [ ] Stronger prior architecture (beyond PhaseMLP)  
 
 ---
 

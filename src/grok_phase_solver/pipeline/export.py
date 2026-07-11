@@ -103,6 +103,11 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         xyz_path.write_text("\n".join(peaks_to_xyz_lines(result.peaks, result.cell)) + "\n")
         written.append(xyz_path)
 
+        # SHELXL-style trial .res (Q peaks / carbon placeholders)
+        res_path = out_dir / "trial.res"
+        res_path.write_text(write_shelxl_res(result))
+        written.append(res_path)
+
     # JSON summary
     summary = {
         "method": result.method,
@@ -163,19 +168,21 @@ def _render_report(result: "SolveResult") -> str:
             "| `density.npz` | Electron density grid |",
             "| `density_slice.png` | Quick visual check |",
             "| `peaks.csv` / `peaks.xyz` | Strongest density maxima (trial atoms) |",
+            "| `trial.res` | SHELXL-style trial model (Q peaks) for Olex2/SHELXL |",
             "| `solve_summary.json` | Machine-readable summary |",
             "",
             "## Suggested next steps (crystallography practice)",
             "",
             "1. **Inspect** `density_slice.png` and peak heights in `peaks.csv` "
             "(look for chemically sensible peak counts).",
-            "2. **Load** trial peaks into Olex2 / ShelXle / PyMOL and assign element types.",
+            "2. **Open** `trial.res` in Olex2 / ShelXle — assign element types to Q peaks.",
             "3. **Refine** with SHELXL against your experimental intensities "
             "(this tool does **not** replace SHELXL refinement).",
-            "4. If the map looks noisy or empty: try `--method charge_flipping` with more "
-            "`--n-iter`, check space group/cell, or improve data completeness/resolution.",
-            "5. Optional: install PhAI weights and re-run with `--method auto` or `--method phai` "
-            "for P2₁/c small-molecule cases (see `third_party/phai/README.md`).",
+            "4. If the map looks noisy: try `--method ensemble` (high-res), "
+            "`--method phai_phaseed` (P2₁/c + PhAI weights), or more `--n-iter`.",
+            "5. Free-FOM composite in diagnostics is a **truth-free** ranking score, not proof of solution.",
+            "6. PhAI weights: see `third_party/phai/README.md`. Hard-P1 prior: "
+            "`python scripts/train_hard_p1_prior.py`.",
             "",
             "## Honest scope",
             "",
@@ -186,3 +193,39 @@ def _render_report(result: "SolveResult") -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def write_shelxl_res(result: "SolveResult", element: str = "C") -> str:
+    """
+    Build a minimal SHELXL-style .res trial model from density peaks.
+
+    Peaks are written as Q labels (or ``element`` if specified) so Olex2/SHELXL
+    can load them as a starting model. Not a refined structure.
+    """
+    a, b, c, al, be, ga = result.cell
+    sg = result.space_group_hm or "P1"
+    # LATT / SYMM omitted for simplicity — user should paste cell into real .ins
+    lines = [
+        f"TITL gps-solve trial ({result.method})",
+        f"CELL 0.71073 {a:.4f} {b:.4f} {c:.4f} {al:.2f} {be:.2f} {ga:.2f}",
+        f"ZERR 1 0.001 0.001 0.001 0.01 0.01 0.01",
+        f"LATT -1",
+        f"SFAC C H N O",
+        f"UNIT 1 1 1 1",
+        f"FVAR 1.0",
+        f"REM free_fom_composite={result.diagnostics.get('free_fom_composite', 'n/a')}",
+        f"REM method={result.method} n_peaks={len(result.peaks)}",
+        f"REM space_group_hint={sg}",
+    ]
+    # Element index for SFAC C = 1
+    for i, p in enumerate(result.peaks):
+        # Q peaks as carbon placeholders (sfac 1); Uiso rough
+        label = f"Q{i+1}" if element.upper() == "Q" else f"{element}{i+1}"
+        u = max(0.02, 0.08 / max(p.height_sigma / 3.0, 0.5))
+        lines.append(
+            f"{label:6s} 1 {p.fract[0]:10.6f} {p.fract[1]:10.6f} {p.fract[2]:10.6f} "
+            f"11.00000 {u:.5f}"
+        )
+    lines.append("HKLF 4")
+    lines.append("END")
+    return "\n".join(lines) + "\n"

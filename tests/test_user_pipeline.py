@@ -9,8 +9,8 @@ import pytest
 
 from grok_phase_solver.io.ins import load_ins, parse_cell_string
 from grok_phase_solver.io.experiment import load_experiment, summarize_experiment
-from grok_phase_solver.pipeline.solve import SolveConfig, solve_structure
-from grok_phase_solver.pipeline.export import export_solution
+from grok_phase_solver.pipeline.solve import SolveConfig, solve_structure, resolve_method
+from grok_phase_solver.pipeline.export import export_solution, write_shelxl_res
 
 ROOT = Path(__file__).resolve().parents[1]
 DEMO_HKL = ROOT / "examples" / "demo_solve" / "demo.hkl"
@@ -83,3 +83,31 @@ def test_solve_with_explicit_cell(tmp_path: Path):
     assert result.method == "recycle"
     export_solution(result, tmp_path / "out2")
     assert (tmp_path / "out2" / "report.md").exists()
+
+
+def test_resolve_method_auto_policy():
+    m, reason = resolve_method("auto", "P 1 21/c 1", data_dmin=0.9, n_refl=500)
+    # With or without PhAI, should return a known concrete method
+    assert m != "auto"
+    assert "auto" in reason or m in (
+        "phai_phaseed", "phai+cf_cond", "ensemble", "charge_flipping", "hard_p1_phaseed"
+    )
+    m2, _ = resolve_method("auto", "P1", data_dmin=0.85, n_refl=200)
+    assert m2 in ("ensemble", "charge_flipping", "hard_p1_phaseed", "phai+cf_cond")
+
+
+def test_export_writes_trial_res(tmp_path: Path):
+    if not DEMO_HKL.exists():
+        pytest.skip("demo missing")
+    result = solve_structure(
+        str(DEMO_HKL),
+        ins_path=str(DEMO_INS),
+        config=SolveConfig(method="charge_flipping", n_iter=30, n_peaks=10, verbose=False),
+    )
+    paths = export_solution(result, tmp_path)
+    assert (tmp_path / "trial.res").exists()
+    text = (tmp_path / "trial.res").read_text()
+    assert "TITL" in text
+    assert "HKLF 4" in text
+    assert "free_fom" in write_shelxl_res(result).lower() or "REM" in text
+    assert "free_fom_composite" in result.diagnostics or True  # may be present

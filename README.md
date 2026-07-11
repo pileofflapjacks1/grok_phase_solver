@@ -42,12 +42,15 @@ gps-solve --hkl mycrystal.hkl \
 
 | File | What it is |
 |------|------------|
-| `solve_out/report.md` | Summary + next steps |
+| `solve_out/report.md` | Summary + free FOM + next steps |
 | `solve_out/density_slice.png` | Quick map view |
 | `solve_out/peaks.csv` | Strong density maxima (trial atoms) |
+| `solve_out/trial.res` | SHELXL-style trial model for Olex2 |
 | `solve_out/phases.csv` | Phased structure factors |
 
 Then refine in **SHELXL / Olex2** as usual. This tool helps **phase** the data; it does not replace refinement.
+
+`auto` picks among charge flipping, multistart ensemble, PhAI+AI-PhaSeed, and free-FOM–gated hybrids based on space group, resolution, and available weights.
 
 ### Demo (no lab data)
 
@@ -310,6 +313,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | PhAI-seeded taxonomy | `python scripts/run_phai_taxonomy.py` | [`phai_taxonomy.md`](data/processed/phai_taxonomy.md) |
 | AI-PhaSeed benchmark | `python scripts/run_ai_phaseed_benchmark.py` | [`ai_phaseed_benchmark.md`](data/processed/ai_phaseed_benchmark.md) |
 | Hard-P1 domain prior | `python scripts/train_hard_p1_prior.py` | [`hard_p1_prior.md`](data/processed/hard_p1_prior.md) |
+| Experimental HKL scoreboard | `python scripts/run_experimental_scoreboard.py` | [`experimental_scoreboard.md`](data/processed/experimental_scoreboard.md) |
 | Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 ### Headlines (reproducible reports)

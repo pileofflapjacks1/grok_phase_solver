@@ -141,18 +141,25 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         choices=[
             "auto",
             "charge_flipping",
+            "ensemble",
+            "raar",
             "phai",
             "phai+cf",
+            "phai+cf_cond",
+            "phai_phaseed",
             "phai+recycle",
+            "hard_p1_phaseed",
             "recycle",
             "direct_methods",
             "hio",
         ],
-        help="Phasing method (default: auto)",
+        help="Phasing method (default: auto = pick best available pipeline)",
     )
     p.add_argument("--dmin", type=float, default=None, help="High-resolution cutoff Å (optional)")
-    p.add_argument("--n-iter", type=int, default=120, help="Iterations for CF/HIO")
+    p.add_argument("--n-iter", type=int, default=120, help="Iterations for CF/HIO/polish")
     p.add_argument("--n-recycle", type=int, default=8, help="Cycles for recycle/PhAI")
+    p.add_argument("--n-extend", type=int, default=12, help="AI-PhaSeed extension cycles")
+    p.add_argument("--n-starts", type=int, default=2, help="Multistart trials (ensemble / PhaSeed)")
     p.add_argument("--n-peaks", type=int, default=40, help="Max density peaks to list")
     p.add_argument("--min-peak-sigma", type=float, default=2.5, help="Min peak height in map σ")
     p.add_argument(
@@ -171,6 +178,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         d_min=args.dmin,
         n_iter=args.n_iter,
         n_recycle=args.n_recycle,
+        n_extend=args.n_extend,
+        n_starts=args.n_starts,
         seed=args.seed,
         n_peaks=args.n_peaks,
         min_peak_sigma=args.min_peak_sigma,
