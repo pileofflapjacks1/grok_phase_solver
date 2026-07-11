@@ -126,3 +126,27 @@ def test_summarize_taxonomy():
     summary = summarize_taxonomy([r1])
     assert summary["n"] == 1
     assert sum(summary["counts"].values()) == 1
+
+
+def test_diagnose_with_phase_init_includes_seed_trial():
+    st = generate_random_organic(n_atoms=5, seed=2)
+    data = structure_to_fcalc(st, d_min=1.0)
+    # use true phases as "oracle seed" to verify seeded path
+    res = diagnose_structure(
+        data["hkl"],
+        data["amplitudes"],
+        data["phases"],
+        st.cell,
+        n_atoms=5,
+        d_min=1.0,
+        structure_seed=2,
+        n_starts=1,
+        n_iter=20,
+        phase_init=data["phases"],
+        init_label="oracle",
+    )
+    methods = {t["method"] for t in res.trials}
+    assert "seed" in methods
+    assert any(m.endswith("_seeded") or m in ("cf_seeded", "raar_seeded") for m in methods)
+    seed_trial = next(t for t in res.trials if t["method"] == "seed")
+    assert seed_trial["mapcc_oi"] > 0.9  # true seed

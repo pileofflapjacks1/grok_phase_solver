@@ -59,6 +59,31 @@ def test_true_beats_random_on_composite_and_R_pos():
     assert f_true["R_pos"] < f_rand["R_pos"]
     assert f_true["composite"] > f_rand["composite"]
     assert f_true["excess_kurtosis"] > f_rand["excess_kurtosis"] - 0.5
+    assert f_true.get("fom_version", 0) >= 2.1
+    assert "score_afa" in f_true
+
+
+def test_afa_penalizes_extreme_kurtosis_score():
+    """Inverted-U: moderate kurtosis scores higher than super-spike kurtosis."""
+    from grok_phase_solver.solvers.free_fom import _score_kurtosis, anti_false_atomicity_score
+
+    assert _score_kurtosis(5.0) > _score_kurtosis(25.0)
+    assert _score_kurtosis(5.0) > _score_kurtosis(0.0)
+    atom_spike = {
+        "excess_kurtosis": 28.0,
+        "max_over_sigma": 25.0,
+        "n_local_maxima": 2.0,
+        "peak_second_ratio": 0.1,
+        "n_strong_peaks": 1.0,
+    }
+    atom_ok = {
+        "excess_kurtosis": 6.0,
+        "max_over_sigma": 9.0,
+        "n_local_maxima": 8.0,
+        "peak_second_ratio": 0.6,
+        "n_strong_peaks": 4.0,
+    }
+    assert anti_false_atomicity_score(atom_ok) > anti_false_atomicity_score(atom_spike)
 
 
 def test_true_beats_random_multiple_seeds():
@@ -129,7 +154,7 @@ def test_gate_rejects_destroying_good_seed():
 def test_compare_fom_and_version():
     st, data = _tiny()
     f0 = free_fom(data["hkl"], data["amplitudes"], data["phases"], st.cell)
-    assert f0.get("fom_version", 0) >= 2.0
+    assert f0.get("fom_version", 0) >= 2.1
     rng = np.random.default_rng(1)
     ph = rng.uniform(-np.pi, np.pi, len(data["phases"]))
     f1 = free_fom(data["hkl"], data["amplitudes"], ph, st.cell)

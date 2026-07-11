@@ -158,23 +158,51 @@ def evaluate_multistart_trials(
     base_seed: int = 0,
     methods: Sequence[str] = ("cf", "raar"),
     d_min: Optional[float] = None,
+    phase_init: Optional[np.ndarray] = None,
+    include_seed_trial: bool = True,
 ) -> List[TrialRecord]:
-    """Run multistart CF/RAAR; score each trial with mapCC and free FOM."""
+    """
+    Run multistart CF/RAAR (optionally seeded); score with mapCC and free FOM.
+
+    If ``phase_init`` is set, CF/RAAR start from that phase set (different RNG
+    seeds still diversify weak-phase / noise). Optionally include pure seed
+    as a trial (method ``seed``).
+    """
     amp = np.asarray(amplitudes, dtype=np.float64)
     hkl = np.asarray(hkl, dtype=int)
     trials: List[TrialRecord] = []
     tid = 0
+
+    if phase_init is not None and include_seed_trial:
+        ph0 = np.asarray(phase_init, dtype=np.float64)
+        rho0 = density_from_structure_factors(
+            hkl, amp * np.exp(1j * ph0), cell, shape=rho_true.shape
+        )
+        fom0 = free_fom(hkl, amp, ph0, cell, density=rho0)
+        trials.append(
+            TrialRecord(
+                method="seed",
+                seed=base_seed,
+                mapcc_oi=_mapcc(rho0, rho_true),
+                composite=fom0["composite"],
+                R_pos=fom0["R_pos"],
+                excess_kurtosis=fom0["excess_kurtosis"],
+            )
+        )
+
     for method in methods:
         for s in range(n_starts):
             seed = base_seed + tid
             tid += 1
             if method == "cf":
                 ph, rho, _ = charge_flipping_solve(
-                    hkl, amp, cell, n_iter=n_iter, seed=seed, d_min=d_min
+                    hkl, amp, cell, n_iter=n_iter, seed=seed, d_min=d_min,
+                    phase_init=phase_init,
                 )
             elif method == "raar":
                 ph, rho, _ = raar_solve(
-                    hkl, amp, cell, n_iter=n_iter, seed=seed, d_min=d_min
+                    hkl, amp, cell, n_iter=n_iter, seed=seed, d_min=d_min,
+                    phase_init=phase_init,
                 )
             else:
                 raise ValueError(method)
@@ -183,9 +211,10 @@ def evaluate_multistart_trials(
                     hkl, amp * np.exp(1j * ph), cell, shape=rho_true.shape
                 )
             fom = free_fom(hkl, amp, ph, cell, density=rho)
+            label = method if phase_init is None else f"{method}_seeded"
             trials.append(
                 TrialRecord(
-                    method=method,
+                    method=label,
                     seed=seed,
                     mapcc_oi=_mapcc(rho, rho_true),
                     composite=fom["composite"],
@@ -433,10 +462,15 @@ def diagnose_structure(
     n_starts: int = 4,
     n_iter: int = 60,
     methods: Sequence[str] = ("cf", "raar"),
+    phase_init: Optional[np.ndarray] = None,
+    init_label: str = "random",
 ) -> TaxonomyResult:
     """
     Full pipeline: information metrics + multistart + free FOM of true/random
     + taxonomy classification.
+
+    ``phase_init``: optional seed phases (e.g. PhAI fair). When set, multistart
+    CF/RAAR start from that seed and a pure-seed trial is included.
     """
     amp = np.asarray(amplitudes, dtype=np.float64)
     hkl = np.asarray(hkl, dtype=int)
@@ -454,10 +488,11 @@ def diagnose_structure(
     trials = evaluate_multistart_trials(
         hkl, amp, cell, ph_t, rho_t,
         n_starts=n_starts, n_iter=n_iter, base_seed=structure_seed,
-        methods=methods, d_min=d_min,
+        methods=methods, d_min=d_min, phase_init=phase_init,
+        include_seed_trial=(phase_init is not None),
     )
 
-    return classify_failure(
+    res = classify_failure(
         trials,
         composite_true=f_true["composite"],
         composite_random=f_rand["composite"],
@@ -470,6 +505,21 @@ def diagnose_structure(
         d_min=d_min,
         structure_seed=structure_seed,
     )
+    # attach init metadata via reasons/flags (TaxonomyResult is a dataclass)
+    res.flags = dict(res.flags)
+    res.flags["init"] = init_label  # type: ignore[assignment]
+    res.reasons = list(res.reasons)
+    if phase_init is not None:
+        res.reasons.insert(0, f"init={init_label}")
+    return res
+
+
+def inversion_rate(results: Sequence[TaxonomyResult]) -> float:
+    """Fraction of cases with free-FOM inversion vs true (flag)."""
+    if not results:
+        return 0.0
+    n = sum(1 for r in results if r.flags.get("fom_inversion_vs_true"))
+    return n / len(results)
 
 
 def summarize_taxonomy(results: Sequence[TaxonomyResult]) -> Dict[str, Any]:

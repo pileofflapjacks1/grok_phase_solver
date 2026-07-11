@@ -15,17 +15,17 @@ Primary diagnostics (all truth-free):
    to |F_obs|. Atomic positive densities keep low R₊; random phases yield
    large negative density whose clipping wrecks moduli (Fienup / CF lore).
 
-2. **Atomicity / peakiness** — correct small-molecule maps are sparse and
-   peaked: high kurtosis, high max/σ, density concentrated in few voxels,
-   strong NMS peaks.
+2. **Atomicity / peakiness (with anti-false-atomicity)** — correct maps are
+   peaked, but *not* delta-spike caricatures. Extreme excess kurtosis and
+   max/σ (common CF artifacts) are **penalized** via inverted-U scores so
+   free FOM does not systematically outrank true phases on hard cells
+   (failure-taxonomy A+B pathology).
 
-3. **Skewness** — atomic ρ is positively skewed (heavy positive tail).
+3. **Peak balance** — multiple comparable strong peaks vs one super-spike.
 
-4. **Optional shell R₊** — same as R₊ in resolution shells (detects
-   high-res over-randomization).
+4. **Skewness** — atomic ρ is positively skewed (heavy positive tail).
 
-5. **Optional Sayre residual** — equal-atom model: F ≈ α (F ⋆ F); useful
-   at atomic resolution.
+5. **Optional shell R₊ / Sayre residual**.
 
 Composite
 ---------
@@ -33,6 +33,9 @@ Scores in [0,1] are combined with calibrated weights (see
 ``DEFAULT_WEIGHTS`` and ``scripts/calibrate_free_fom.py``). Higher
 ``composite`` is better. ``should_accept_polish`` is deliberately
 **conservative**: requires composite gain *and* no serious R₊ regression.
+
+v2.1: anti-false-atomicity (AFA) scores + rebalanced weights to reduce
+FOM inversion rate on hard synthetic cells.
 
 References
 ----------
@@ -57,14 +60,16 @@ from grok_phase_solver.solvers.projectors import (
 )
 
 
-# Calibrated on synthetic + COD Fcalc pairs (see calibrate_free_fom.py).
-# Weights sum ≈ 1; higher weight = more influence on ranking.
+# Calibrated against FOM-inversion on hard cells (see calibrate_free_fom.py).
+# v2.1: up-weight R₊; use inverted-U kurtosis/peakiness; add peak balance + AFA.
 DEFAULT_WEIGHTS: Dict[str, float] = {
-    "R_pos": 0.35,       # positivity residual (higher score = lower R)
-    "kurtosis": 0.20,    # peakiness / heavy tails
-    "peakiness": 0.20,   # max/σ and top-voxel concentration
-    "skew": 0.15,        # positive skew of atomic maps
-    "pos_frac": 0.10,    # weak: CF maps can be less positive than Fcalc
+    "R_pos": 0.42,       # positivity residual (dominant free signal)
+    "kurtosis": 0.12,    # rising then soft-cap (penalize CF super-spikes)
+    "peakiness": 0.12,   # rising then soft-cap on max/σ
+    "peak_balance": 0.12,  # multi-peak vs super-spike
+    "afa": 0.10,         # aggregate anti-false-atomicity
+    "skew": 0.08,
+    "pos_frac": 0.04,
 }
 
 # Conservative polish gate (calibrated to reduce false accepts of bad CF)
@@ -91,28 +96,90 @@ def _score_R(R: float) -> float:
     return float(1.0 / (1.0 + max(R, 0.0)))
 
 
+def _gauss_bump(x: float, center: float, width: float) -> float:
+    """Unnormalized Gaussian bump in (0, 1], peak 1 at center."""
+    z = (x - center) / (width + 1e-16)
+    return float(np.exp(-0.5 * z * z))
+
+
 def _score_kurtosis(k: float) -> float:
     """
-    Excess kurtosis of atomic maps is large and positive.
-    Random Gaussian field: excess kurtosis ≈ 0.
-    Map k≥0 through soft saturating transform.
+    Rising score with soft cap at extreme kurtosis.
+
+    Random ≈ 0 → low. True atomic maps ≈ 3–12 → high.
+    CF false spikes often k ≫ 15–25 → soft-penalized (AFA / inversion fix).
     """
-    return _logistic(k, center=3.0, scale=3.0)
+    k = float(k)
+    base = _logistic(k, center=2.5, scale=2.0)
+    if k > 12.0:
+        # roll off super-spikes without collapsing moderate atomic kurtosis
+        base *= float(np.clip(1.0 - 0.045 * (k - 12.0), 0.25, 1.0))
+    return float(base)
 
 
 def _score_skew(skew: float) -> float:
-    """Positive skew preferred; random ≈ 0."""
-    return _logistic(skew, center=1.0, scale=1.5)
+    """Positive skew preferred; random ≈ 0. Soft-cap extreme skew (artifact)."""
+    s = _logistic(skew, center=1.0, scale=1.5)
+    if skew > 10.0:
+        s *= float(np.clip(1.0 - 0.05 * (skew - 10.0), 0.3, 1.0))
+    return float(s)
 
 
 def _score_peakiness(max_over_sigma: float, top_frac_mass: float) -> float:
     """
-    max_over_sigma: max(ρ)/σ(ρ) — large for sharp peaks.
-    top_frac_mass: fraction of positive density in top 5% voxels.
+    Prefer peaked maps; soft-cap extreme max/σ (super-spikes).
+
+    True maps: max/σ often ~6–14.  Super-spikes (max/σ > 20) are penalized.
     """
-    s_max = _logistic(max_over_sigma, center=6.0, scale=3.0)
-    s_mass = float(np.clip(top_frac_mass, 0.0, 1.0))
-    return 0.6 * s_max + 0.4 * s_mass
+    s_max = _logistic(max_over_sigma, center=5.0, scale=2.5)
+    if max_over_sigma > 16.0:
+        s_max *= float(np.clip(1.0 - 0.04 * (max_over_sigma - 16.0), 0.25, 1.0))
+    # some concentration good; ultra-concentration slightly downweighted
+    s_mass = _logistic(top_frac_mass, center=0.22, scale=0.12)
+    if top_frac_mass > 0.55:
+        s_mass *= 0.75
+    return 0.65 * s_max + 0.35 * s_mass
+
+
+def _score_peak_balance(
+    n_local_maxima: float,
+    peak_second_ratio: float,
+    n_strong_peaks: float,
+) -> float:
+    """
+    Prefer several comparable strong peaks (molecular atoms) over one spike.
+
+    peak_second_ratio = height_2nd / height_1st (0 if <2 peaks).
+    n_strong_peaks = count of local max ≥ 0.4 × max peak.
+    """
+    s_n = _logistic(n_local_maxima, center=4.0, scale=3.0)
+    # too many peaks → noise; soft downweight above ~40
+    if n_local_maxima > 40:
+        s_n *= _gauss_bump(n_local_maxima, center=20.0, width=25.0)
+    s_ratio = float(np.clip(peak_second_ratio, 0.0, 1.0))
+    s_strong = _logistic(n_strong_peaks, center=2.5, scale=1.5)
+    return 0.35 * s_n + 0.35 * s_ratio + 0.30 * s_strong
+
+
+def anti_false_atomicity_score(atom: Dict[str, float]) -> float:
+    """
+    Aggregate 0–1 score: high = physically plausible multi-atom density;
+    low = CF-style super-spike / false atomicity.
+
+    Truth-free. Used both as a weight component and for diagnostics.
+    """
+    k = atom["excess_kurtosis"]
+    mx = atom["max_over_sigma"]
+    # Extreme kurtosis or max/σ → strong penalty
+    p_kurt = 1.0 - _logistic(k, center=14.0, scale=4.0)  # high k → low score
+    p_max = 1.0 - _logistic(mx, center=18.0, scale=4.0)
+    p_bal = _score_peak_balance(
+        atom["n_local_maxima"],
+        atom.get("peak_second_ratio", 0.0),
+        atom.get("n_strong_peaks", 0.0),
+    )
+    # Combine: need not look like a single delta AND need multi-peak structure
+    return float(0.35 * p_kurt + 0.35 * p_max + 0.30 * p_bal)
 
 
 def positivity_residual(
@@ -206,8 +273,15 @@ def density_atomicity_stats(rho: np.ndarray, top_pct: float = 5.0) -> Dict[str, 
     if n_peaks > 0:
         peak_heights = r[peaks]
         mean_peak_sigma = float((peak_heights.mean() - m) / s)
+        order = np.sort(peak_heights)[::-1]
+        h1 = float(order[0])
+        h2 = float(order[1]) if len(order) > 1 else 0.0
+        peak_second_ratio = (h2 / h1) if h1 > 1e-16 else 0.0
+        n_strong_peaks = float(np.sum(peak_heights >= 0.4 * h1))
     else:
         mean_peak_sigma = 0.0
+        peak_second_ratio = 0.0
+        n_strong_peaks = 0.0
 
     return {
         "pos_frac": pos_frac,
@@ -217,6 +291,8 @@ def density_atomicity_stats(rho: np.ndarray, top_pct: float = 5.0) -> Dict[str, 
         "top_frac_mass": top_frac_mass,
         "n_local_maxima": float(n_peaks),
         "mean_peak_sigma": mean_peak_sigma,
+        "peak_second_ratio": peak_second_ratio,
+        "n_strong_peaks": n_strong_peaks,
     }
 
 
@@ -316,6 +392,12 @@ def free_fom(
     s_R = _score_R(R_pos)
     s_kurt = _score_kurtosis(atom["excess_kurtosis"])
     s_peak = _score_peakiness(atom["max_over_sigma"], atom["top_frac_mass"])
+    s_bal = _score_peak_balance(
+        atom["n_local_maxima"],
+        atom["peak_second_ratio"],
+        atom["n_strong_peaks"],
+    )
+    s_afa = anti_false_atomicity_score(atom)
     s_skew = _score_skew(atom["skewness"])
     s_pos = float(np.clip(atom["pos_frac"], 0.0, 1.0))
 
@@ -323,6 +405,8 @@ def free_fom(
         w.get("R_pos", 0) * s_R
         + w.get("kurtosis", 0) * s_kurt
         + w.get("peakiness", 0) * s_peak
+        + w.get("peak_balance", 0) * s_bal
+        + w.get("afa", 0) * s_afa
         + w.get("skew", 0) * s_skew
         + w.get("pos_frac", 0) * s_pos
     )
@@ -338,14 +422,18 @@ def free_fom(
         "top_frac_mass": atom["top_frac_mass"],
         "n_local_maxima": atom["n_local_maxima"],
         "mean_peak_sigma": atom["mean_peak_sigma"],
+        "peak_second_ratio": atom["peak_second_ratio"],
+        "n_strong_peaks": atom["n_strong_peaks"],
         # scores
         "score_R_pos": s_R,
         "score_kurtosis": s_kurt,
         "score_peakiness": s_peak,
+        "score_peak_balance": s_bal,
+        "score_afa": s_afa,
         "score_skew": s_skew,
         "score_pos_frac": s_pos,
         "composite": float(composite),
-        "fom_version": 2.0,
+        "fom_version": 2.1,
     }
 
     if include_shells:

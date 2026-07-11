@@ -10,9 +10,12 @@ Composite combines scored R₊, excess kurtosis, peakiness (max/σ + top mass), 
 
 | Metric | Value |
 |--------|-------|
-| Spearman ρ(composite, mapCC_OI) | **0.731** |
-| Pairwise rank accuracy | **79.1%** (n=698) |
+| Spearman ρ(composite, mapCC_OI) | **0.895** |
+| Pairwise rank accuracy | **89.3%** (n=698) |
 | P(true FOM > random FOM) | **100.0%** |
+| FOM inversion rate (wrong beats true) | **0.0%** (0/8) |
+| mean (C_true − C_cf) | **0.107** |
+| free-FOM version | 2.1 |
 
 ## Conditional polish gate (synthetic)
 
@@ -44,10 +47,10 @@ COD gate correctness: **8/8** decisions match mapCC interest.
 | Label | mean composite | mean mapCC | n |
 |-------|----------------|------------|---|
 | `true` | 0.810 | 1.000 | 8 |
-| `partial` | 0.712 | 0.796 | 8 |
-| `cf` | 0.837 | 0.653 | 8 |
-| `raar` | 0.550 | 0.362 | 8 |
-| `random` | 0.497 | 0.277 | 8 |
+| `partial` | 0.788 | 0.796 | 8 |
+| `cf` | 0.703 | 0.653 | 8 |
+| `raar` | 0.675 | 0.362 | 8 |
+| `random` | 0.654 | 0.277 | 8 |
 
 ## Interpretation
 
@@ -56,4 +59,4 @@ COD gate correctness: **8/8** decisions match mapCC interest.
 - Free FOM remains a **proxy**, not an oracle; always refine experimentally.
 
 JSON: `data/processed/free_fom_calibration.json`
-Runtime: 69.5s
+Runtime: 46.5s

@@ -88,10 +88,26 @@ Rules 2–3 block the COD 2016452 pathology: CF can raise composite and lower \(
 (PhAI+CF @ 0.9 Å) improves \(R_+\) by ~0.12 and is accepted; harmful polishes
 improve \(R_+\) only by ~0.01–0.06 under large \(D_\varphi\) and are rejected.
 
+## Anti-false-atomicity (v2.1)
+
+Failure taxonomy showed hard-region **FOM inversion**: wrong CF maps with extreme
+kurtosis / max(ρ)/σ scored **higher** than true phases. v2.1 changes:
+
+| Change | Rationale |
+|--------|-----------|
+| Inverted-U kurtosis & max/σ scores | Reward atomic peakiness; **penalize** delta-spike caricatures |
+| Peak balance (2nd/1st peak, # strong peaks) | Prefer multi-atom maps over one super-spike |
+| Aggregate AFA score | Explicit anti-false-atomicity component in composite |
+| Reweighted toward \(R_+\) | Residual is less gamed than pure peakiness |
+
+Calibrate inversion rate with `scripts/calibrate_free_fom.py`
+(`fom_inversion_rate`, mean \(C_{\mathrm{true}}-C_{\mathrm{CF}}\)).
+
 ## Limitations (honest)
 
 - Free FOMs are **proxies**, not oracles. Origin ambiguity, enantiomorph, and incomplete models limit density statistics.
 - At very low resolution, atomicity signals weaken; neural priors may dominate.
+- AFA reduces but does not eliminate inversion on the hardest cells.
 - Always validate with refinement R-factors on experimental data.
 - Sayre / triplet terms assume approximate atomic equal-atom structure.
 

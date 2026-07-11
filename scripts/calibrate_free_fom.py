@@ -304,12 +304,50 @@ def main():
     print("\n=== COD 2016452 hybrid gate ===")
     cod = cod_gate_study()
 
+    # FOM inversion: among phase-set types, does any wrong set beat true composite?
+    inversion_events = 0
+    inversion_total = 0
+    hard_inv = 0
+    hard_n = 0
+    for key, d in by_struct.items():
+        if "true" not in d:
+            continue
+        name = key[0] if isinstance(key, tuple) else str(key)
+        is_hard = ("n12" in name or "n16" in name or "n20" in name or
+                   (isinstance(key, tuple) and len(key) > 1 and key[1] >= 1.5))
+        # check from all_rows for this structure
+        sub = [r for r in all_rows if r["structure"] == d["true"]["structure"]]
+        if not sub:
+            continue
+        c_true = d["true"]["composite"]
+        wrong = [r for r in sub if r["label"] in ("cf", "raar", "random", "partial") and r["mapcc_oi"] < 0.45]
+        if not wrong:
+            continue
+        inversion_total += 1
+        if is_hard:
+            hard_n += 1
+        if any(r["composite"] > c_true + 0.02 for r in wrong):
+            inversion_events += 1
+            if is_hard:
+                hard_inv += 1
+
+    # Also: mean composite gap (true - cf) on hard-ish
+    gaps = []
+    for key, d in by_struct.items():
+        if "true" in d and "cf" in d:
+            gaps.append(d["true"]["composite"] - d["cf"]["composite"])
+
     payload = {
         "spearman_composite_vs_mapcc": rho_s,
         "pairwise_rank_accuracy": pair_acc,
         "n_pairs": n_pairs,
         "true_beats_random_rate": true_beats_random / tr_n if tr_n else None,
         "n_structures_true_rand": tr_n,
+        "fom_inversion_rate": inversion_events / inversion_total if inversion_total else None,
+        "fom_inversion_events": inversion_events,
+        "fom_inversion_total": inversion_total,
+        "hard_fom_inversion_rate": hard_inv / hard_n if hard_n else None,
+        "mean_true_minus_cf_composite": float(np.mean(gaps)) if gaps else None,
         "gate": {
             "n": n_g,
             "true_positive": n_tp,
@@ -323,11 +361,11 @@ def main():
         "gates": all_gates,
         "cod_gates": cod,
         "seconds": time.time() - t0,
-        "fom_version": 2.0,
+        "fom_version": 2.1,
         "notes": (
-            "R_pos is positivity residual BEFORE modulus re-imposition "
-            "(old free_fom R_after_ER was always ~0 — bug fixed). "
-            "Gate requires composite gain AND no serious R_pos regression."
+            "v2.1: anti-false-atomicity (inverted-U kurtosis/peakiness, peak balance, AFA). "
+            "R_pos is positivity residual BEFORE modulus re-imposition. "
+            "Gate requires composite gain, no serious R_pos regression, rewrite trust-region."
         ),
     }
 
@@ -355,6 +393,12 @@ def main():
         f"| Spearman ρ(composite, mapCC_OI) | **{rho_s:.3f}** |",
         f"| Pairwise rank accuracy | **{pair_acc:.1%}** (n={n_pairs}) |",
         f"| P(true FOM > random FOM) | **{true_beats_random/tr_n if tr_n else float('nan'):.1%}** |",
+        f"| FOM inversion rate (wrong beats true) | "
+        f"**{payload['fom_inversion_rate'] if payload['fom_inversion_rate'] is not None else float('nan'):.1%}** "
+        f"({payload['fom_inversion_events']}/{payload['fom_inversion_total']}) |",
+        f"| mean (C_true − C_cf) | "
+        f"**{payload['mean_true_minus_cf_composite'] if payload['mean_true_minus_cf_composite'] is not None else float('nan'):.3f}** |",
+        f"| free-FOM version | {payload['fom_version']} |",
         "",
         "## Conditional polish gate (synthetic)",
         "",

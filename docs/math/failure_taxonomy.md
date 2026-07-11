@@ -73,12 +73,16 @@ A useful basin was entered but not refined to strict success. Implies more itera
 
 `A+B`, `B+C` when multiple mechanisms fire. Priority for primary label: selection first when a good basin was found, else basin vs information.
 
-## Relation to free-FOM v2
+## Relation to free-FOM v2 / v2.1
 
 Free-FOM calibration asks: *does \(C\) correlate with mapCC?*  
 Taxonomy asks: *when \(C\) fails to deliver a solution, is that because of \(C\), search, or data?*
 
-A hard region full of **C** and **B** means further FOM polishing has limited upside; priors and information dominate. Dominance of **A** would justify more free-FOM work.
+**v2.1 anti-false-atomicity** reduced calibration FOM inversion (wrong \(C > C(\varphi^\star)\)) toward **0%**, and hard-region labels shifted away from pure **A+B** (inversion + miss) toward **B+C** (never find basin + degeneracy). Residual pure **A** cases are FOM missing a *near-good* trial, not ranking delta-spike maps above truth.
+
+### PhAI-seeded taxonomy
+
+`scripts/run_phai_taxonomy.py` re-runs the hard grid with PhAI fair seed + multistart. On synthetic P1 hard cells, PhAI seeds alone often have low mapCC (domain gap vs PhAI's COD training distribution); occasional upgrades to **near/solved** show that **when** a better basin is reached, taxonomy labels move as expected.
 
 ## Code
 

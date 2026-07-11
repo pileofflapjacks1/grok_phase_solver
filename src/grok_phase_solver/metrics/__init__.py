@@ -9,6 +9,7 @@ from .failure_taxonomy import (
     classify_failure,
     information_metrics,
     summarize_taxonomy,
+    inversion_rate,
     TaxonomyResult,
 )
 
@@ -28,5 +29,6 @@ __all__ = [
     "classify_failure",
     "information_metrics",
     "summarize_taxonomy",
+    "inversion_rate",
     "TaxonomyResult",
 ]
