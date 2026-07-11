@@ -92,6 +92,12 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Phase blending (complex weighted combination)
 - [x] Uniqueness / Parseval / Friedel notebook 03 + bounds doc
 - [x] Beamline-style degradations already in synthetic suite (noise, completeness, wedge)
+- [x] RAAR / DiffMap / ER projectors (`solvers/iterative_retrieval.py`)
+- [x] Free FOM + conditional hybrid polish (`free_fom.py`, `conditional_hybrid.py`)
+- [x] Multistart ensemble CF+RAAR free-FOM pick (`ensemble.py`)
+- [x] DiffMap retune grid (β, charge-flip \(P_S\), δσ)
+- [x] Physics-recycle net on hard cells (`recycle_net.py`)
+- [x] COD 2016452 PhAI+RAAR conditional hybrid benchmark
 
 ### Still open research / scale
 - [ ] Envelope detection tuned for proteins (solvent_fraction API only)
@@ -99,6 +105,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [ ] Full AlphaFold-MR production pipeline
 - [ ] Radiation-damage / anisotropy physical models (beyond isotropic B)
 - [ ] Agentic auto-benchmark at COD/PDB scale
+- [ ] Hard-region strict success still ~0% classically — need better atomic prior
 
 ---
 
@@ -145,9 +152,10 @@ AI-driven general solver for the X-ray crystallography phase problem.
 | Package | `src/grok_phase_solver/` |
 | Classical solvers | `solvers/{patterson,direct_methods,charge_flipping,hio,baseline}.py` |
 | Diff. Patterson / MIR | `solvers/{difference_patterson,mir_blow_crick}.py` |
-| Hybrid / DM | `solvers/{hybrid,density_modification,phase_recycle}.py` |
+| Hybrid / DM | `solvers/{hybrid,density_modification,phase_recycle,conditional_hybrid}.py` |
+| Ensemble / RAAR / DiffMap | `solvers/{ensemble,iterative_retrieval,recycle_net}.py` |
 | Physics | `physics/{structure_factors,density,patterson,parseval,form_factors}.py` |
-| Benchmark | `scripts/run_scoreboard.py` |
+| Benchmark | `scripts/run_{scoreboard,frontier,ensemble,diffmap_retune,cod_hybrid}_benchmark.py` |
 | Math | `docs/math/`, notebooks 01–03 |
 | COD samples | `data/raw/cod/` |
 

@@ -108,9 +108,12 @@ Secondary: **COD 2100301** (P2₁/c).
 | PhAI+CF solves 2016452 @ 0.9 Å under strict criteria | Hybrid architecture is the right research direction |
 | R1 / peak criteria fail more often than mapCC | Need better atomic interpretation + refinement loop |
 
-### Next research steps (after these two tasks)
+### Next research steps (status)
 
-1. Conditional hybrid: use CF polish only if CF residual improves / map stats improve.  
-2. Multistart PhAI + selection by positivity / R-factor proxy.  
-3. Train physics-recycle net on hard region (\(n\ge 12\), \(d_{\min}\ge 1.5\)).  
-4. Experimental HKL (not only Fcalc) with same success metrics.
+1. [x] Conditional hybrid (free-FOM gate): `conditional_hybrid.py`  
+2. [x] Multistart CF+RAAR + free-FOM pick: `ensemble.py`, `scripts/run_ensemble_benchmark.py`  
+3. [x] Physics-recycle net on hard region: `recycle_net.py`, `scripts/train_recycle_net.py`  
+4. [x] COD 2016452 PhAI+RAAR conditional hybrid: `scripts/run_cod_hybrid_benchmark.py`  
+5. [x] DiffMap retune (β, charge-flip \(P_S\)): `retune_difference_map`, `scripts/run_diffmap_retune.py`  
+6. [ ] Experimental HKL (not only Fcalc) with same success metrics at scale  
+7. [ ] Larger equivariant nets / fine-tune PhAI on hard cells

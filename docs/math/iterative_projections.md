@@ -64,3 +64,21 @@ Tangent formula weights use \(\kappa\) and \(I_1(\kappa)/I_0(\kappa) = \mathbb{E
 ## Conditional hybrid
 
 Apply classical polish to a neural/classical seed only if the **truth-free composite FOM** increases (`conditional_hybrid.py`). Prevents CF from destroying a good PhAI prior (observed in fair PhAI benchmarks).
+
+## Multistart ensemble + free FOM
+
+`ensemble_solve` / `ensemble_cf_raar` run several independent CF and RAAR starts and select the trial with highest free-FOM composite (`free_fom.py`). Selection is truth-free (usable on experimental data); success rates vs synthetic truth are reported only for analysis.
+
+## Difference Map retune
+
+Default DiffMap with positivity underperformed CF on the frontier benchmark. `retune_difference_map` grid-searches:
+
+- \(\beta \in \{0.5, 0.7, 1.0, 1.2\}\)
+- real-space projector: positivity vs charge-flip
+- charge-flip threshold \(\delta = \delta_\sigma\,\sigma(\rho)\)
+
+Empirical recommendation from synthetic retune (see `data/processed/diffmap_retune.md`): **β ≈ 0.5, charge_flip, δσ = 1.0** for free-FOM ranking. Truth mapCC still often trails classical CF — free FOM is a proxy, not a guarantee.
+
+## Physics-recycle net
+
+`recycle_net.py` trains PhaseMLP on the hard solvability region (\(n \ge 12\), \(d_{\min} \ge 1.5\)) and injects predictions as `phase_fn` inside `phase_recycle` (modulus + positivity each cycle). Supervised synthetic prior + physics consistency — not a claimed general experimental solver.

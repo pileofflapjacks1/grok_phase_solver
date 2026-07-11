@@ -28,11 +28,12 @@ Marchesini, S. (2007). Rev. Sci. Instrum. 78, 011301 (review).
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
 from grok_phase_solver.physics.density import density_from_structure_factors
+from grok_phase_solver.solvers.free_fom import free_fom
 from grok_phase_solver.solvers.projectors import (
     density_from_phases,
     density_to_F,
@@ -47,13 +48,19 @@ from grok_phase_solver.solvers.projectors import (
 def _real_space_projector(
     rho: np.ndarray,
     kind: str = "positivity",
-    delta_sigma: float = 0.0,
+    delta_sigma: float = 1.0,
 ) -> np.ndarray:
+    """
+    Real-space constraint projector.
+
+    charge_flip: flip density below δ = delta_sigma * σ(ρ)
+    (delta_sigma=1.0 is a typical Oszlányi–Sütő scale; 0 → flip all negative).
+    """
     if kind == "positivity":
         return project_positivity(rho)
     if kind == "charge_flip":
         sigma = float(rho.std()) + 1e-16
-        delta = 0.1 * delta_sigma * sigma
+        delta = float(delta_sigma) * sigma
         return project_charge_flip(rho, delta=delta)
     if kind == "none":
         return rho
@@ -87,6 +94,7 @@ def raar_solve(
     n_iter: int = 200,
     beta: float = 0.9,
     real_proj: str = "positivity",
+    delta_sigma: float = 1.0,
     seed: int = 0,
     d_min: Optional[float] = None,
     sampling: float = 3.0,
@@ -110,7 +118,14 @@ def raar_solve(
         phases = np.asarray(phase_init, dtype=np.float64).copy()
 
     x = density_from_phases(hkl, amp, phases, cell, shape)
-    history = {"R": [], "neg_frac": [], "beta": beta, "algorithm": "RAAR"}
+    history = {
+        "R": [],
+        "neg_frac": [],
+        "beta": beta,
+        "algorithm": "RAAR",
+        "real_proj": real_proj,
+        "delta_sigma": delta_sigma,
+    }
 
     for it in range(n_iter):
         # P_M x
@@ -118,7 +133,7 @@ def raar_solve(
         # R_M x = 2 P_M x − x
         Rm_x = 2.0 * Pm_x - x
         # P_S R_M x
-        Ps_Rm = _real_space_projector(Rm_x, kind=real_proj)
+        Ps_Rm = _real_space_projector(Rm_x, kind=real_proj, delta_sigma=delta_sigma)
         # R_S R_M x = 2 P_S R_M x − R_M x
         Rs_Rm = 2.0 * Ps_Rm - Rm_x
         # RAAR update
@@ -148,6 +163,7 @@ def difference_map_solve(
     n_iter: int = 200,
     beta: float = 1.0,
     real_proj: str = "positivity",
+    delta_sigma: float = 1.0,
     seed: int = 0,
     d_min: Optional[float] = None,
     sampling: float = 3.0,
@@ -163,6 +179,12 @@ def difference_map_solve(
       x ← x + β (P_S f_M − P_M f_S) x
 
     For β=1, γ_S=1, γ_M=-1 this reduces to a common DM specialization.
+
+    Parameters
+    ----------
+    beta : step size / DM parameter (try 0.5–1.5 in retunes)
+    real_proj : ``"positivity"`` | ``"charge_flip"`` | ``"none"``
+    delta_sigma : flip threshold in units of density σ (charge_flip only)
     """
     rng = np.random.default_rng(seed)
     hkl = np.asarray(hkl, dtype=int)
@@ -184,13 +206,15 @@ def difference_map_solve(
         "neg_frac": [],
         "beta": beta,
         "algorithm": "difference_map",
+        "real_proj": real_proj,
+        "delta_sigma": delta_sigma,
         "gamma_S": gamma_S,
         "gamma_M": gamma_M,
     }
 
     for it in range(n_iter):
         Pm_x, phases, F_m = _P_M_density(x, hkl, amp, cell)
-        Ps_x = _real_space_projector(x, kind=real_proj)
+        Ps_x = _real_space_projector(x, kind=real_proj, delta_sigma=delta_sigma)
 
         # f_M(x) = (1+γ_M) P_M x − γ_M x
         f_M = (1.0 + gamma_M) * Pm_x - gamma_M * x
@@ -198,7 +222,7 @@ def difference_map_solve(
         f_S = (1.0 + gamma_S) * Ps_x - gamma_S * x
 
         # P_S f_M and P_M f_S
-        Ps_fM = _real_space_projector(f_M, kind=real_proj)
+        Ps_fM = _real_space_projector(f_M, kind=real_proj, delta_sigma=delta_sigma)
         Pm_fS, _, _ = _P_M_density(f_S, hkl, amp, cell)
 
         x = x + beta * (Ps_fM - Pm_fS)
@@ -217,6 +241,93 @@ def difference_map_solve(
     history["n_iter"] = n_iter
     history["shape"] = shape
     return phases, rho, history
+
+
+def retune_difference_map(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    beta_grid: Optional[Sequence[float]] = None,
+    real_proj_options: Optional[Sequence[str]] = None,
+    delta_sigma_grid: Optional[Sequence[float]] = None,
+    n_iter: int = 80,
+    seeds: Optional[Sequence[int]] = None,
+    d_min: Optional[float] = None,
+    verbose: bool = False,
+) -> Dict:
+    """
+    Grid-search DiffMap hyperparameters; rank by free-FOM composite (no truth).
+
+    Returns dict with ``best_params``, ``best_fom``, ``grid_results``.
+    """
+    if beta_grid is None:
+        beta_grid = (0.5, 0.7, 1.0, 1.2)
+    if real_proj_options is None:
+        real_proj_options = ("positivity", "charge_flip")
+    if delta_sigma_grid is None:
+        delta_sigma_grid = (0.0, 0.5, 1.0)
+    if seeds is None:
+        seeds = (0, 1)
+
+    grid_results = []
+    best = None  # (composite, params, phases, rho, fom, hist)
+
+    for beta in beta_grid:
+        for real_proj in real_proj_options:
+            deltas = delta_sigma_grid if real_proj == "charge_flip" else (1.0,)
+            for delta_sigma in deltas:
+                composites = []
+                for seed in seeds:
+                    ph, rho, hist = difference_map_solve(
+                        hkl,
+                        amplitudes,
+                        cell,
+                        n_iter=n_iter,
+                        beta=float(beta),
+                        real_proj=real_proj,
+                        delta_sigma=float(delta_sigma),
+                        seed=int(seed),
+                        d_min=d_min,
+                        verbose=False,
+                    )
+                    fom = free_fom(hkl, amplitudes, ph, cell, density=rho)
+                    composites.append(fom["composite"])
+                    entry = {
+                        "beta": float(beta),
+                        "real_proj": real_proj,
+                        "delta_sigma": float(delta_sigma),
+                        "seed": int(seed),
+                        "composite": fom["composite"],
+                        "pos_frac": fom["pos_frac"],
+                        "R_after_ER": fom["R_after_ER"],
+                        "final_R": hist.get("final_R"),
+                    }
+                    grid_results.append(entry)
+                    if best is None or fom["composite"] > best[0]:
+                        best = (fom["composite"], entry, ph, rho, fom, hist)
+                mean_c = float(np.mean(composites))
+                if verbose:
+                    print(
+                        f"  β={beta:.2f} Ps={real_proj:12s} δσ={delta_sigma:.1f} "
+                        f"mean_composite={mean_c:.3f}"
+                    )
+
+    assert best is not None
+    _, params, ph, rho, fom, hist = best
+    return {
+        "best_params": {
+            "beta": params["beta"],
+            "real_proj": params["real_proj"],
+            "delta_sigma": params["delta_sigma"],
+        },
+        "best_seed": params["seed"],
+        "best_fom": fom,
+        "grid_results": grid_results,
+        "phases": ph,
+        "density": rho,
+        "history": hist,
+    }
+
 
 
 def er_solve(
