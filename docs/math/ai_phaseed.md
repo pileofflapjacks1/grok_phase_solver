@@ -71,6 +71,7 @@ Implementation: `solvers/ai_phaseed.py`
 - **Oracle seed** (true \(\varphi\) as AI): mapCC \(\approx 1\) after extension — algorithm is sound.
 - **Partial seed** (\(\sim\)55% true + noise): **solves** hard synthetic cells where CF fails (mapCC \(\sim 0.8\)–0.9). Shows AI-PhaSeed works when the prior is moderately good.
 - **PhAI on random P1 synthetic**: still weak (domain gap; PhAI trained for COD-like \(P2_1/c\)).
+- **Hard-P1 domain prior** (`models/hard_p1_prior.py`): origin-invariant PhaseMLP on hard P1; hold-out prior mapCC ~0.5 (vs ~0.3 random/PhAI-on-P1). Still rarely strict-solves — small MLP is a weak prior; algorithm is validated by oracle/partial seeds.
 - **COD 2016452**: `phai_phaseed` improves over CF at low res; at 0.9 Å free-FOM–gated CF after PhAI (`phai_cf_cond`) remains the strict solver — extension alone does not replace a *helpful* polish when free FOM accepts it.
 
 ## References

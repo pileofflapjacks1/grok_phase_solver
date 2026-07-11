@@ -10,6 +10,7 @@ from .losses import (
 )
 from .phase_mlp import PhaseMLP, reflection_features, train_phase_mlp_on_structure
 from .representations import voxelize_amplitudes, patterson_voxel, reflection_graph
+# hard_p1_prior imported lazily (avoids cycle: models → data → solvers → models)
 
 __all__ = [
     "PhAIConfig",

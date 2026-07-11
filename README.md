@@ -139,6 +139,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | Multistart ensemble | `solvers/ensemble.py` | CF+RAAR starts → free-FOM pick |
 | Conditional hybrid | `solvers/conditional_hybrid.py` | Polish seed only if free FOM improves |
 | **AI-PhaSeed** | `solvers/ai_phaseed.py` | AI seed → strong-\|E\| extension → free-FOM polish |
+| **Hard-P1 prior** | `models/hard_p1_prior.py` | Domain-matched PhaseMLP (OI loss) → AI-PhaSeed |
 | Phase recycle | `solvers/phase_recycle.py` | Fourier modulus projection loop |
 | Physics-recycle net | `solvers/recycle_net.py` | PhaseMLP inside recycle (hard cells) |
 
@@ -207,6 +208,11 @@ phases, rho, info = conditional_polish(
 phases, rho, info = phai_phaseed_solve(
     hkl, amplitudes, cell, n_extend=15, polish="charge_flipping", n_starts=2
 )
+
+# Domain-matched hard-P1 prior + AI-PhaSeed (synthetic hard P1)
+from grok_phase_solver.models.hard_p1_prior import hard_p1_phaseed_solve
+phases, rho, info = hard_p1_phaseed_solve(hkl, amplitudes, cell)
+
 
 # DiffMap with retuned charge-flip projector
 phases, rho, hist = difference_map_solve(
@@ -303,6 +309,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | Failure taxonomy (A/B/C) | `python scripts/run_failure_taxonomy.py` | [`failure_taxonomy.md`](data/processed/failure_taxonomy.md) |
 | PhAI-seeded taxonomy | `python scripts/run_phai_taxonomy.py` | [`phai_taxonomy.md`](data/processed/phai_taxonomy.md) |
 | AI-PhaSeed benchmark | `python scripts/run_ai_phaseed_benchmark.py` | [`ai_phaseed_benchmark.md`](data/processed/ai_phaseed_benchmark.md) |
+| Hard-P1 domain prior | `python scripts/train_hard_p1_prior.py` | [`hard_p1_prior.md`](data/processed/hard_p1_prior.md) |
 | Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 ### Headlines (reproducible reports)
