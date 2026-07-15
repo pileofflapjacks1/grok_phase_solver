@@ -117,7 +117,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] arXiv preprint skeleton (`docs/arxiv_skeleton.md`)
 - [x] GitHub Actions CI (pytest)
 - [x] Math failure documentation
-- [ ] Head-to-head vs SHELXD/Phenix (external binaries not bundled)
+- [x] Head-to-head harness vs SHELXD (runner + dual_space; binary external)
 - [ ] PyMOL / web density viewer
 - [ ] PyPI release
 - [ ] Full public multi-TB dataset mirrors
@@ -146,11 +146,12 @@ AI-driven general solver for the X-ray crystallography phase problem.
 5. [x] Improve auto method + wire AI-PhaSeed / ensemble into `gps-solve`  
 6. [x] Peak → SHELXL `.res` fragment export (`trial.res`)  
 7. [x] Experimental HKL scoreboard (COD 2017775 + controls)  
-8. [ ] External validation vs SHELXD  
+8. [x] External validation vs SHELXD — runner + dual_space baseline + `run_shelxd_h2h.py` (binary optional academic install)  
 9. [ ] Scale synthetic generation; Wilson domain-gap  
 10. [x] Stronger prior architecture (GraphPhaseNet triplet GNN + AI-PhaSeed)  
 11. [x] Scale graph prior v2 (250 structs, H=128/L=3, curriculum multi-pass, triplet aux, vectorized Â) — mapCC≈0.51 matches hP1, beats CF; still 0% strict hard solves  
-12. [ ] Further scale (10³–10⁴ cells / optional torch) or SHELXD H2H if prioritizing external proof  
+12. [ ] Re-run H2H with real SHELXD binary when installed (`export SHELXD=…`)  
+13. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing strict hard solves  
 
 ---
 

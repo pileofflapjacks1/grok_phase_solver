@@ -41,6 +41,9 @@ KNOWN_METHODS = (
     "recycle",
     "direct_methods",
     "hio",
+    "dual_space",
+    "shelxd",
+    "shelxd_or_dual",
 )
 
 
@@ -220,6 +223,49 @@ def _run_phasing(
             hkl, amp * np.exp(1j * phases), cell_arr, d_min=d_use
         )
         history = dm.history
+        return method, phases, density, history
+
+    if method == "dual_space":
+        from grok_phase_solver.solvers.dual_space import dual_space_solve
+
+        phases, density, history = dual_space_solve(
+            hkl, amp, cell_arr,
+            n_atoms=max(8, min(cfg.n_peaks, 30)),
+            n_cycles=max(20, cfg.n_iter // 2),
+            n_starts=max(4, cfg.n_starts * 2),
+            seed=cfg.seed,
+            d_min=d_use,
+            polish_cf_iters=min(30, cfg.n_iter // 3),
+            verbose=cfg.verbose,
+        )
+        return method, phases, density, history
+
+    if method == "shelxd":
+        from grok_phase_solver.solvers.shelxd_runner import shelxd_solve
+
+        phases, density, history = shelxd_solve(
+            hkl, amp, cell_arr,
+            n_atoms=max(8, min(cfg.n_peaks, 40)),
+            n_try=max(20, cfg.n_starts * 25),
+            seed=max(1, cfg.seed),
+            d_min=d_use,
+            verbose=cfg.verbose,
+        )
+        return method, phases, density, history
+
+    if method == "shelxd_or_dual":
+        from grok_phase_solver.solvers.shelxd_runner import shelxd_or_dual_space
+
+        phases, density, history = shelxd_or_dual_space(
+            hkl, amp, cell_arr,
+            n_atoms=max(8, min(cfg.n_peaks, 40)),
+            n_try=max(20, cfg.n_starts * 25),
+            seed=cfg.seed,
+            d_min=d_use,
+            dual_space_starts=max(4, cfg.n_starts * 2),
+            dual_space_cycles=max(20, cfg.n_iter // 2),
+            verbose=cfg.verbose,
+        )
         return method, phases, density, history
 
     if method == "hio":
