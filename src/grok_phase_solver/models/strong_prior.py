@@ -38,8 +38,14 @@ def iter_hard_multsg_samples(
     include_bridge: bool = True,
     p_minus1_frac: float = 0.25,
     bridge_frac: float = 0.25,
+    wilson_match: bool = False,
+    wilson_template: Optional[Dict] = None,
 ) -> Iterator[Dict]:
-    """Yield hard-region samples in P1 and P-1 (optional bridge easy cells)."""
+    """Yield hard-region samples in P1 and P-1 (optional bridge easy cells).
+
+    If ``wilson_match`` is True, |F| are transformed toward an experimental
+    Wilson template (phases from Fcalc unchanged).
+    """
     from grok_phase_solver.data.synthetic import generate_random_organic
     from grok_phase_solver.data.synthetic_v2 import make_centrosymmetric_copy
     from grok_phase_solver.solvers.baseline import structure_to_fcalc
@@ -47,6 +53,14 @@ def iter_hard_multsg_samples(
     rng = np.random.default_rng(seed)
     n_lo, n_hi = n_atoms_range
     d_lo, d_hi = d_min_range
+    template = wilson_template
+    if wilson_match and template is None:
+        try:
+            from grok_phase_solver.data.wilson_match import load_reference_template
+
+            template = load_reference_template()
+        except Exception:
+            template = None
     for i in range(n_samples):
         s = int(rng.integers(0, 2**31 - 1))
         if include_bridge and (rng.random() < bridge_frac):
@@ -66,12 +80,22 @@ def iter_hard_multsg_samples(
             except Exception:
                 pass
         data = structure_to_fcalc(st, d_min=d_min)
+        amp = data["amplitudes"]
+        wmeta = {"matched": False}
+        if wilson_match and template is not None:
+            from grok_phase_solver.data.wilson_match import apply_wilson_match_if_template
+
+            amp, wmeta = apply_wilson_match_if_template(
+                data["hkl"], amp, st.cell, phases=data["phases"], template=template,
+                config=None,
+            )
+            wmeta["matched"] = bool(wmeta.get("matched", True))
         # curriculum score: lower = easier
         difficulty = float(n_atoms) * float(d_min)
         yield {
             "name": st.name,
             "hkl": data["hkl"],
-            "amplitudes": data["amplitudes"],
+            "amplitudes": amp,
             "phases": data["phases"],
             "cell": st.cell,
             "n_atoms": data["n_atoms_cell"],
@@ -82,6 +106,7 @@ def iter_hard_multsg_samples(
             "fracs": data["fracs"],
             "elements": data["elements"],
             "difficulty": difficulty,
+            "wilson_match": wmeta,
         }
 
 
@@ -322,6 +347,7 @@ def train_strong_prior(
     lr_refine: float = 6e-4,
     triplet_weight: float = 0.15,
     curriculum: bool = True,
+    wilson_match: bool = False,
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
@@ -329,6 +355,9 @@ def train_strong_prior(
 
     Defaults target ~5× prior budget (structures × capacity) with curriculum
     multi-pass training and triplet auxiliary loss.
+
+    wilson_match: if True and a Wilson template exists, match |F| statistics
+    to experimental before training (phases unchanged).
     """
     samples = list(
         iter_hard_multsg_samples(
@@ -339,6 +368,7 @@ def train_strong_prior(
             include_bridge=True,
             bridge_frac=0.30,
             p_minus1_frac=0.25,
+            wilson_match=wilson_match,
         )
     )
     if curriculum:
@@ -479,6 +509,7 @@ def train_strong_prior(
         "epochs_refine": epochs_refine,
         "triplet_weight": triplet_weight,
         "curriculum": curriculum,
+        "wilson_match": wilson_match,
         "seed": seed,
         "train_losses": all_losses,
         "train_mpe_oi": all_mpe,

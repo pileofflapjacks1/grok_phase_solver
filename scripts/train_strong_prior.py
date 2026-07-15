@@ -202,6 +202,11 @@ def main():
         action="store_true",
         help="Full scale defaults (250 structs, H=128, L=3, 3 passes)",
     )
+    p.add_argument(
+        "--wilson-match",
+        action="store_true",
+        help="Match synthetic |F| to experimental Wilson template before training",
+    )
     p.add_argument("--out", type=str, default="data/processed/strong_prior.npz")
     p.add_argument("--n-eval", type=int, default=None)
     args = p.parse_args()
@@ -218,6 +223,7 @@ def main():
         triplet_weight=0.15,
         n_eval=6,
         curriculum=True,
+        wilson_match=False,
     )
     if args.scale:
         cfg.update(
@@ -263,12 +269,14 @@ def main():
         cfg["triplet_weight"] = args.triplet_weight
     if args.n_eval is not None:
         cfg["n_eval"] = args.n_eval
+    if args.wilson_match:
+        cfg["wilson_match"] = True
 
     print(
         f"Config: structs={cfg['n_structures']} hidden={cfg['hidden']} "
         f"layers={cfg['n_layers']} passes={cfg['n_global_passes']} "
         f"epochs/struct={cfg['epochs_per']} max_refl={cfg['max_refl']} "
-        f"triplet_w={cfg['triplet_weight']}"
+        f"triplet_w={cfg['triplet_weight']} wilson_match={cfg['wilson_match']}"
     )
 
     t0 = time.time()
@@ -282,6 +290,7 @@ def main():
         max_reflections=cfg["max_refl"],
         triplet_weight=cfg["triplet_weight"],
         curriculum=cfg["curriculum"],
+        wilson_match=cfg["wilson_match"],
         seed=args.seed,
         verbose=True,
     )

@@ -205,3 +205,70 @@ def degradation_suite(
         "comp_50": simulate_diffraction(structure, d_min=d_min, completeness=0.5, seed=seed),
         "low_res_2A": simulate_diffraction(structure, d_min=2.0, seed=seed),
     }
+
+
+def simulate_diffraction_wilson_matched(
+    structure: CrystalStructure,
+    d_min: float = 1.0,
+    reference: Optional[Dict] = None,
+    noise_level: float = 0.03,
+    completeness: float = 1.0,
+    seed: int = 0,
+    match_slope: bool = True,
+    match_shells: bool = True,
+    match_quantiles: bool = True,
+) -> ReflectionTable:
+    """
+    Simulate |F| then close Wilson/amplitude gap to an experimental template.
+
+    If ``reference`` is None, tries ``data/processed/wilson_ref_template.npz``.
+    Phases come from Fcalc (training labels); only |F| is matched.
+    """
+    from grok_phase_solver.data.wilson_match import (
+        WilsonMatchConfig,
+        close_wilson_gap,
+        load_reference_template,
+    )
+
+    table = simulate_diffraction(
+        structure,
+        d_min=d_min,
+        noise_level=0.0,
+        completeness=completeness,
+        seed=seed,
+    )
+    ref = reference if reference is not None else load_reference_template()
+    if ref is None:
+        # fall back to light noise only
+        if noise_level > 0:
+            rng = np.random.default_rng(seed)
+            amp = np.maximum(
+                table.amplitudes * (1.0 + noise_level * rng.standard_normal(len(table))),
+                0.0,
+            )
+            table.F_meas = amp
+            table.meta["wilson_matched"] = False
+            table.meta["wilson_match_reason"] = "no_template"
+        return table
+
+    synth = {
+        "hkl": table.hkl,
+        "amplitudes": table.amplitudes,
+        "cell": structure.cell,
+        "phases": table.phase,
+        "name": structure.name,
+    }
+    cfg = WilsonMatchConfig(
+        match_slope=match_slope,
+        match_shells=match_shells,
+        match_quantiles=match_quantiles,
+        noise_level=noise_level,
+        seed=seed,
+    )
+    matched, report = close_wilson_gap(synth, ref, cfg)
+    table.F_meas = matched["amplitudes"]
+    table.meta["wilson_matched"] = True
+    table.meta["wilson_gap_before"] = report["gap_before"]
+    table.meta["wilson_gap_after"] = report["gap_after"]
+    table.meta["wilson_gap_reduction"] = report["gap_reduction"]
+    return table

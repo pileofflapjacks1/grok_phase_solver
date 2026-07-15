@@ -9,7 +9,8 @@ from .experimental_phasing import (
     mir_phase_indication,
     hybrid_feature_stack_mir,
 )
-from .wilson import wilson_plot, domain_gap_wilson
+from .wilson import wilson_plot, domain_gap_wilson, domain_gap_report
+from .wilson_match import close_wilson_gap, load_reference_template, WilsonMatchConfig
 from .synthetic_v2 import (
     generate_fragment_structure,
     write_training_shard,
@@ -31,6 +32,10 @@ __all__ = [
     "hybrid_feature_stack_mir",
     "wilson_plot",
     "domain_gap_wilson",
+    "domain_gap_report",
+    "close_wilson_gap",
+    "load_reference_template",
+    "WilsonMatchConfig",
     "generate_fragment_structure",
     "write_training_shard",
     "apply_partial_occupancy",
