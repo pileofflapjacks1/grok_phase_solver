@@ -148,7 +148,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
 7. [x] Experimental HKL scoreboard (COD 2017775 + controls)  
 8. [ ] External validation vs SHELXD  
 9. [ ] Scale synthetic generation; Wilson domain-gap  
-10. [ ] Stronger prior architecture (beyond PhaseMLP)  
+10. [x] Stronger prior architecture (GraphPhaseNet triplet GNN + AI-PhaSeed)  
+11. [ ] Scale graph prior (more data / torch / triplet aux loss) for strict hard solves  
 
 ---
 

@@ -74,6 +74,7 @@ gps-solve \
 | `phai+cf_cond` | PhAI + CF only if free FOM accepts polish |
 | `phai` / `phai+cf` | PhAI alone or unconditional CF polish (needs weights) |
 | `hard_p1_phaseed` | Domain-matched hard-P1 prior + AI-PhaSeed (synthetic-trained) |
+| `strong_prior_phaseed` | Triplet-graph GNN prior + AI-PhaSeed (hard multi-SG) |
 | `raar` / `recycle` / `hio` | Projection / positivity variants |
 | `direct_methods` | Educational multi-start triplets (not SHELXD-strength) |
 

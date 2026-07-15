@@ -37,6 +37,7 @@ KNOWN_METHODS = (
     "phai_phaseed",
     "phai+recycle",
     "hard_p1_phaseed",
+    "strong_prior_phaseed",
     "recycle",
     "direct_methods",
     "hio",
@@ -136,6 +137,15 @@ def resolve_method(
 
     if phai and _is_p21c_like(sg):
         return "phai_phaseed", "auto: P21/c-like + PhAI → AI-PhaSeed"
+    # Prefer graph strong prior when available on hard P1-like data
+    try:
+        from grok_phase_solver.models.strong_prior import default_strong_prior_path
+
+        strong_ok = default_strong_prior_path().exists()
+    except Exception:
+        strong_ok = False
+    if strong_ok and (_is_p1(sg) or not sg) and data_dmin >= 1.3:
+        return "strong_prior_phaseed", "auto: P1-ish hard-res + GraphPhaseNet prior"
     if hp1 and (_is_p1(sg) or not sg) and data_dmin >= 1.3:
         return "hard_p1_phaseed", "auto: P1-ish hard-res + hard_p1 prior"
     if data_dmin <= 1.0 and n_refl >= 80:
@@ -233,6 +243,22 @@ def _run_phasing(
             return method, phases, density, history
         except Exception as e:
             warnings.append(f"hard_p1_phaseed failed ({e}); falling back to charge_flipping")
+            return _run_phasing(
+                "charge_flipping", hkl, amp, cell_arr, d_use, cfg, centro, warnings
+            )
+
+    if method == "strong_prior_phaseed":
+        try:
+            from grok_phase_solver.models.strong_prior import strong_prior_phaseed_solve
+
+            phases, density, history = strong_prior_phaseed_solve(
+                hkl, amp, cell_arr,
+                n_extend=cfg.n_extend, polish="charge_flipping", n_polish=cfg.n_iter,
+                n_starts=cfg.n_starts, seed=cfg.seed, d_min=d_use, verbose=cfg.verbose,
+            )
+            return method, phases, density, history
+        except Exception as e:
+            warnings.append(f"strong_prior_phaseed failed ({e}); falling back to charge_flipping")
             return _run_phasing(
                 "charge_flipping", hkl, amp, cell_arr, d_use, cfg, centro, warnings
             )

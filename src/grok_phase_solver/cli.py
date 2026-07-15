@@ -149,6 +149,7 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "phai_phaseed",
             "phai+recycle",
             "hard_p1_phaseed",
+            "strong_prior_phaseed",
             "recycle",
             "direct_methods",
             "hio",
