@@ -106,7 +106,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [ ] Full AlphaFold-MR production pipeline
 - [ ] Radiation-damage / anisotropy physical models (beyond isotropic B)
 - [ ] Agentic auto-benchmark at COD/PDB scale
-- [ ] Hard-region strict success still ~0% classically — need better atomic prior
+- [~] Hard-region strict success ~0% ab initio; partial-φ path formalized (oracle/fragment curves)
 
 ---
 
@@ -147,11 +147,13 @@ AI-driven general solver for the X-ray crystallography phase problem.
 6. [x] Peak → SHELXL `.res` fragment export (`trial.res`)  
 7. [x] Experimental HKL scoreboard (COD 2017775 + controls)  
 8. [x] External validation vs SHELXD — runner + dual_space baseline + `run_shelxd_h2h.py` (binary optional academic install)  
-9. [ ] Scale synthetic generation; Wilson domain-gap  
+9. [x] Wilson domain-gap metrics + report (`data/wilson.py`, `run_wilson_domain_gap.py`)  
 10. [x] Stronger prior architecture (GraphPhaseNet triplet GNN + AI-PhaSeed)  
 11. [x] Scale graph prior v2 (250 structs, H=128/L=3, curriculum multi-pass, triplet aux, vectorized Â) — mapCC≈0.51 matches hP1, beats CF; still 0% strict hard solves  
 12. [ ] Re-run H2H with real SHELXD binary when installed (`export SHELXD=…`)  
-13. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing strict hard solves  
+13. [x] Partial-φ / fragment seed API + hard-cliff curves (`partial_seed.py`, `run_partial_seed_benchmark.py`)  
+14. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
+15. [ ] PyPI release / more experimental HKL scoreboard  
 
 ---
 

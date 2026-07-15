@@ -44,6 +44,7 @@ KNOWN_METHODS = (
     "dual_space",
     "shelxd",
     "shelxd_or_dual",
+    "partial_phaseed",
 )
 
 
@@ -62,6 +63,9 @@ class SolveConfig:
     min_peak_sigma: float = 2.5
     solvent_fraction: Optional[float] = None
     verbose: bool = True
+    # Partial-φ seed file (CSV: h,k,l,phase_deg) for method=partial_phaseed
+    phase_seed_csv: Optional[str] = None
+    seed_fraction: float = 0.30
 
 
 @dataclass
@@ -308,6 +312,38 @@ def _run_phasing(
             return _run_phasing(
                 "charge_flipping", hkl, amp, cell_arr, d_use, cfg, centro, warnings
             )
+
+    if method == "partial_phaseed":
+        from grok_phase_solver.solvers.partial_seed import (
+            load_phase_seed_csv,
+            partial_phaseed_solve,
+        )
+
+        if not cfg.phase_seed_csv:
+            raise ValueError(
+                "method=partial_phaseed requires SolveConfig.phase_seed_csv "
+                "(CSV with h,k,l,phase_deg). See solvers/partial_seed.py."
+            )
+        seed_ph, mask, meta = load_phase_seed_csv(cfg.phase_seed_csv, hkl)
+        if mask.sum() < 5:
+            warnings.append(
+                f"phase seed CSV mapped only {int(mask.sum())} reflections; "
+                "results may be poor"
+            )
+        phases, density, history = partial_phaseed_solve(
+            hkl, amp, cell_arr, seed_ph,
+            mask=mask if mask.sum() >= 5 else None,
+            seed_fraction=cfg.seed_fraction,
+            n_extend=cfg.n_extend,
+            polish="charge_flipping",
+            n_polish=cfg.n_iter,
+            n_starts=cfg.n_starts,
+            seed=cfg.seed,
+            d_min=d_use,
+            verbose=cfg.verbose,
+            meta=meta,
+        )
+        return method, phases, density, history
 
     if method == "phai_phaseed":
         try:

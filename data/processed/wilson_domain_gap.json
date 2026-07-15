@@ -1,0 +1,151 @@
+{
+  "n_synthetic": 20,
+  "pairs": [],
+  "experimental": "COD_2017775_exp_dmin1.2",
+  "easy_vs_exp": {
+    "n_synthetic": 10,
+    "mean_domain_gap_score": 2.185037039832175,
+    "std_domain_gap_score": 1.0693555643639252,
+    "min_domain_gap_score": 0.8197059040746253,
+    "max_domain_gap_score": 3.694939554023486
+  },
+  "hard_vs_exp": {
+    "n_synthetic": 10,
+    "mean_domain_gap_score": 9.499495009255082,
+    "std_domain_gap_score": 2.9008125674503895,
+    "min_domain_gap_score": 3.779482636403623,
+    "max_domain_gap_score": 13.235749264145717
+  },
+  "all_vs_exp": {
+    "n_synthetic": 20,
+    "mean_domain_gap_score": 5.842266024543628,
+    "std_domain_gap_score": 4.260802891929016,
+    "min_domain_gap_score": 0.8197059040746253,
+    "max_domain_gap_score": 13.235749264145717
+  },
+  "example_gaps": [
+    {
+      "label_a": "easy_n9_d0.9809360141291611_636961687",
+      "label_b": "COD_2017775_exp_dmin1.2",
+      "wilson": {
+        "slope_diff": 2.099093854246725,
+        "B_a": 12.247541328649186,
+        "B_b": 14.34663518289591,
+        "intensity_quantile_L1": 0.04344092296873567,
+        "domain_gap_score": 2.1425347772154604
+      },
+      "wilson_a": {
+        "B_overall": 12.247541328649186,
+        "slope": -12.247541328649186,
+        "n_shells": 10
+      },
+      "wilson_b": {
+        "B_overall": 14.34663518289591,
+        "slope": -14.34663518289591,
+        "n_shells": 10
+      },
+      "moments_a": {
+        "n": 946.0,
+        "mean": 0.9999999999999999,
+        "std": 0.7989027809728113,
+        "skew": 2.5752082631411386,
+        "kurt": 9.667475792827918,
+        "frac_weak_0.5": 0.24101479915433405,
+        "frac_strong_2": 0.08456659619450317
+      },
+      "moments_b": {
+        "n": 1639.0,
+        "mean": 1.0,
+        "std": 0.7843908587616218,
+        "skew": 2.237816229048224,
+        "kurt": 7.93028866304487,
+        "frac_weak_0.5": 0.2568639414276998,
+        "frac_strong_2": 0.08846857840146431
+      },
+      "resolution_a": {
+        "d_min_obs": 0.9827031315243107,
+        "d_max_obs": 10.833145062850813,
+        "n_refl": 946,
+        "median_d": 1.2384368828353687
+      },
+      "resolution_b": {
+        "d_min_obs": 1.200096093660339,
+        "d_max_obs": 13.737832833038881,
+        "n_refl": 1639,
+        "median_d": 1.5327777470311672
+      },
+      "moment_gap": 2.0784811460829244,
+      "domain_gap_score": 2.6621550637361917,
+      "interpretation": "Lower domain_gap_score \u21d2 more similar |F| statistics. Large score suggests synthetic training may not transfer to this experiment."
+    },
+    {
+      "label_a": "hard_n12_d1.562141638249782_8284309",
+      "label_b": "COD_2017775_exp_dmin1.2",
+      "wilson": {
+        "slope_diff": 11.965675302019298,
+        "B_a": 26.31231048491521,
+        "B_b": 14.34663518289591,
+        "intensity_quantile_L1": 0.13862515539686796,
+        "domain_gap_score": 12.104300457416166
+      },
+      "wilson_a": {
+        "B_overall": 26.31231048491521,
+        "slope": -26.31231048491521,
+        "n_shells": 10
+      },
+      "wilson_b": {
+        "B_overall": 14.34663518289591,
+        "slope": -14.34663518289591,
+        "n_shells": 10
+      },
+      "moments_a": {
+        "n": 392.0,
+        "mean": 1.0,
+        "std": 0.63948159400839,
+        "skew": 1.4875166975806642,
+        "kurt": 4.166730933750791,
+        "frac_weak_0.5": 0.1836734693877551,
+        "frac_strong_2": 0.07653061224489796
+      },
+      "moments_b": {
+        "n": 1639.0,
+        "mean": 1.0,
+        "std": 0.7843908587616218,
+        "skew": 2.237816229048224,
+        "kurt": 7.93028866304487,
+        "frac_weak_0.5": 0.2568639414276998,
+        "frac_strong_2": 0.08846857840146431
+      },
+      "resolution_a": {
+        "d_min_obs": 1.5637447702647653,
+        "d_max_obs": 10.687018521595737,
+        "n_refl": 392,
+        "median_d": 1.9140100572812417
+      },
+      "resolution_b": {
+        "d_min_obs": 1.200096093660339,
+        "d_max_obs": 13.737832833038881,
+        "n_refl": 1639,
+        "median_d": 1.5327777470311672
+      },
+      "moment_gap": 4.525795226918205,
+      "domain_gap_score": 13.235749264145717,
+      "interpretation": "Lower domain_gap_score \u21d2 more similar |F| statistics. Large score suggests synthetic training may not transfer to this experiment."
+    }
+  ],
+  "fcalc_control_vs_hard": {
+    "n_synthetic": 10,
+    "mean_domain_gap_score": 31.384446780415765,
+    "std_domain_gap_score": 2.901721263191394,
+    "min_domain_gap_score": 25.671684543277923,
+    "max_domain_gap_score": 35.12795117102002
+  },
+  "fcalc_control_vs_easy": {
+    "n_synthetic": 10,
+    "mean_domain_gap_score": 20.828950024801422,
+    "std_domain_gap_score": 1.9031566970839215,
+    "min_domain_gap_score": 18.1983456895507,
+    "max_domain_gap_score": 23.37938183716598
+  },
+  "hard_vs_hard_self": 4.640185563996648
+}

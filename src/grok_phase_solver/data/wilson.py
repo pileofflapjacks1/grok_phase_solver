@@ -109,3 +109,134 @@ def domain_gap_wilson(
         "intensity_quantile_L1": l1,
         "domain_gap_score": float(slope_diff + l1),
     }
+
+
+def amplitude_moments(amplitudes: np.ndarray) -> Dict[str, float]:
+    """Normalized amplitude distribution moments (resolution-agnostic)."""
+    a = np.asarray(amplitudes, dtype=np.float64)
+    a = a[np.isfinite(a) & (a > 0)]
+    if len(a) < 5:
+        return {"n": float(len(a)), "mean": 0.0, "std": 0.0, "skew": 0.0, "kurt": 0.0}
+    x = a / (a.mean() + 1e-16)
+    m = float(x.mean())
+    s = float(x.std())
+    z = (x - m) / (s + 1e-16)
+    skew = float(np.mean(z ** 3))
+    kurt = float(np.mean(z ** 4) - 3.0)
+    return {
+        "n": float(len(a)),
+        "mean": m,
+        "std": s,
+        "skew": skew,
+        "kurt": kurt,
+        "frac_weak_0.5": float(np.mean(x < 0.5)),
+        "frac_strong_2": float(np.mean(x > 2.0)),
+    }
+
+
+def resolution_coverage(
+    hkl: np.ndarray,
+    cell: np.ndarray,
+    d_min: Optional[float] = None,
+    d_max: Optional[float] = None,
+) -> Dict[str, float]:
+    """d-min/max and shell completeness proxy (observed count only)."""
+    d = d_spacing(hkl, cell)
+    d = d[np.isfinite(d)]
+    out = {
+        "d_min_obs": float(d.min()) if len(d) else None,
+        "d_max_obs": float(d.max()) if len(d) else None,
+        "n_refl": int(len(d)),
+        "median_d": float(np.median(d)) if len(d) else None,
+    }
+    if d_min is not None:
+        out["frac_above_d_min"] = float(np.mean(d >= d_min))
+    if d_max is not None:
+        out["frac_below_d_max"] = float(np.mean(d <= d_max))
+    return out
+
+
+def domain_gap_report(
+    synth: Dict,
+    exp: Dict,
+    *,
+    n_shells: int = 10,
+    label_a: str = "synthetic",
+    label_b: str = "experimental",
+) -> Dict:
+    """
+    Rich domain-gap summary between two |F| datasets.
+
+    Each of synth/exp: keys hkl, amplitudes, cell; optional elements, name.
+    """
+    gap = domain_gap_wilson(
+        synth["hkl"], synth["amplitudes"], synth["cell"],
+        exp["hkl"], exp["amplitudes"], exp["cell"],
+        n_shells=n_shells,
+    )
+    ma = amplitude_moments(synth["amplitudes"])
+    mb = amplitude_moments(exp["amplitudes"])
+    ra = resolution_coverage(synth["hkl"], synth["cell"])
+    rb = resolution_coverage(exp["hkl"], exp["cell"])
+    wa = wilson_plot(synth["hkl"], synth["amplitudes"], synth["cell"], n_shells=n_shells)
+    wb = wilson_plot(exp["hkl"], exp["amplitudes"], exp["cell"], n_shells=n_shells)
+
+    moment_l1 = float(
+        abs(ma["skew"] - mb["skew"])
+        + abs(ma["kurt"] - mb["kurt"])
+        + abs(ma["frac_strong_2"] - mb["frac_strong_2"])
+    )
+    score = float(gap["domain_gap_score"] + 0.25 * moment_l1)
+
+    return {
+        "label_a": label_a,
+        "label_b": label_b,
+        "wilson": gap,
+        "wilson_a": {
+            "B_overall": wa["B_overall"],
+            "slope": wa["slope"],
+            "n_shells": int(len(wa["s2"])),
+        },
+        "wilson_b": {
+            "B_overall": wb["B_overall"],
+            "slope": wb["slope"],
+            "n_shells": int(len(wb["s2"])),
+        },
+        "moments_a": ma,
+        "moments_b": mb,
+        "resolution_a": ra,
+        "resolution_b": rb,
+        "moment_gap": moment_l1,
+        "domain_gap_score": score,
+        "interpretation": (
+            "Lower domain_gap_score ⇒ more similar |F| statistics. "
+            "Large score suggests synthetic training may not transfer to this experiment."
+        ),
+    }
+
+
+def mean_domain_gap_vs_experiment(
+    synthetic_list: Sequence[Dict],
+    exp: Dict,
+    n_shells: int = 10,
+) -> Dict:
+    """
+    Average domain-gap score of many synthetic cells vs one experimental set.
+    """
+    rows = []
+    for i, s in enumerate(synthetic_list):
+        r = domain_gap_report(
+            s, exp, n_shells=n_shells,
+            label_a=s.get("name", f"synth_{i}"),
+            label_b=exp.get("name", "exp"),
+        )
+        rows.append(r)
+    scores = [r["domain_gap_score"] for r in rows]
+    return {
+        "n_synthetic": len(rows),
+        "mean_domain_gap_score": float(np.mean(scores)) if scores else None,
+        "std_domain_gap_score": float(np.std(scores)) if scores else None,
+        "min_domain_gap_score": float(np.min(scores)) if scores else None,
+        "max_domain_gap_score": float(np.max(scores)) if scores else None,
+        "per_structure": rows,
+    }

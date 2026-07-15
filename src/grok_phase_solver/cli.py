@@ -150,9 +150,13 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "phai+recycle",
             "hard_p1_phaseed",
             "strong_prior_phaseed",
+            "partial_phaseed",
             "recycle",
             "direct_methods",
             "hio",
+            "dual_space",
+            "shelxd",
+            "shelxd_or_dual",
         ],
         help="Phasing method (default: auto = pick best available pipeline)",
     )
@@ -168,6 +172,17 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         type=float,
         default=None,
         help="Optional solvent flatten fraction after phasing (e.g. 0.4)",
+    )
+    p.add_argument(
+        "--phase-seed-csv",
+        default=None,
+        help="Partial-φ CSV (h,k,l,phase_deg) for --method partial_phaseed",
+    )
+    p.add_argument(
+        "--seed-fraction",
+        type=float,
+        default=0.30,
+        help="Strong-seed fraction for PhaSeed-style methods (default 0.30)",
     )
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", "-o", default="./gps_solve_out", help="Output directory")
@@ -186,6 +201,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         min_peak_sigma=args.min_peak_sigma,
         solvent_fraction=args.solvent_fraction,
         verbose=not args.quiet,
+        phase_seed_csv=args.phase_seed_csv,
+        seed_fraction=args.seed_fraction,
     )
 
     try:
