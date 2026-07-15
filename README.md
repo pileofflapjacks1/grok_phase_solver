@@ -143,7 +143,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | Conditional hybrid | `solvers/conditional_hybrid.py` | Polish seed only if free FOM improves |
 | **AI-PhaSeed** | `solvers/ai_phaseed.py` | AI seed → strong-\|E\| extension → free-FOM polish |
 | **Hard-P1 prior** | `models/hard_p1_prior.py` | Domain-matched PhaseMLP (OI loss) → AI-PhaSeed |
-| **Strong graph prior** | `models/graph_phase_net.py`, `strong_prior.py` | Triplet-GNN prior → AI-PhaSeed |
+| **Strong graph prior** | `models/graph_phase_net.py`, `strong_prior.py` | Scaled triplet-GNN (curriculum + triplet aux) → AI-PhaSeed |
 | Phase recycle | `solvers/phase_recycle.py` | Fourier modulus projection loop |
 | Physics-recycle net | `solvers/recycle_net.py` | PhaseMLP inside recycle (hard cells) |
 
@@ -315,7 +315,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | AI-PhaSeed benchmark | `python scripts/run_ai_phaseed_benchmark.py` | [`ai_phaseed_benchmark.md`](data/processed/ai_phaseed_benchmark.md) |
 | Hard-P1 domain prior | `python scripts/train_hard_p1_prior.py` | [`hard_p1_prior.md`](data/processed/hard_p1_prior.md) |
 | Experimental HKL scoreboard | `python scripts/run_experimental_scoreboard.py` | [`experimental_scoreboard.md`](data/processed/experimental_scoreboard.md) |
-| Strong GraphPhaseNet prior | `python scripts/train_strong_prior.py` | [`strong_prior.md`](data/processed/strong_prior.md) |
+| Strong GraphPhaseNet prior | `python scripts/train_strong_prior.py --scale` | [`strong_prior.md`](data/processed/strong_prior.md) |
 | Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |
 
 ### Headlines (reproducible reports)

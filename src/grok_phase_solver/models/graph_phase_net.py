@@ -1,5 +1,5 @@
 """
-Triplet-graph phase network (NumPy).
+Triplet-graph phase network (NumPy, vectorized).
 
 Stronger prior than per-reflection PhaseMLP: reflections are nodes; Cochran
 triplets define edges so message passing can encode φ_h + φ_k ≈ φ_{h+k}
@@ -9,13 +9,12 @@ Architecture
 ------------
 1. Node features x_i ∈ R^{d_in} (E, resolution, |h|, amp, …)
 2. h^{(0)} = ReLU(x W_in + b_in)
-3. For L layers: aggregate neighbor states (weighted by triplet κ/|EEE|),
+3. For L layers: agg = Â h  (row-normalized weighted adjacency from triplets),
    h ← ReLU(h W_self + agg W_msg + b)
 4. Output (cos φ, sin φ) = h W_out + b_out
 
-Training uses origin/enantiomorph-invariant targets (same idea as hard_p1_prior).
-Inference: predict strong-reflection phases → free-FOM origin search →
-AI-PhaSeed for full map.
+Loss = OI MSE on (cos, sin) + unit-norm penalty + optional triplet-consistency
+auxiliary (origin-invariant Cochran invariant matching).
 
 Honest scope: synthetic hard-region seed prior, not a general experimental solver.
 """
@@ -30,7 +29,6 @@ import numpy as np
 
 from grok_phase_solver.models.representations import reflection_graph
 from grok_phase_solver.physics.reciprocal import d_spacing
-from grok_phase_solver.solvers.direct_methods import normalize_E
 
 
 def _relu(x: np.ndarray) -> np.ndarray:
@@ -64,6 +62,32 @@ def build_undirected_adj(
     return nbrs, wts
 
 
+def build_normalized_adj(
+    n_nodes: int,
+    edges: np.ndarray,
+    edge_weight: np.ndarray,
+) -> np.ndarray:
+    """
+    Dense row-normalized weighted adjacency (N×N).
+
+    Triplet (i,j,k) adds undirected edges (i,j), (i,k), (j,k) with weight κ/|EEE|.
+    """
+    A = np.zeros((n_nodes, n_nodes), dtype=np.float64)
+    if n_nodes == 0 or len(edges) == 0:
+        return A
+    for e, w in zip(np.asarray(edges), np.asarray(edge_weight, dtype=np.float64)):
+        i, j, k = int(e[0]), int(e[1]), int(e[2])
+        w = float(max(w, 1e-8))
+        for a, b in ((i, j), (i, k), (j, k)):
+            if a == b or a < 0 or b < 0 or a >= n_nodes or b >= n_nodes:
+                continue
+            A[a, b] += w
+            A[b, a] += w
+    rs = A.sum(axis=1, keepdims=True)
+    A = A / np.maximum(rs, 1e-16)
+    return A
+
+
 def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell: np.ndarray) -> np.ndarray:
     """
     Richer node features: [E, s_norm, s², |h|_norm, amp_norm, h/hmax, k/kmax, l/lmax]
@@ -93,9 +117,83 @@ def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell
     ).astype(np.float64)
 
 
+def triplet_cos_invariant(c: np.ndarray, s: np.ndarray, edges: np.ndarray) -> np.ndarray:
+    """
+    cos(φ_i + φ_j − φ_k) from cos/sin arrays for each triplet edge (i,j,k).
+
+    Re(z_i z_j conj(z_k)).
+    """
+    if len(edges) == 0:
+        return np.zeros(0, dtype=np.float64)
+    i = edges[:, 0].astype(np.int64)
+    j = edges[:, 1].astype(np.int64)
+    k = edges[:, 2].astype(np.int64)
+    return (
+        c[i] * c[j] * c[k]
+        - s[i] * s[j] * c[k]
+        + c[i] * s[j] * s[k]
+        + s[i] * c[j] * s[k]
+    )
+
+
+def triplet_loss_and_grad(
+    out: np.ndarray,
+    edges: np.ndarray,
+    edge_weight: np.ndarray,
+    phase_true: Optional[np.ndarray] = None,
+) -> Tuple[float, np.ndarray]:
+    """
+    MSE on Cochran cos-invariants; returns (loss, dout).
+
+    If phase_true given, match predicted invariant to true invariant
+    (origin-invariant supervision). Else push cos → +1 (unsupervised).
+    """
+    n = out.shape[0]
+    dout = np.zeros_like(out)
+    if n == 0 or len(edges) == 0:
+        return 0.0, dout
+
+    c = out[:, 0]
+    s = out[:, 1]
+    edges = np.asarray(edges, dtype=np.int64)
+    w = np.asarray(edge_weight, dtype=np.float64)
+    w = w / (w.mean() + 1e-16)
+
+    cos_p = triplet_cos_invariant(c, s, edges)
+    if phase_true is not None:
+        ct = np.cos(phase_true)
+        st = np.sin(phase_true)
+        cos_t = triplet_cos_invariant(ct, st, edges)
+    else:
+        cos_t = np.ones_like(cos_p)
+
+    diff = cos_p - cos_t
+    loss = 0.5 * float(np.mean(w * diff ** 2))
+    # dL/d cos_p
+    dcos = (w * diff) / max(len(edges), 1)
+
+    i = edges[:, 0]
+    j = edges[:, 1]
+    k = edges[:, 2]
+    # cos = ci cj ck - si sj ck + ci sj sk + si cj sk
+    # d/dci = cj ck + sj sk
+    # d/dsi = -sj ck + cj sk
+    # d/dcj = ci ck + si sk
+    # d/dsj = -si ck + ci sk
+    # d/dck = ci cj - si sj
+    # d/dsk = ci sj + si cj
+    np.add.at(dout[:, 0], i, dcos * (c[j] * c[k] + s[j] * s[k]))
+    np.add.at(dout[:, 1], i, dcos * (-s[j] * c[k] + c[j] * s[k]))
+    np.add.at(dout[:, 0], j, dcos * (c[i] * c[k] + s[i] * s[k]))
+    np.add.at(dout[:, 1], j, dcos * (-s[i] * c[k] + c[i] * s[k]))
+    np.add.at(dout[:, 0], k, dcos * (c[i] * c[j] - s[i] * s[j]))
+    np.add.at(dout[:, 1], k, dcos * (c[i] * s[j] + s[i] * c[j]))
+    return loss, dout
+
+
 @dataclass
 class GraphPhaseNet:
-    """2-layer message-passing net → (cos φ, sin φ) per strong reflection."""
+    """Message-passing net → (cos φ, sin φ) per strong reflection."""
 
     d_in: int = 8
     hidden: int = 64
@@ -125,27 +223,43 @@ class GraphPhaseNet:
         self.W_out = rng.normal(0, np.sqrt(2 / h), (h, 2)) * 0.1
         self.b_out = np.zeros(2)
 
+    def _resolve_adj(
+        self,
+        X: np.ndarray,
+        nbrs: Optional[List[List[int]]] = None,
+        wts: Optional[List[List[float]]] = None,
+        adj: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        n = X.shape[0]
+        if adj is not None:
+            return np.asarray(adj, dtype=np.float64)
+        if nbrs is None:
+            return np.zeros((n, n), dtype=np.float64)
+        A = np.zeros((n, n), dtype=np.float64)
+        for i in range(n):
+            if not nbrs[i]:
+                continue
+            ww = np.asarray(wts[i] if wts is not None else [1.0] * len(nbrs[i]), dtype=np.float64)
+            ww = ww / (ww.sum() + 1e-16)
+            for j, wj in zip(nbrs[i], ww):
+                A[i, int(j)] += float(wj)
+        return A
+
     def forward(
         self,
         X: np.ndarray,
-        nbrs: List[List[int]],
-        wts: List[List[float]],
+        nbrs: Optional[List[List[int]]] = None,
+        wts: Optional[List[List[float]]] = None,
+        adj: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, dict]:
         """Return (N, 2) cos/sin logits and cache for backward."""
+        A = self._resolve_adj(X, nbrs, wts, adj)
         z0 = X @ self.W_in + self.b_in
         h = _relu(z0)
-        cache = {"X": X, "z0": z0, "h0": h, "hs": [h], "zs": [], "aggs": []}
+        cache = {"X": X, "z0": z0, "h0": h, "hs": [h], "zs": [], "aggs": [], "A": A}
 
         for ell in range(self.n_layers):
-            n = h.shape[0]
-            agg = np.zeros_like(h)
-            for i in range(n):
-                if not nbrs[i]:
-                    continue
-                ww = np.asarray(wts[i], dtype=np.float64)
-                ww = ww / (ww.sum() + 1e-16)
-                idx = nbrs[i]
-                agg[i] = (ww[:, None] * h[idx]).sum(axis=0)
+            agg = A @ h
             z = h @ self.W_self[ell] + agg @ self.W_msg[ell] + self.b_h[ell]
             cache["zs"].append(z)
             cache["aggs"].append(agg)
@@ -160,30 +274,38 @@ class GraphPhaseNet:
     def predict_cos_sin(
         self,
         X: np.ndarray,
-        nbrs: List[List[int]],
-        wts: List[List[float]],
+        nbrs: Optional[List[List[int]]] = None,
+        wts: Optional[List[List[float]]] = None,
+        adj: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        out, _ = self.forward(X, nbrs, wts)
+        out, _ = self.forward(X, nbrs, wts, adj=adj)
         return out
 
     def predict_phases(
         self,
         X: np.ndarray,
-        nbrs: List[List[int]],
-        wts: List[List[float]],
+        nbrs: Optional[List[List[int]]] = None,
+        wts: Optional[List[List[float]]] = None,
+        adj: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        z = self.predict_cos_sin(X, nbrs, wts)
+        z = self.predict_cos_sin(X, nbrs, wts, adj=adj)
         return np.arctan2(z[:, 1], z[:, 0])
 
     def loss_and_backward(
         self,
         X: np.ndarray,
-        nbrs: List[List[int]],
-        wts: List[List[float]],
-        phase_true: np.ndarray,
+        nbrs: Optional[List[List[int]]] = None,
+        wts: Optional[List[List[float]]] = None,
+        phase_true: Optional[np.ndarray] = None,
         weights: Optional[np.ndarray] = None,
+        adj: Optional[np.ndarray] = None,
+        edges: Optional[np.ndarray] = None,
+        edge_weight: Optional[np.ndarray] = None,
+        triplet_weight: float = 0.0,
     ) -> Tuple[float, dict]:
-        out, cache = self.forward(X, nbrs, wts)
+        out, cache = self.forward(X, nbrs, wts, adj=adj)
+        if phase_true is None:
+            raise ValueError("phase_true required for supervised loss")
         ut = np.column_stack([np.cos(phase_true), np.sin(phase_true)])
         if weights is None:
             w = np.ones(len(X))
@@ -191,7 +313,7 @@ class GraphPhaseNet:
             w = np.asarray(weights, dtype=np.float64)
             w = w / (w.mean() + 1e-16)
         diff = out - ut
-        N = len(X)
+        N = max(len(X), 1)
         loss = 0.5 * np.mean(w * np.sum(diff ** 2, axis=1))
         nrm = np.linalg.norm(out, axis=1)
         loss = loss + 0.05 * np.mean((nrm - 1.0) ** 2)
@@ -200,7 +322,20 @@ class GraphPhaseNet:
         scale = 0.05 * 2.0 * (nrm - 1.0) / (N * (nrm + 1e-16))
         dout = dout + scale[:, None] * out
 
+        if (
+            triplet_weight > 0
+            and edges is not None
+            and len(edges) > 0
+            and edge_weight is not None
+        ):
+            t_loss, t_dout = triplet_loss_and_grad(
+                out, edges, edge_weight, phase_true=phase_true
+            )
+            loss = loss + triplet_weight * t_loss
+            dout = dout + triplet_weight * t_dout
+
         h = cache["h_final"]
+        A = cache["A"]
         dW_out = h.T @ dout
         db_out = dout.sum(axis=0)
         dh = dout @ self.W_out.T
@@ -213,7 +348,6 @@ class GraphPhaseNet:
             "b_h": [],
         }
 
-        # backprop layers reverse
         for ell in range(self.n_layers - 1, -1, -1):
             z = cache["zs"][ell]
             h_prev = cache["hs"][ell]
@@ -228,19 +362,9 @@ class GraphPhaseNet:
 
             dh_prev = dz @ self.W_self[ell].T
             dagg = dz @ self.W_msg[ell].T
-            # distribute dagg to neighbors (symmetric undirected — approximate)
-            n = h_prev.shape[0]
-            dh_from_agg = np.zeros_like(h_prev)
-            for i in range(n):
-                if not nbrs[i]:
-                    continue
-                ww = np.asarray(wts[i], dtype=np.float64)
-                ww = ww / (ww.sum() + 1e-16)
-                for j, wj in zip(nbrs[i], ww):
-                    dh_from_agg[j] += wj * dagg[i]
-            dh = dh_prev + dh_from_agg
+            # agg = A @ h_prev  →  dh_prev += A.T @ dagg
+            dh = dh_prev + A.T @ dagg
 
-        # input layer
         z0 = cache["z0"]
         dz0 = dh * _relu_grad(z0)
         dW_in = cache["X"].T @ dz0
@@ -249,15 +373,21 @@ class GraphPhaseNet:
         grads["b_in"] = db_in
         return float(loss), grads
 
-    def step(self, grads: dict, lr: float = 1e-3) -> None:
-        self.W_in -= lr * grads["W_in"]
-        self.b_in -= lr * grads["b_in"]
+    def step(self, grads: dict, lr: float = 1e-3, clip: float = 5.0) -> None:
+        def _clip(g: np.ndarray) -> np.ndarray:
+            n = np.linalg.norm(g)
+            if n > clip and n > 0:
+                return g * (clip / n)
+            return g
+
+        self.W_in -= lr * _clip(grads["W_in"])
+        self.b_in -= lr * _clip(grads["b_in"])
         for ell in range(self.n_layers):
-            self.W_self[ell] -= lr * grads["W_self"][ell]
-            self.W_msg[ell] -= lr * grads["W_msg"][ell]
-            self.b_h[ell] -= lr * grads["b_h"][ell]
-        self.W_out -= lr * grads["W_out"]
-        self.b_out -= lr * grads["b_out"]
+            self.W_self[ell] -= lr * _clip(grads["W_self"][ell])
+            self.W_msg[ell] -= lr * _clip(grads["W_msg"][ell])
+            self.b_h[ell] -= lr * _clip(grads["b_h"][ell])
+        self.W_out -= lr * _clip(grads["W_out"])
+        self.b_out -= lr * _clip(grads["b_out"])
 
     def save(self, path: Path) -> None:
         path = Path(path)
@@ -279,6 +409,9 @@ class GraphPhaseNet:
         if hasattr(self, "_feat_mu"):
             payload["feat_mu"] = self._feat_mu
             payload["feat_sig"] = self._feat_sig
+        if hasattr(self, "_meta_extra"):
+            for k, v in self._meta_extra.items():  # type: ignore[attr-defined]
+                payload[k] = v
         np.savez(path, **payload)
 
     @classmethod
@@ -310,21 +443,27 @@ def prepare_graph_batch(
     max_reflections: int = 120,
     e_min: float = 0.9,
 ) -> Dict:
-    """Build graph + features for one structure."""
+    """Build graph + features + dense adj for one structure."""
     graph = reflection_graph(
         hkl, amplitudes, cell, e_min=e_min, max_reflections=max_reflections
     )
     X = node_features_from_graph(graph, hkl, amplitudes, cell)
     n = X.shape[0]
-    nbrs, wts = build_undirected_adj(n, graph["edges"], graph["edge_weight"])
+    edges = graph["edges"]
+    ewt = graph["edge_weight"]
+    nbrs, wts = build_undirected_adj(n, edges, ewt)
+    adj = build_normalized_adj(n, edges, ewt)
     idx = graph["node_idx"]
     return {
         "X": X,
         "nbrs": nbrs,
         "wts": wts,
+        "adj": adj,
+        "edges": edges,
+        "edge_weight": ewt,
         "node_idx": idx,
-        "phases_strong": None,  # filled by caller
+        "phases_strong": None,
         "amp_strong": amplitudes[idx],
         "hkl_strong": hkl[idx],
-        "n_edges": len(graph["edges"]),
+        "n_edges": len(edges),
     }

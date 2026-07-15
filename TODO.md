@@ -149,7 +149,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
 8. [ ] External validation vs SHELXD  
 9. [ ] Scale synthetic generation; Wilson domain-gap  
 10. [x] Stronger prior architecture (GraphPhaseNet triplet GNN + AI-PhaSeed)  
-11. [ ] Scale graph prior (more data / torch / triplet aux loss) for strict hard solves  
+11. [x] Scale graph prior v2 (250 structs, H=128/L=3, curriculum multi-pass, triplet aux, vectorized Â) — mapCC≈0.51 matches hP1, beats CF; still 0% strict hard solves  
+12. [ ] Further scale (10³–10⁴ cells / optional torch) or SHELXD H2H if prioritizing external proof  
 
 ---
 
