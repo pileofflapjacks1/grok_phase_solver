@@ -114,6 +114,32 @@ def _standardize(X: np.ndarray, mu: np.ndarray, sig: np.ndarray) -> np.ndarray:
     return (X - mu) / sig
 
 
+def _strong_train_weights(
+    E: np.ndarray,
+    amp: np.ndarray,
+    *,
+    e_power: float = 2.0,
+    top_frac: float = 0.50,
+    top_boost: float = 3.0,
+) -> np.ndarray:
+    """
+    Emphasize strongest |E| nodes for the hard-cliff seed bar.
+
+    Weight ∝ |E|^e_power · |F|, with an extra boost on the top ``top_frac``
+    of nodes by |E| (the AI-PhaSeed seed set is typically ~30% of all refl,
+    but graph nodes are already the strong set — so top half of nodes).
+    """
+    E = np.asarray(E, dtype=np.float64)
+    amp = np.asarray(amp, dtype=np.float64)
+    w = (np.abs(E) + 1e-6) ** float(e_power) * (amp + 1e-6)
+    if top_frac < 1.0 and len(E) >= 4:
+        k = max(1, int(round(top_frac * len(E))))
+        top = np.argsort(-E)[:k]
+        w = w.copy()
+        w[top] *= float(top_boost)
+    return w
+
+
 def _prebuild_packed(
     sample: Dict,
     mu: np.ndarray,
@@ -122,6 +148,9 @@ def _prebuild_packed(
     n_origin_grid: int,
     seed: int,
     max_cands: int = 54,
+    e_power: float = 2.0,
+    top_frac: float = 0.50,
+    top_boost: float = 3.0,
 ) -> Optional[Dict]:
     """Precompute graph, standardized features, origin candidate targets."""
     batch = prepare_graph_batch(
@@ -131,12 +160,17 @@ def _prebuild_packed(
         max_reflections=max_reflections,
         e_min=0.9,
     )
+    # Raw E before standardize (column 0 of node features)
+    E = batch["X"][:, 0].copy()
     X = _standardize(batch["X"], mu, sig)
     idx = batch["node_idx"]
     if X.shape[0] < 4:
         return None
     ph_s = sample["phases"][idx]
-    w_s = sample["amplitudes"][idx].astype(np.float64)
+    amp_s = sample["amplitudes"][idx].astype(np.float64)
+    w_s = _strong_train_weights(
+        E, amp_s, e_power=e_power, top_frac=top_frac, top_boost=top_boost
+    )
     cands = origin_phase_candidates(
         batch["hkl_strong"], ph_s, n_grid=n_origin_grid, include_enantiomorph=True
     )
@@ -153,7 +187,9 @@ def _prebuild_packed(
         "nbrs": batch["nbrs"],
         "wts": batch["wts"],
         "node_idx": idx,
+        "E": E,
         "w_s": w_s,
+        "amp_s": amp_s,
         "cands": cands,
         "cand_ut": cand_ut,
         "hkl_strong": batch["hkl_strong"],
@@ -181,8 +217,15 @@ def train_graph_on_packed(
     lr: float = 2e-3,
     triplet_weight: float = 0.15,
     origin_every: int = 3,
+    within_weight: float = 0.25,
+    within_deg: float = 20.0,
 ) -> List[float]:
-    """Train on one prebuilt structure pack with OI + triplet aux."""
+    """
+    Train on one prebuilt structure with OI + triplet aux + strong-seed focus.
+
+    within_weight: extra penalty when cos/sin targets disagree beyond ~within_deg
+    on high-|E| nodes (soft push toward the 20° seed bar).
+    """
     X = packed["X"]
     adj = packed["adj"]
     edges = packed["edges"]
@@ -190,15 +233,25 @@ def train_graph_on_packed(
     w_s = packed["w_s"]
     losses: List[float] = []
     best_ph = packed["cands"][0]
+    thr = np.deg2rad(within_deg)
     for ep in range(n_epochs):
         if ep % max(origin_every, 1) == 0:
             z, _ = model.forward(X, adj=adj)
             best_ph = _pick_best_origin(z, packed)
+        # Soft within-angle boost: increase weight where currently wrong
+        if within_weight > 0:
+            z, _ = model.forward(X, adj=adj)
+            ph_p = np.arctan2(z[:, 1], z[:, 0])
+            d = np.abs(np.angle(np.exp(1j * (ph_p - best_ph))))
+            # boost nodes worse than threshold
+            w_ep = w_s * (1.0 + within_weight * (d > thr).astype(np.float64))
+        else:
+            w_ep = w_s
         loss, grads = model.loss_and_backward(
             X,
             adj=adj,
             phase_true=best_ph,
-            weights=w_s,
+            weights=w_ep,
             edges=edges,
             edge_weight=ewt,
             triplet_weight=triplet_weight,
@@ -345,20 +398,24 @@ def train_strong_prior(
     seed: int = 0,
     lr: float = 2e-3,
     lr_refine: float = 6e-4,
-    triplet_weight: float = 0.15,
+    triplet_weight: float = 0.18,
     curriculum: bool = True,
     wilson_match: bool = False,
+    e_power: float = 2.0,
+    top_frac: float = 0.50,
+    top_boost: float = 3.0,
+    within_weight: float = 0.35,
+    within_deg: float = 20.0,
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
-    Scale-ready GraphPhaseNet trainer.
+    Scale-ready GraphPhaseNet trainer (strong-seed retarget + optional Wilson match).
 
-    Defaults target ~5× prior budget (structures × capacity) with curriculum
-    multi-pass training and triplet auxiliary loss.
-
-    wilson_match: if True and a Wilson template exists, match |F| statistics
-    to experimental before training (phases unchanged).
+    Training emphasizes the hard-cliff seed bar: high |E| nodes, extra loss when
+    phase error exceeds ``within_deg`` (default 20°), triplet aux.
     """
+    from grok_phase_solver.metrics.strong_seed import full_and_strong_metrics
+
     samples = list(
         iter_hard_multsg_samples(
             n_structures,
@@ -374,6 +431,7 @@ def train_strong_prior(
     if curriculum:
         samples = sorted(samples, key=lambda s: s["difficulty"])
 
+    n_wm = sum(1 for s in samples if s.get("wilson_match", {}).get("matched"))
     mu, sig = accumulate_feature_stats(samples, max_reflections=max_reflections)
     model = GraphPhaseNet(d_in=8, hidden=hidden, n_layers=n_layers, seed=seed)
     model._feat_mu = mu  # type: ignore[attr-defined]
@@ -383,18 +441,20 @@ def train_strong_prior(
         n_bridge = sum(1 for s in samples if s["region"] == "bridge")
         n_p1 = sum(1 for s in samples if s["space_group"] == "P1")
         print(
-            f"Strong prior (scaled GraphPhaseNet): {len(samples)} structs "
+            f"Strong prior (v3 seed-retarget): {len(samples)} structs "
             f"(bridge={n_bridge}, P1={n_p1}, P-1={len(samples)-n_p1}), "
             f"hidden={hidden}, layers={n_layers}, max_refl={max_reflections}, "
             f"triplet_w={triplet_weight}, passes={n_global_passes}, "
-            f"epochs/struct={epochs_per}, curriculum={curriculum}"
+            f"epochs/struct={epochs_per}, curriculum={curriculum}, "
+            f"wilson_match={wilson_match} (matched={n_wm}), "
+            f"E^{e_power} top_boost={top_boost} within={within_deg}°"
         )
 
-    # Prebuild packs once
     packs: List[Dict] = []
     for i, s in enumerate(samples):
         p = _prebuild_packed(
-            s, mu, sig, max_reflections, n_origin_grid=3, seed=seed + i
+            s, mu, sig, max_reflections, n_origin_grid=3, seed=seed + i,
+            e_power=e_power, top_frac=top_frac, top_boost=top_boost,
         )
         if p is not None:
             packs.append(p)
@@ -403,18 +463,17 @@ def train_strong_prior(
 
     all_losses: List[float] = []
     all_mpe: List[float] = []
+    all_strong_mpe: List[float] = []
+    all_frac20: List[float] = []
     pass_mpe: List[float] = []
+    pass_frac20: List[float] = []
 
     for gpass in range(n_global_passes):
-        # anneal LR and increase hard focus
         lr_p = lr * (0.7 ** gpass)
-        # later passes: slightly more epochs on hard half
         order = list(range(len(packs)))
         if curriculum and gpass > 0:
-            # reverse curriculum emphasis: hard structures first on later passes
             order = list(reversed(order))
         rng = np.random.default_rng(seed + 1000 * gpass)
-        # mild shuffle within curriculum halves for SGD noise
         if len(order) > 4:
             mid = len(order) // 2
             first, second = order[:mid], order[mid:]
@@ -432,45 +491,46 @@ def train_strong_prior(
                 lr=lr_p,
                 triplet_weight=triplet_weight,
                 origin_every=3,
+                within_weight=within_weight,
+                within_deg=within_deg,
             )
             all_losses.append(float(np.mean(losses[-5:])) if losses else 0.0)
 
             if j < 2 or (j + 1) % max(25, len(packs) // 6) == 0 or j == len(order) - 1:
                 s = packed["sample"]
-                idx, ph_pred = predict_strong_phases(
-                    model,
-                    s["hkl"],
-                    s["amplitudes"],
-                    s["cell"],
-                    max_reflections=max_reflections,
-                    origin_fom_search=False,
+                ph_full = predict_full_phases(
+                    model, s["hkl"], s["amplitudes"], s["cell"],
+                    max_reflections=max_reflections, origin_fom_search=False,
                 )
-                mpe_s = float("nan")
-                if len(idx):
-                    mpe, _ = mean_phase_error_origin_invariant(
-                        ph_pred,
-                        s["phases"][idx],
-                        s["hkl"][idx],
-                        weights=s["amplitudes"][idx],
-                    )
-                    mpe_s = float(mpe)
-                    all_mpe.append(mpe_s)
+                sm = full_and_strong_metrics(
+                    ph_full, s["phases"], s["hkl"], s["amplitudes"], s["cell"],
+                    fraction=0.30, within_deg=within_deg,
+                )
+                all_mpe.append(sm["full_mpe_oi"])
+                if sm["strong_mpe_oi"] is not None:
+                    all_strong_mpe.append(sm["strong_mpe_oi"])
+                    all_frac20.append(sm["frac_within_deg"])
                 if verbose:
                     print(
                         f"  pass {gpass+1}/{n_global_passes} "
                         f"[{j+1}/{len(order)}] {s['region']} {s['space_group']} "
                         f"n={s['n_atoms']} d={s['d_min']:.2f} "
-                        f"loss≈{all_losses[-1]:.4f} MPE_OI={mpe_s:.1f}° "
-                        f"nodes={len(idx)} edges={packed['edges'].shape[0]}"
+                        f"loss≈{all_losses[-1]:.4f} "
+                        f"fullMPE={sm['full_mpe_oi']:.0f}° "
+                        f"strongMPE={sm['strong_mpe_oi']:.0f}° "
+                        f"frac≤{within_deg:.0f}°={sm['frac_within_deg']:.0%} "
+                        f"seedOK={sm['would_seed_solve']}"
                     )
 
-        # pass-level hold-out probe (cheap)
-        if all_mpe:
-            pass_mpe.append(float(np.mean(all_mpe[-min(20, len(all_mpe)):])))
+        if all_strong_mpe:
+            pass_mpe.append(float(np.mean(all_strong_mpe[-min(20, len(all_strong_mpe)):])))
+            pass_frac20.append(float(np.mean(all_frac20[-min(20, len(all_frac20)):])))
             if verbose:
-                print(f"  → pass {gpass+1} recent train MPE_OI≈{pass_mpe[-1]:.1f}°")
+                print(
+                    f"  → pass {gpass+1} recent strongMPE≈{pass_mpe[-1]:.1f}° "
+                    f"frac≤{within_deg:.0f}°≈{pass_frac20[-1]:.0%}"
+                )
 
-    # refine pass: hard-only packs
     hard_packs = [p for p in packs if p["sample"]["region"] == "hard"]
     if not hard_packs:
         hard_packs = packs
@@ -483,6 +543,8 @@ def train_strong_prior(
             lr=lr_refine,
             triplet_weight=triplet_weight * 1.2,
             origin_every=2,
+            within_weight=within_weight * 1.2,
+            within_deg=within_deg,
         )
 
     hold = _holdout_eval(
@@ -492,13 +554,17 @@ def train_strong_prior(
         n_atoms_range=n_atoms_range,
         d_min_range=d_min_range,
         max_reflections=max_reflections,
+        wilson_match=wilson_match,
+        within_deg=within_deg,
     )
+    sm_hold = [h for h in hold if h.get("strong_mpe_oi") is not None]
     meta = {
         "architecture": "GraphPhaseNet",
-        "scale": "v2",
+        "scale": "v3_seed_retarget",
         "domain": "hard_multi_SG",
         "n_structures": n_structures,
         "n_packs": len(packs),
+        "n_wilson_matched": n_wm,
         "n_atoms_range": list(n_atoms_range),
         "d_min_range": list(d_min_range),
         "hidden": hidden,
@@ -510,25 +576,42 @@ def train_strong_prior(
         "triplet_weight": triplet_weight,
         "curriculum": curriculum,
         "wilson_match": wilson_match,
+        "e_power": e_power,
+        "top_frac": top_frac,
+        "top_boost": top_boost,
+        "within_weight": within_weight,
+        "within_deg": within_deg,
         "seed": seed,
         "train_losses": all_losses,
         "train_mpe_oi": all_mpe,
-        "pass_mpe_oi": pass_mpe,
+        "train_strong_mpe_oi": all_strong_mpe,
+        "train_frac_within_20": all_frac20,
+        "pass_strong_mpe_oi": pass_mpe,
+        "pass_frac20": pass_frac20,
         "mean_train_mpe_oi": float(np.mean(all_mpe)) if all_mpe else None,
+        "mean_train_strong_mpe_oi": float(np.mean(all_strong_mpe)) if all_strong_mpe else None,
+        "mean_train_frac_within_20": float(np.mean(all_frac20)) if all_frac20 else None,
         "holdout": hold,
         "mean_holdout_mpe_oi": float(np.mean([h["mpe_oi"] for h in hold])) if hold else None,
         "mean_holdout_mapcc_prior": float(np.mean([h["mapcc_prior"] for h in hold])) if hold else None,
+        "mean_holdout_strong_mpe_oi": float(np.mean([h["strong_mpe_oi"] for h in sm_hold])) if sm_hold else None,
+        "mean_holdout_frac_within_20": float(np.mean([h["frac_within_deg"] for h in sm_hold])) if sm_hold else None,
+        "holdout_would_seed_solve_rate": float(np.mean([h["would_seed_solve"] for h in sm_hold])) if sm_hold else None,
         "feat_mu": mu.tolist(),
         "feat_sig": sig.tolist(),
         "note": (
-            "Scaled triplet-graph phase prior (curriculum multi-pass + triplet aux). "
-            "Use strong_prior_phaseed_solve. Not a claimed general experimental solver."
+            "v3 GraphPhaseNet: Wilson-matchable |F|, strong-|E| loss reweight, "
+            "within-20° boost, triplet aux. Target: ≥30% strong φ within 20° "
+            "for AI-PhaSeed. Not a claimed general experimental solver."
         ),
     }
     if verbose and hold:
         print(
-            f"  hold-out mean MPE_OI={meta['mean_holdout_mpe_oi']:.1f}° "
-            f"prior mapCC={meta['mean_holdout_mapcc_prior']:.3f}"
+            f"  hold-out fullMPE={meta['mean_holdout_mpe_oi']:.1f}° "
+            f"mapCC={meta['mean_holdout_mapcc_prior']:.3f} | "
+            f"strongMPE={meta.get('mean_holdout_strong_mpe_oi', float('nan')):.1f}° "
+            f"frac≤{within_deg:.0f}°={meta.get('mean_holdout_frac_within_20', float('nan')):.0%} "
+            f"would_seed_solve={meta.get('holdout_would_seed_solve_rate', float('nan')):.0%}"
         )
     return model, meta
 
@@ -540,8 +623,11 @@ def _holdout_eval(
     n_atoms_range,
     d_min_range,
     max_reflections: int,
+    wilson_match: bool = False,
+    within_deg: float = 20.0,
 ) -> List[Dict]:
     from grok_phase_solver.metrics.map_cc import map_correlation_origin_invariant
+    from grok_phase_solver.metrics.strong_seed import full_and_strong_metrics
     from grok_phase_solver.physics.density import density_from_structure_factors
 
     rows = []
@@ -552,6 +638,7 @@ def _holdout_eval(
         d_min_range=d_min_range,
         include_bridge=False,
         p_minus1_frac=0.2,
+        wilson_match=wilson_match,
     ):
         ph = predict_full_phases(
             model,
@@ -561,8 +648,9 @@ def _holdout_eval(
             max_reflections=max_reflections,
             origin_fom_search=True,
         )
-        mpe, _ = mean_phase_error_origin_invariant(
-            ph, s["phases"], s["hkl"], weights=s["amplitudes"]
+        sm = full_and_strong_metrics(
+            ph, s["phases"], s["hkl"], s["amplitudes"], s["cell"],
+            fraction=0.30, within_deg=within_deg,
         )
         rho = density_from_structure_factors(
             s["hkl"], s["amplitudes"] * np.exp(1j * ph), s["cell"], d_min=s["d_min"]
@@ -579,8 +667,12 @@ def _holdout_eval(
                 "n_atoms": s["n_atoms"],
                 "d_min": s["d_min"],
                 "space_group": s["space_group"],
-                "mpe_oi": float(mpe),
+                "mpe_oi": sm["full_mpe_oi"],
                 "mapcc_prior": float(cc),
+                "strong_mpe_oi": sm["strong_mpe_oi"],
+                "frac_within_deg": sm["frac_within_deg"],
+                "would_seed_solve": sm["would_seed_solve"],
+                "n_strong": sm["n_strong"],
             }
         )
     return rows

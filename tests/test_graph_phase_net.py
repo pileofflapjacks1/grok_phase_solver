@@ -105,7 +105,7 @@ def test_train_and_phaseed(tmp_path):
         verbose=False,
     )
     assert meta["architecture"] == "GraphPhaseNet"
-    assert meta["scale"] == "v2"
+    assert meta["scale"] in ("v2", "v3_seed_retarget")
     path = tmp_path / "sp.npz"
     save_strong_prior(model, path, meta=meta)
     m2 = load_strong_prior(path)

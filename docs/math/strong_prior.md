@@ -24,44 +24,48 @@ principled upgrade for an ab initio **seed prior**.
 
 Code: `models/graph_phase_net.py`, `models/strong_prior.py`
 
-## Scale recipe (v2)
+## Scale recipe (v3 = A+B)
 
 ```bash
-python scripts/train_strong_prior.py --scale
-# 250 structures · hidden=128 · layers=3 · 3 global passes · triplet_w≈0.18
+# A: Wilson-matched |F|  +  B: strong-seed loss retarget
+python scripts/train_strong_prior.py --scale --wilson-match
+# 250 structs · H=128 · L=3 · E² weights · within-20° boost · Wilson template
 # → data/processed/strong_prior.{npz,json,md}
 ```
 
-| Lever | First pass | Scale v2 |
-|-------|------------|----------|
-| Structures | 50 | **250** |
-| Hidden / layers | 80 / 2 | **128 / 3** |
-| Strong reflections | 90 | **120** |
-| Training schedule | 1 pass online | **curriculum multi-pass** |
-| Triplet aux | no | **yes** |
-| Aggregation | Python loops | **dense $\hat{A}$ matmul** |
+| Lever | v1 | v2 scale | **v3 A+B** |
+|-------|----|----------|------------|
+| Structures | 50 | 250 | 250 |
+| Hidden / layers | 80/2 | 128/3 | 128/3 |
+| Wilson match | no | no | **yes** |
+| Loss focus | uniform amp | amp + triplet | **E² + top boost + >20° boost** |
+| Primary metric | full MPE | full MPE | **strong MPE + frac≤20°** |
 
-## Empirical (scale v2, this repo)
+## Strong-seed bar
 
-| Method | mean mapCC (hold-out hard) | Strict solved |
-|--------|----------------------------|---------------|
-| Graph prior only | ~0.46 | — |
-| **Graph + AI-PhaSeed** | **~0.51** | 0/8 |
-| hard_p1 MLP + PhaSeed | ~0.51 | 0/8 |
-| CF | ~0.48 | 0/8 |
+Oracle partial-φ: hard cells **strict-solve** when ≥30% of top-|E| phases are
+within **20°** of truth. Metrics in `metrics/strong_seed.py`:
+
+- `strong_mpe_oi` — OI MAPE on top 30% \|E\|
+- `frac_within_deg` — weighted fraction ≤20°
+- `would_seed_solve` — `frac ≥ 0.30`
+
+## Empirical (v3 A+B, this repo)
+
+| Method | mean mapCC | strong MPE | frac≤20° | Strict solved |
+|--------|------------|------------|----------|---------------|
+| Graph prior | ~0.46 | **~59°** | **~21%** | — |
+| Graph + AI-PhaSeed | **~0.50** | — | ~21% | 0/8 |
+| hard_p1 + PhaSeed | ~0.51 | — | — | 0/8 |
+| CF | ~0.48 | — | — | 0/8 |
 
 **Honest read:**
 
-- Scale **matched hard-P1** and **beat CF by ~0.03 mapCC** on the same hard hold-out.
-- Still **0% strict success** under `SuccessThresholds` — the B/C failure cliff is not
-  closed by data/capacity alone at this regime.
-- Train MPE_OI on strong nodes is often ~55–65°, but full-map OI MPE stays ~70°
-  (weak reflections + origin residual).
-- Oracle/partial AI-PhaSeed seeds still prove the *extension* path works when the
-  seed is good enough; the bottleneck remains prior quality on hard cells.
-
-First-pass baseline (50 structs / H=80 / L=2) for comparison: Graph+PhaSeed mapCC
-~0.48, CF ~0.47, hard-P1 ~0.51, 0/6 strict.
+- Strong-subset MPE (~59°) is better than full-map (~71°); frac≤20° (~21%) is
+  **below the 30% oracle bar** — still not seed-ready for hard solves.
+- Wilson match + retarget improves the *objective* and reporting; mapCC remains
+  comparable to CF/hP1. Need more capacity/data or better architecture to hit 30%/20°.
+- Internal train occasionally hits `seedOK=True` on individual cells (frac≤20°≥30%).
 
 ## Usage
 

@@ -152,8 +152,10 @@ AI-driven general solver for the X-ray crystallography phase problem.
 11. [x] Scale graph prior v2 (250 structs, H=128/L=3, curriculum multi-pass, triplet aux, vectorized Â) — mapCC≈0.51 matches hP1, beats CF; still 0% strict hard solves  
 12. [ ] Re-run H2H with real SHELXD binary when installed (`export SHELXD=…`)  
 13. [x] Partial-φ / fragment seed API + hard-cliff curves (`partial_seed.py`, `run_partial_seed_benchmark.py`)  
-14. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
-15. [ ] PyPI release / more experimental HKL scoreboard  
+14. [x] A+B: Wilson-matched retrain + strong-seed metrics/loss (v3; hold-out strong MPE≈59°, frac≤20°≈21% vs 30% bar; still 0% strict)  
+15. [ ] Hit strong-seed bar (≥30% within 20°) via larger data/capacity or better architecture  
+16. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
+17. [ ] PyPI release / more experimental HKL scoreboard  
 
 ---
 

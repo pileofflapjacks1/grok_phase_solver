@@ -317,7 +317,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | AI-PhaSeed benchmark | `python scripts/run_ai_phaseed_benchmark.py` | [`ai_phaseed_benchmark.md`](data/processed/ai_phaseed_benchmark.md) |
 | Hard-P1 domain prior | `python scripts/train_hard_p1_prior.py` | [`hard_p1_prior.md`](data/processed/hard_p1_prior.md) |
 | Experimental HKL scoreboard | `python scripts/run_experimental_scoreboard.py` | [`experimental_scoreboard.md`](data/processed/experimental_scoreboard.md) |
-| Strong GraphPhaseNet prior | `python scripts/train_strong_prior.py --scale` | [`strong_prior.md`](data/processed/strong_prior.md) |
+| Strong GraphPhaseNet prior | `python scripts/train_strong_prior.py --scale --wilson-match` | [`strong_prior.md`](data/processed/strong_prior.md) |
 | SHELXD head-to-head | `python scripts/run_shelxd_h2h.py` | [`shelxd_h2h.md`](data/processed/shelxd_h2h.md), [`docs/math/shelxd_h2h.md`](docs/math/shelxd_h2h.md) |
 | Partial-φ hard-cliff curves | `python scripts/run_partial_seed_benchmark.py` | [`partial_seed_benchmark.md`](data/processed/partial_seed_benchmark.md), [`docs/math/partial_seed.md`](docs/math/partial_seed.md) |
 | Wilson domain-gap (close gap) | `python scripts/run_wilson_domain_gap.py` | [`wilson_domain_gap.md`](data/processed/wilson_domain_gap.md), [`docs/math/wilson_domain_gap.md`](docs/math/wilson_domain_gap.md) |

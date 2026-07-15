@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from grok_phase_solver.data.synthetic import generate_random_organic
 from grok_phase_solver.metrics.map_cc import map_correlation_origin_invariant
 from grok_phase_solver.metrics.phase_error import mean_phase_error_origin_invariant
+from grok_phase_solver.metrics.strong_seed import full_and_strong_metrics
 from grok_phase_solver.metrics.success import SuccessThresholds, evaluate_success
 from grok_phase_solver.models.strong_prior import (
     predict_full_phases,
@@ -73,7 +74,9 @@ def holdout_solve_compare(
             hkl, amp * np.exp(1j * ph_t), cell, shape=rho_p.shape
         )
         cc_p, _ = map_correlation_origin_invariant(rho_p, rho_t)
-        mpe, _ = mean_phase_error_origin_invariant(ph_p, ph_t, hkl, weights=amp)
+        sm = full_and_strong_metrics(
+            ph_p, ph_t, hkl, amp, cell, fraction=0.30, within_deg=20.0
+        )
 
         ph_s, rho_s, _ = strong_prior_phaseed_solve(
             hkl,
@@ -103,6 +106,9 @@ def holdout_solve_compare(
             elements=data["elements"],
             thresholds=SuccessThresholds(),
         )
+        sm_ps = full_and_strong_metrics(
+            ph_s, ph_t, hkl, amp, cell, fraction=0.30, within_deg=20.0
+        )
 
         ph_c, rho_c, _ = charge_flipping_solve(
             hkl, amp, cell, n_iter=n_iter, seed=s, d_min=d_min
@@ -127,11 +133,16 @@ def holdout_solve_compare(
             "n_atoms": n_atoms,
             "d_min": d_min,
             "seed": s,
-            "graph_prior_mpe_oi": float(mpe),
+            "graph_prior_mpe_oi": sm["full_mpe_oi"],
             "graph_prior_mapcc": float(cc_p),
+            "graph_prior_strong_mpe_oi": sm["strong_mpe_oi"],
+            "graph_prior_frac_within_20": sm["frac_within_deg"],
+            "graph_prior_would_seed_solve": sm["would_seed_solve"],
             "strong_phaseed_mapcc": rep_s.mapcc_oi,
             "strong_phaseed_solved": rep_s.solved,
             "strong_phaseed_peak": rep_s.peak_recovery,
+            "strong_phaseed_frac_within_20": sm_ps["frac_within_deg"],
+            "strong_phaseed_would_seed_solve": sm_ps["would_seed_solve"],
             "cf_mapcc": rep_c.mapcc_oi,
             "cf_solved": rep_c.solved,
         }
@@ -164,17 +175,22 @@ def holdout_solve_compare(
                 elements=data["elements"],
                 thresholds=SuccessThresholds(),
             )
+            sm_h = full_and_strong_metrics(
+                ph_h, ph_t, hkl, amp, cell, fraction=0.30, within_deg=20.0
+            )
             row["hard_p1_phaseed_mapcc"] = rep_h.mapcc_oi
             row["hard_p1_phaseed_solved"] = rep_h.solved
+            row["hard_p1_frac_within_20"] = sm_h["frac_within_deg"]
 
         rows.append(row)
         extra = ""
         if "hard_p1_phaseed_mapcc" in row:
             extra = f" | hP1={row['hard_p1_phaseed_mapcc']:.2f}"
         print(
-            f"  n={n_atoms} d={d_min:.1f}: graph prior MPE={mpe:.0f}° CC={cc_p:.2f} | "
-            f"strong+PS CC={rep_s.mapcc_oi:.2f} sol={rep_s.solved} | "
-            f"CF={rep_c.mapcc_oi:.2f}{extra}"
+            f"  n={n_atoms} d={d_min:.1f}: prior strongMPE={sm['strong_mpe_oi']:.0f}° "
+            f"frac20={sm['frac_within_deg']:.0%} seedOK={sm['would_seed_solve']} "
+            f"CC={cc_p:.2f} | +PS CC={rep_s.mapcc_oi:.2f} sol={rep_s.solved} "
+            f"frac20={sm_ps['frac_within_deg']:.0%} | CF={rep_c.mapcc_oi:.2f}{extra}"
         )
     return rows
 
@@ -323,6 +339,10 @@ def main():
     mcc_c = float(np.mean([r["cf_mapcc"] for r in hold]))
     mcc_p = float(np.mean([r["graph_prior_mapcc"] for r in hold]))
     mpe = float(np.mean([r["graph_prior_mpe_oi"] for r in hold]))
+    smpe = float(np.mean([r["graph_prior_strong_mpe_oi"] for r in hold]))
+    frac20 = float(np.mean([r["graph_prior_frac_within_20"] for r in hold]))
+    n_seed_ok = sum(1 for r in hold if r.get("graph_prior_would_seed_solve"))
+    frac20_ps = float(np.mean([r["strong_phaseed_frac_within_20"] for r in hold]))
     mcc_h = None
     n_h = None
     if any("hard_p1_phaseed_mapcc" in r for r in hold):
@@ -335,34 +355,42 @@ def main():
                 ]
             )
         )
-        n_h = sum(
-            1
-            for r in hold
-            if r.get("hard_p1_phaseed_solved")
-        )
+        n_h = sum(1 for r in hold if r.get("hard_p1_phaseed_solved"))
 
     md = [
-        "# Strong phase prior (GraphPhaseNet) — scaled",
+        "# Strong phase prior (GraphPhaseNet) — v3 seed retarget",
         "",
-        "Triplet-graph message-passing network trained on **hard multi-SG** "
-        "synthetic cells (P1 + P−1) with origin-invariant + triplet auxiliary loss, "
-        "curriculum multi-pass training, and vectorized adjacency aggregation.",
+        "Triplet-graph prior with **Wilson-matched |F|** (optional), **strong-|E| "
+        "loss reweight**, and **within-20°** focus. Success bar for the hard cliff: "
+        "≥30% of strong |E| phases within 20° of truth (oracle AI-PhaSeed threshold).",
         "",
-        f"- Structures: **{cfg['n_structures']}** (packs used: {meta.get('n_packs', '?')})",
-        f"- Hidden={cfg['hidden']}, layers={cfg['n_layers']}, "
-        f"max strong reflections={cfg['max_refl']}",
-        f"- Global passes: **{cfg['n_global_passes']}**, "
-        f"epochs/struct≈{cfg['epochs_per']}, triplet_w={cfg['triplet_weight']}",
-        f"- Curriculum: **{cfg['curriculum']}**",
-        f"- Mean train MPE_OI: **{meta.get('mean_train_mpe_oi', float('nan')):.1f}°**",
-        f"- Mean hold-out MPE_OI: **{meta.get('mean_holdout_mpe_oi', float('nan')):.1f}°**",
+        f"- Structures: **{cfg['n_structures']}** (packs: {meta.get('n_packs', '?')}, "
+        f"Wilson-matched train: {meta.get('n_wilson_matched', 0)})",
+        f"- Hidden={cfg['hidden']}, layers={cfg['n_layers']}, max_refl={cfg['max_refl']}",
+        f"- wilson_match=**{cfg.get('wilson_match')}**, "
+        f"scale=**{meta.get('scale')}**",
+        f"- Train strong MPE_OI: **{meta.get('mean_train_strong_mpe_oi', float('nan')):.1f}°**, "
+        f"frac≤20°: **{meta.get('mean_train_frac_within_20', float('nan')):.0%}**",
+        f"- Hold-out full MPE_OI: **{meta.get('mean_holdout_mpe_oi', float('nan')):.1f}°**, "
+        f"strong MPE: **{meta.get('mean_holdout_strong_mpe_oi', float('nan')):.1f}°**, "
+        f"frac≤20°: **{meta.get('mean_holdout_frac_within_20', float('nan')):.0%}**, "
+        f"would_seed_solve: **{meta.get('holdout_would_seed_solve_rate', float('nan')):.0%}**",
         f"- Weights: `{out.relative_to(ROOT)}`",
+        "",
+        "## Strong-seed bar (hold-out hard)",
+        "",
+        "| Metric | Graph prior | Graph+PhaSeed |",
+        "|--------|-------------|---------------|",
+        f"| strong MPE_OI | {smpe:.1f}° | — |",
+        f"| frac ≤20° (top 30% \\|E\\|) | {frac20:.0%} | {frac20_ps:.0%} |",
+        f"| would_seed_solve (≥30% within 20°) | {n_seed_ok}/{n} | "
+        f"{sum(1 for r in hold if r.get('strong_phaseed_would_seed_solve'))}/{n} |",
         "",
         "## Hold-out hard-region comparison",
         "",
         "| Method | Solved | Rate | mean mapCC |",
         "|--------|--------|------|------------|",
-        f"| Graph prior only | — | — | {mcc_p:.3f} (MPE_OI {mpe:.0f}°) |",
+        f"| Graph prior only | — | — | {mcc_p:.3f} (full MPE {mpe:.0f}°) |",
         f"| **Graph + AI-PhaSeed** | {n_s} | {n_s/max(n,1):.0%} | **{mcc_s:.3f}** |",
         f"| CF | {n_c} | {n_c/max(n,1):.0%} | {mcc_c:.3f} |",
     ]
@@ -376,29 +404,26 @@ def main():
             "",
             "## Per-case",
             "",
-            "| n | d_min | prior MPE | prior CC | strong+PS CC | solved | CF CC |",
-            "|---|-------|-----------|----------|--------------|--------|-------|",
+            "| n | d_min | strongMPE | frac20 | seedOK | prior CC | +PS CC | solved | CF |",
+            "|---|-------|-----------|--------|--------|----------|--------|--------|-----|",
         ]
     )
     for r in hold:
         md.append(
-            f"| {r['n_atoms']} | {r['d_min']} | {r['graph_prior_mpe_oi']:.0f}° | "
+            f"| {r['n_atoms']} | {r['d_min']} | {r['graph_prior_strong_mpe_oi']:.0f}° | "
+            f"{r['graph_prior_frac_within_20']:.0%} | {r['graph_prior_would_seed_solve']} | "
             f"{r['graph_prior_mapcc']:.2f} | {r['strong_phaseed_mapcc']:.2f} | "
             f"{r['strong_phaseed_solved']} | {r['cf_mapcc']:.2f} |"
         )
     md.extend(
         [
             "",
-            "## Scale notes",
+            "## Notes (A+B)",
             "",
-            "Compared to the first GraphPhaseNet pass (50 structs / H=80 / L=2), this "
-            "run increases data, capacity, curriculum multi-pass SGD, and adds a "
-            "Cochran triplet-consistency auxiliary. Strict hard-region success remains "
-            "difficult; report mapCC honestly vs CF and hard-P1.",
-            "",
-            "Still a synthetic hard-region prior — not a claimed general experimental "
-            "solver. Use via `strong_prior_phaseed_solve` or "
-            "`gps-solve --method strong_prior_phaseed`.",
+            "- **A:** train with `--wilson-match` so |F| match experimental Wilson template.",
+            "- **B:** loss targets strong-|E| accuracy (E² weights, top-half boost, "
+            "extra weight when error >20°).",
+            "- Oracle bar: ≥30% strong phases within 20° → AI-PhaSeed can strict-solve hard cells.",
             "",
             f"Train {meta['train_seconds']:.1f}s + eval {meta['eval_seconds']:.1f}s",
             "",
