@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.1 — 2026-07
+
+### Ship / packaging
+- Version bump for first public tag **v0.2.1**
+- `__version__` aligned with `pyproject.toml`
+- Release notes: `docs/RELEASE.md` (build, tag, PyPI upload)
+
+### Included since 0.2.0 (product freeze for tag)
+- Streamlit **gps-gui** + polish (wizard, CELL parse, peaks retry, SHELXL handoff)
+- Lane B partial-φ seed importers + `gps-make-seed`
+- Lane C experimental COD scoreboard + `arxiv_draft`
+- GraphPhaseNet v4 XL prior weights (honest ~21% seed bar)
+
 ## 0.2.0 — 2026-07
 
 ### Product / pipeline

@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.2.0 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.2.1 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 

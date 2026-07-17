@@ -1,6 +1,6 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft (Lane C review pack)** · Version 0.2.0 · MIT  
+**Working draft (Lane C review pack)** · Version 0.2.1 · MIT  
 **Code:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **One-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)
 

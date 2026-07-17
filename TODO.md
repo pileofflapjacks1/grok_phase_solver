@@ -164,7 +164,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
       seedOK rate 5–12%; strict hard solves still 0%. Checkpoint `strong_prior.npz`  
       + `strong_prior_v4_xl.npz` / `_ft.npz`. **Mean seed bar not cleared by scale alone.**  
 17. [ ] Further scale (10⁴ cells / torch equivariant) **or** accept ceiling and invest in partial-φ UX  
-18. [~] PyPI packaging ready (build/check); full upload when credentials available  
+18. [x] **v0.2.1 ship:** version align, tag, `docs/RELEASE.md`; build+twine check  
+      PyPI upload still needs user API token (`twine upload` — see RELEASE.md)
 19. [x] **Lane C:** expanded experimental COD Fobs scoreboard (2016452, 2100301,
       2017775) + Fcalc controls + oracle partial-φ rows; `arxiv_draft.md`;
       FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).

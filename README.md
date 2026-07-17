@@ -1,7 +1,7 @@
 # grok_phase_solver
 
 **Open physics / AI phasing assistant for X-ray crystallography**  
-Version **0.2.0** · Python ≥ 3.10 · MIT
+Version **0.2.1** · Python ≥ 3.10 · MIT
 
 Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and a SHELXL-ready trial model, then refine elsewhere (Olex2 / SHELXL).
 
@@ -35,8 +35,16 @@ gps-solve --help
 
 Optional: `python -m pip install -e ".[ml]"` for PhAI (weights not included — see [`third_party/phai/README.md`](third_party/phai/README.md)).
 
+From PyPI (after publish):
+
+```bash
+python -m pip install grok-phase-solver
+python -m pip install "grok-phase-solver[gui]"   # optional browser UI
+```
+
 **GUI (browser):** `python -m pip install -e ".[gui]"` then `gps-gui` → http://localhost:8501  
-Upload HKL/INS, pick method or hard-path seeds, download `trial.res`.
+Upload HKL/INS, pick method or hard-path seeds, download `trial.res`.  
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md).
 
 ### Phase your data
 
@@ -296,7 +304,8 @@ gps-download-cod          # helper for COD samples
 
 ```bash
 pytest -q
-python -m build && python -m twine check dist/*   # optional; package 0.2.0
+python -m build && python -m twine check dist/*   # optional; package 0.2.1
+# PyPI (needs API token): python -m twine upload dist/grok_phase_solver-0.2.1*
 ```
 
 PyPI upload is optional (`twine upload dist/*` with your API token). GitHub source install is fully supported.
