@@ -135,7 +135,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] **Lane B partial-φ UX:** `--phase-seed-res` / `--seed-peaks-csv` /
       `--seed-atoms-csv` / HA pair / `--patterson-ha`; `gps-make-seed`;
       seed-quality section in `report.md` (`solvers/seed_import.py`)
-- [ ] GUI / web upload
+- [x] **GUI (Streamlit):** `gps-gui` / `python -m grok_phase_solver.gui`
+      (`gui/app.py` + `gui/backend.py`); optional dep `.[gui]`
 
 ## Immediate next actions (honest priority)
 

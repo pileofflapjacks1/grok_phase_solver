@@ -8,6 +8,8 @@
 - **Lane B seed UX:** `--phase-seed-res`, `--seed-peaks-csv`, `--seed-atoms-csv`,
   isomorphous `--native-hkl`/`--derivative-hkl`, `--patterson-ha`;
   `gps-make-seed` CLI; seed-quality section in `report.md`
+- **GUI:** Streamlit app (`gps-gui`, extras `.[gui]`) — upload HKL/INS/seeds,
+  run same pipeline, download `trial.res` / zip
 - **SHELXS / SHELXE** external runners (`ShelX/` gitignored); `shelxs+shelxe` method
 - USER_GUIDE decision tree; SHELXL refinement instructions in `report.md`
 - `trial.res` export for Olex2/SHELXL

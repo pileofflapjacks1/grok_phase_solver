@@ -19,11 +19,44 @@ python -m pip install -e ".[ml]"
 # + download weights — see third_party/phai/README.md
 ```
 
+Optional **GUI** (Streamlit web UI):
+
+```bash
+python -m pip install -e ".[gui]"
+gps-gui
+# opens http://localhost:8501 — upload HKL/INS, run phasing, download trial.res
+```
+
 Check:
 
 ```bash
 gps-solve --help
+gps-gui --help   # launches Streamlit; use Ctrl+C to stop
 ```
+
+---
+
+## 1b. Graphical interface (optional)
+
+The GUI is a thin front end on the same `gps-solve` pipeline:
+
+| Feature | Notes |
+|---------|--------|
+| Upload HKL + INS | Or type cell / space group |
+| Method menu | `auto`, `ensemble`, `partial_phaseed`, PhAI, SHELXS, … |
+| Seed uploads | Phase CSV, fragment `.res`, `peaks.csv` |
+| Packaged demos | Easy ensemble; hard + 30% φ; hard + fragment |
+| Results | Free FOM, density slice, peaks table, full `report.md` |
+| Downloads | `trial.res`, CSV, zip of the export folder |
+
+```bash
+python -m pip install -e ".[gui]"
+gps-gui
+# or:  python -m grok_phase_solver.gui
+# or:  python scripts/run_gui.py
+```
+
+Headless / CI still use the CLI. The GUI does not replace SHELXL refinement.
 
 ---
 

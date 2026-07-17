@@ -39,6 +39,10 @@ dependencies = [
 ml = [
   "torch>=2.0",
 ]
+gui = [
+  "streamlit>=1.28",
+  "pandas>=2.0",
+]
 dev = [
   "pytest>=7.0",
   "pytest-cov>=4.0",
@@ -47,7 +51,7 @@ dev = [
   "ipykernel>=6.0",
 ]
 all = [
-  "grok-phase-solver[ml,dev]",
+  "grok-phase-solver[ml,dev,gui]",
 ]
 
 [project.urls]
@@ -58,6 +62,7 @@ Repository = "https://github.com/pileofflapjacks1/grok_phase_solver"
 [project.scripts]
 gps-solve = "grok_phase_solver.cli:solve_main"
 gps-make-seed = "grok_phase_solver.cli:make_seed_main"
+gps-gui = "grok_phase_solver.gui.launch:main"
 gps-download-cod = "grok_phase_solver.cli:download_cod_main"
 gps-baseline = "grok_phase_solver.cli:baseline_main"
 

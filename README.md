@@ -35,6 +35,9 @@ gps-solve --help
 
 Optional: `python -m pip install -e ".[ml]"` for PhAI (weights not included — see [`third_party/phai/README.md`](third_party/phai/README.md)).
 
+**GUI (browser):** `python -m pip install -e ".[gui]"` then `gps-gui` → http://localhost:8501  
+Upload HKL/INS, pick method or hard-path seeds, download `trial.res`.
+
 ### Phase your data
 
 ```bash
@@ -274,6 +277,7 @@ gps-download-cod          # helper for COD samples
 |------|------|
 | **Reviewing / refereeing** | [**FOR_REVIEWERS**](docs/FOR_REVIEWERS.md) (one-pager) |
 | Running on lab data | [**USER_GUIDE**](docs/USER_GUIDE.md) |
+| Browser GUI | `gps-gui` after `pip install -e ".[gui]"` |
 | Partial-φ theory + API | [docs/math/partial_seed.md](docs/math/partial_seed.md) |
 | Free FOM | [docs/math/free_fom.md](docs/math/free_fom.md) |
 | Failure modes A/B/C | [docs/math/failure_taxonomy.md](docs/math/failure_taxonomy.md) |
