@@ -38,6 +38,9 @@ examples/**/out_*/
 gps_solve_out/
 solve_out/
 
+# Pandoc intermediate for PDF build
+docs/paper/_arxiv_draft_tex.md
+
 # Academic SHELX binaries (user-provided; do NOT redistribute)
 ShelX/
 shelx/

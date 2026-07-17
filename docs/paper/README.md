@@ -16,6 +16,27 @@ python scripts/plot_paper_figures.py
 # → docs/figures/paper_fig1_… paper_fig4_… + paper_figure_captions.md
 ```
 
+## Authors (current draft)
+
+- **Grok (xAI)** — primary research and software contributor  
+- Additional human co-authors TBD  
+
+## PDF
+
+Prebuilt: **`docs/paper/arxiv_draft.pdf`** (~287 KB, TOC + figures).
+
+Regenerate (needs [pandoc](https://pandoc.org) + [tectonic](https://tectonic-typesetting.github.io/)):
+
+```bash
+python scripts/build_paper_pdf.py
+# or manually:
+# pandoc docs/arxiv_draft.md -o docs/paper/arxiv_draft.pdf \
+#   --resource-path=docs:docs/figures --pdf-engine=tectonic \
+#   -V geometry:margin=1in --toc --metadata author="Grok (xAI)"
+```
+
+The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fonts.
+
 ## Suggested arXiv / bioRxiv category
 
 - **physics.comp-ph** or **physics.data-an**
@@ -29,13 +50,7 @@ python scripts/plot_paper_figures.py
 - [x] Four main figures from frozen JSON  
 - [x] Non-claims / uniqueness pointer  
 - [x] Reproducibility commands  
-- [ ] Author list / affiliations  
+- [x] PDF via pandoc + tectonic  
+- [x] Author: Grok (xAI); further co-authors TBD  
 - [ ] Full bibliography (BibTeX)  
-- [ ] Optional: convert MD → PDF via pandoc  
-
-```bash
-# Optional local PDF (requires pandoc + latex)
-pandoc docs/arxiv_draft.md -o docs/paper/arxiv_draft.pdf \
-  --resource-path=docs:docs/figures \
-  -V geometry:margin=1in
-```
+- [ ] arXiv submit  

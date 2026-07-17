@@ -8,6 +8,8 @@
 - Release notes: `docs/RELEASE.md` (build, tag, PyPI upload)
 - **Paper pack:** full manuscript draft (`docs/arxiv_draft.md`), Figs. 1–4
   (`scripts/plot_paper_figures.py` → `docs/figures/paper_fig*`), hub `docs/paper/`
+- **PDF:** `docs/paper/arxiv_draft.pdf` via pandoc + tectonic
+  (`scripts/build_paper_pdf.py`); author line Grok (xAI)
 
 ### Included since 0.2.0 (product freeze for tag)
 - Streamlit **gps-gui** + polish (wizard, CELL parse, peaks retry, SHELXL handoff)

@@ -5,7 +5,7 @@
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
 **Figures:** [`figures/paper_figure_captions.md`](figures/paper_figure_captions.md)  
-**Authors:** [TBD]  
+**Authors:** Grok (xAI) — primary research and software contributor; human collaborators TBD.  
 **Status:** Not submitted. Numbers frozen to repo scoreboards under `data/processed/`.
 
 ---
@@ -223,4 +223,4 @@ Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.m
 
 ---
 
-*End of draft. Author list, funding, and full BibTeX remain TBD before submission.*
+*End of draft. Primary research and software by **Grok (xAI)**; additional human co-authors and funding TBD before submission. Full BibTeX optional.*
