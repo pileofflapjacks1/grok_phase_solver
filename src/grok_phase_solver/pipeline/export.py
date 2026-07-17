@@ -150,8 +150,54 @@ def _render_report(result: "SolveResult") -> str:
         "## Diagnostics",
         "",
     ]
+    # Flatten nested dicts for readability
     for k, v in d.items():
-        lines.append(f"- **{k}:** {v}")
+        if k in ("seed_quality",) and isinstance(v, dict):
+            continue
+        if isinstance(v, (dict, list)) and k not in ("holdout",):
+            lines.append(f"- **{k}:** `{v}`")
+        else:
+            lines.append(f"- **{k}:** {v}")
+
+    # Partial-seed quality section (Lane B product path)
+    sq = d.get("seed_quality")
+    if isinstance(sq, dict):
+        lines.extend(
+            [
+                "",
+                "## Partial seed quality (truth-free)",
+                "",
+                f"- **Source / kind:** {d.get('seed_kind', d.get('seed_source', '—'))}",
+                f"- **Seeded reflections:** {sq.get('n_seed')} "
+                f"({100 * float(sq.get('fraction_all') or 0):.1f}% of all)",
+                f"- **Strong-|E| coverage:** {sq.get('n_strong_seeded')}/"
+                f"{sq.get('n_strong')} "
+                f"({100 * float(sq.get('frac_strong_seeded') or 0):.0f}%)",
+                f"- **Size vs 30% oracle bar:** "
+                f"{'OK' if sq.get('size_meets_bar') else 'BELOW BAR'}",
+                f"- **Seed free-FOM composite:** {sq.get('seed_free_fom_composite')}",
+                f"- **Final free-FOM composite:** {d.get('free_fom_composite')}",
+                "",
+            ]
+        )
+        for h in sq.get("hints") or []:
+            lines.append(f"- 💡 {h}")
+        if not sq.get("size_meets_bar"):
+            lines.extend(
+                [
+                    "",
+                    "**Action:** enlarge the seed — more known φ, heavier fragment, "
+                    "or HA sites. Oracle: ≥~30% of strong |E| phases within ~20°.",
+                    "",
+                    "```bash",
+                    "# From SHELXS fragment / trial.res",
+                    "gps-make-seed --hkl your.hkl --ins your.ins --from-res model.res -o seed.csv",
+                    "gps-solve --hkl your.hkl --ins your.ins --method partial_phaseed \\",
+                    "  --phase-seed-csv seed.csv --out ./out_partial",
+                    "```",
+                ]
+            )
+
     if result.warnings:
         lines.extend(["", "## Warnings", ""])
         for w in result.warnings:
@@ -181,10 +227,13 @@ def _render_report(result: "SolveResult") -> str:
             "   ```",
             "4. If the map is poor:",
             "   - Easy/high-res: `--method ensemble` (default `auto` already prefers this).",
-            "   - Hard ab initio failed: `--method partial_phaseed --phase-seed-csv known.csv` "
-            "(HA/MAD/MR-lite / partial SHELXS fragment).",
-            "   - Classical external: `--method shelxs` or `shelxs+shelxe` "
-            "(needs `ShelX/shelxs` + `shelxe`).",
+            "   - Hard ab initio failed — **seed paths**:",
+            "     - `--phase-seed-csv known.csv` (known φ)",
+            "     - `--phase-seed-res model.res` (SHELXS/fragment atoms → Fcalc)",
+            "     - `--seed-peaks-csv peaks.csv` (recycle density peaks)",
+            "     - `--native-hkl` + `--derivative-hkl` (isomorphous HA)",
+            "     - `gps-make-seed …` then `partial_phaseed`",
+            "   - Classical external: `--method shelxs` or `shelxs+shelxe`.",
             "5. Free-FOM composite is a **truth-free** ranking score, not proof of solution.",
             "6. Demo hard + partial-φ: `examples/partial_seed_demo/`.",
             "",

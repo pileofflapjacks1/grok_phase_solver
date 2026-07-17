@@ -47,6 +47,8 @@ KNOWN_METHODS = (
     "shelxs",
     "shelxs+shelxe",
     "partial_phaseed",
+    "fragment_phaseed",
+    "ha_phaseed",
 )
 
 
@@ -65,9 +67,23 @@ class SolveConfig:
     min_peak_sigma: float = 2.5
     solvent_fraction: Optional[float] = None
     verbose: bool = True
-    # Partial-φ seed file (CSV: h,k,l,phase_deg) for method=partial_phaseed
-    phase_seed_csv: Optional[str] = None
+    # Partial-φ / fragment / HA seed sources (hard-data path)
+    phase_seed_csv: Optional[str] = None  # h,k,l,phase_deg
+    phase_seed_res: Optional[str] = None  # SHELXS/SHELXL .res atoms → Fcalc
+    seed_atoms_csv: Optional[str] = None  # x,y,z,element
+    seed_peaks_csv: Optional[str] = None  # peaks.csv from prior gps-solve
+    seed_element: str = "C"
+    seed_n_atoms: Optional[int] = None
+    seed_min_peak_sigma: float = 2.5
+    seed_b_iso: float = 8.0
     seed_fraction: float = 0.30
+    # Isomorphous HA pair (amplitudes loaded in solve_structure)
+    native_hkl: Optional[str] = None
+    derivative_hkl: Optional[str] = None
+    n_ha: int = 1
+    ha_element: str = "Br"
+    patterson_ha: bool = False
+    export_seed_csv: Optional[str] = None  # write mapped seed for reuse
     # Optional SHELXE density-mod polish after shelxs / when method=shelxs+shelxe
     shelxe_polish: bool = False
     shelxe_cycles: int = 15
@@ -140,12 +156,18 @@ def resolve_method(
     - else: ``charge_flipping``
 
     Hard data with *known partial phases* is not auto-detected — use
-    ``--method partial_phaseed --phase-seed-csv …`` (see USER_GUIDE).
+    ``--method partial_phaseed`` with a seed source (CSV / .res / peaks /
+    HA pair). See USER_GUIDE § partial-φ.
     """
     m = method.lower().strip()
     if m != "auto":
         if m not in KNOWN_METHODS:
             raise ValueError(f"Unknown method '{method}'. Choose from {KNOWN_METHODS}")
+        # Aliases
+        if m == "fragment_phaseed":
+            return "partial_phaseed", "user-selected (fragment/atomic model seed)"
+        if m == "ha_phaseed":
+            return "partial_phaseed", "user-selected (HA / difference Patterson seed)"
         return m, "user-selected"
 
     sg = space_group or ""
@@ -379,22 +401,69 @@ def _run_phasing(
             )
 
     if method == "partial_phaseed":
-        from grok_phase_solver.solvers.partial_seed import (
-            load_phase_seed_csv,
-            partial_phaseed_solve,
+        from grok_phase_solver.solvers.partial_seed import partial_phaseed_solve
+        from grok_phase_solver.solvers.seed_import import (
+            assess_seed_quality,
+            export_seed_csv,
+            resolve_phase_seed,
         )
 
-        if not cfg.phase_seed_csv:
-            raise ValueError(
-                "method=partial_phaseed requires SolveConfig.phase_seed_csv "
-                "(CSV with h,k,l,phase_deg). See solvers/partial_seed.py."
+        native_amp = getattr(cfg, "_native_amp", None)
+        deriv_amp = getattr(cfg, "_derivative_amp", None)
+        try:
+            seed_ph, mask, meta = resolve_phase_seed(
+                hkl,
+                amp,
+                cell_arr,
+                phase_seed_csv=cfg.phase_seed_csv,
+                phase_seed_res=cfg.phase_seed_res,
+                seed_atoms_csv=cfg.seed_atoms_csv,
+                seed_peaks_csv=cfg.seed_peaks_csv,
+                seed_element=cfg.seed_element,
+                seed_n_atoms=cfg.seed_n_atoms,
+                seed_min_peak_sigma=cfg.seed_min_peak_sigma,
+                seed_b_iso=cfg.seed_b_iso,
+                native_amp=native_amp,
+                derivative_amp=deriv_amp,
+                n_ha=cfg.n_ha,
+                ha_element=cfg.ha_element,
+                use_patterson_ha=cfg.patterson_ha,
+                seed=cfg.seed,
             )
-        seed_ph, mask, meta = load_phase_seed_csv(cfg.phase_seed_csv, hkl)
+        except ValueError as e:
+            raise ValueError(str(e)) from e
+
+        qual = assess_seed_quality(hkl, amp, cell_arr, seed_ph, mask)
+        meta = {**meta, "seed_quality": qual}
         if mask.sum() < 5:
             warnings.append(
-                f"phase seed CSV mapped only {int(mask.sum())} reflections; "
+                f"phase seed mapped only {int(mask.sum())} reflections; "
                 "results may be poor"
             )
+        if not qual.get("size_meets_bar", True):
+            warnings.append(
+                "Seed set is small vs the ~30% strong-|E| oracle bar — "
+                "extension may fail; add more known φ / fragment / HA."
+            )
+            for h in qual.get("hints") or []:
+                warnings.append(h)
+        if cfg.export_seed_csv:
+            try:
+                p = export_seed_csv(cfg.export_seed_csv, hkl, seed_ph, mask)
+                meta["exported_seed_csv"] = str(p)
+                if cfg.verbose:
+                    print(f"  wrote seed CSV → {p}")
+            except Exception as e:
+                warnings.append(f"export_seed_csv failed: {e}")
+
+        if cfg.verbose:
+            print(
+                f"  seed source={meta.get('source', meta.get('kind'))} "
+                f"n_seed={int(mask.sum())} "
+                f"frac_strong={qual.get('frac_strong_seeded', float('nan')):.0%} "
+                f"size_ok={qual.get('size_meets_bar')}"
+            )
+
         phases, density, history = partial_phaseed_solve(
             hkl, amp, cell_arr, seed_ph,
             mask=mask if mask.sum() >= 5 else None,
@@ -408,6 +477,10 @@ def _run_phasing(
             verbose=cfg.verbose,
             meta=meta,
         )
+        history = dict(history or {})
+        history["seed_meta"] = meta
+        history["seed_quality"] = qual
+        history["seed_source"] = meta.get("source", meta.get("kind", "partial"))
         return method, phases, density, history
 
     if method == "phai_phaseed":
@@ -534,15 +607,69 @@ def solve_structure(
     if data_dmin > 1.5:
         warnings.append(
             f"Data d_min ≈ {data_dmin:.2f} Å is relatively low for classical ab initio; "
-            "expect partial maps. Prefer PhAI/AI-PhaSeed (P21/c) or experimental phasing / MR."
+            "expect partial maps. Prefer partial_phaseed (HA/fragment) or experimental "
+            "phasing / MR; pure priors sit ~21% ≤20° (below 30% bar)."
         )
     if len(table) < 100:
         warnings.append(f"Only {len(table)} reflections — solution may be unreliable.")
 
-    method, auto_reason = resolve_method(cfg.method, sg, data_dmin, len(table))
+    # Isomorphous pair amplitudes (same hkl indexing as primary table when possible)
+    cfg._native_amp = None  # type: ignore[attr-defined]
+    cfg._derivative_amp = None  # type: ignore[attr-defined]
+    if cfg.native_hkl and cfg.derivative_hkl:
+        try:
+            from grok_phase_solver.io.experiment import load_experiment as _load_exp
+
+            t_nat, _ = _load_exp(
+                cfg.native_hkl, ins=ins_path, cell=cell, space_group=space_group
+            )
+            t_der, _ = _load_exp(
+                cfg.derivative_hkl, ins=ins_path, cell=cell, space_group=space_group
+            )
+            # Map to primary hkl keys
+            def _amp_map(tab):
+                key = {
+                    (int(r[0]), int(r[1]), int(r[2])): float(a)
+                    for r, a in zip(tab.hkl, tab.amplitudes)
+                }
+                out = np.zeros(len(hkl), dtype=np.float64)
+                for i, r in enumerate(hkl):
+                    k = (int(r[0]), int(r[1]), int(r[2]))
+                    out[i] = key.get(k, key.get((-k[0], -k[1], -k[2]), 0.0))
+                return out
+
+            cfg._native_amp = _amp_map(t_nat)  # type: ignore[attr-defined]
+            cfg._derivative_amp = _amp_map(t_der)  # type: ignore[attr-defined]
+            if cfg.verbose:
+                print(
+                    f"  loaded isomorphous pair native={cfg.native_hkl} "
+                    f"derivative={cfg.derivative_hkl}"
+                )
+        except Exception as e:
+            warnings.append(f"Failed to load native/derivative HKL pair: {e}")
+
+    # Auto-upgrade to partial_phaseed if user passed a seed source with auto
+    method_req = cfg.method.lower().strip()
+    has_seed = any(
+        [
+            cfg.phase_seed_csv,
+            cfg.phase_seed_res,
+            cfg.seed_atoms_csv,
+            cfg.seed_peaks_csv,
+            (cfg.native_hkl and cfg.derivative_hkl),
+            cfg.patterson_ha,
+        ]
+    )
+    if method_req == "auto" and has_seed:
+        method, auto_reason = (
+            "partial_phaseed",
+            "auto: seed source provided → partial_phaseed (hard path)",
+        )
+    else:
+        method, auto_reason = resolve_method(cfg.method, sg, data_dmin, len(table))
     if cfg.verbose:
         print(f"\n=== Phasing with method: {method} ===")
-        if cfg.method.lower() == "auto":
+        if cfg.method.lower() == "auto" or auto_reason.startswith("user"):
             print(f"    ({auto_reason})")
 
     diagnostics: Dict[str, Any] = {
@@ -579,6 +706,20 @@ def solve_structure(
         diagnostics["ensemble_pick"] = history.get("best_method")
     if history.get("seed_source"):
         diagnostics["seed_source"] = history.get("seed_source")
+    if history.get("seed_quality"):
+        sq = history["seed_quality"]
+        diagnostics["seed_n"] = sq.get("n_seed")
+        diagnostics["seed_frac_strong"] = sq.get("frac_strong_seeded")
+        diagnostics["seed_size_meets_bar"] = sq.get("size_meets_bar")
+        diagnostics["seed_free_fom"] = sq.get("seed_free_fom_composite")
+        diagnostics["seed_quality"] = sq
+    if history.get("seed_meta"):
+        sm = history["seed_meta"]
+        diagnostics["seed_kind"] = sm.get("kind") or sm.get("source")
+        if sm.get("n_atoms") is not None:
+            diagnostics["seed_n_atoms"] = sm.get("n_atoms")
+        if sm.get("path"):
+            diagnostics["seed_path"] = sm.get("path")
     if history.get("accepted_polish") is not None:
         diagnostics["accepted_polish"] = history.get("accepted_polish")
     if history.get("best_trial"):
@@ -597,6 +738,7 @@ def solve_structure(
     # Optional solvent DM polish after CF-family methods
     if cfg.solvent_fraction is not None and method in (
         "charge_flipping", "phai+cf", "hio", "ensemble", "phai_phaseed", "phai+cf_cond",
+        "partial_phaseed", "strong_prior_phaseed", "hard_p1_phaseed",
     ):
         if cfg.verbose:
             print(f"Density modification polish (solvent_fraction={cfg.solvent_fraction})")

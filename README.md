@@ -76,8 +76,10 @@ python scripts/run_partial_seed_demo.py
 ## 2. Which method should I use?
 
 ```text
-Have partial phases (HA / MAD / MR / SHELXS fragment)?
-   YES →  --method partial_phaseed --phase-seed-csv known.csv
+Have partial info (φ / fragment / HA)?
+   YES →  partial_phaseed + seed source:
+            --phase-seed-csv | --phase-seed-res | --seed-peaks-csv
+            | --native-hkl + --derivative-hkl | gps-make-seed …
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → --method auto   (→ ensemble)
             NO  → --method auto   (→ prior/CF; may fail — get partial φ or try shelxs)
@@ -89,7 +91,8 @@ Finish → trial.res → SHELXL / Olex2
 | Default / unsure | `--method auto` |
 | Easy / high resolution | `auto` or `ensemble` |
 | Hard, pure ab initio | `auto` (honest: often unsolved) |
-| **Hard + known φ or heavy atoms** | **`partial_phaseed` + `--phase-seed-csv`** |
+| **Hard + known φ / fragment / HA** | **`partial_phaseed` + seed source** (CSV / `.res` / peaks / HA) |
+| Build seed only | `gps-make-seed --from-res model.res -o seed.csv` |
 | External classical solve | `shelxs` or `shelxs+shelxe` (local academic binaries in `ShelX/`) |
 | P2₁/c + PhAI weights | `phai_phaseed` |
 

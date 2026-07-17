@@ -4,7 +4,10 @@
 
 ### Product / pipeline
 - `auto` prefers **ensemble** on easy/high-res; hard uses graph/hard-P1 priors or CF
-- **Partial-φ hard path**: `partial_phaseed` + `--phase-seed-csv`; demo in `examples/partial_seed_demo/`
+- **Partial-φ hard path**: `partial_phaseed` + multiple seed sources; demo in `examples/partial_seed_demo/`
+- **Lane B seed UX:** `--phase-seed-res`, `--seed-peaks-csv`, `--seed-atoms-csv`,
+  isomorphous `--native-hkl`/`--derivative-hkl`, `--patterson-ha`;
+  `gps-make-seed` CLI; seed-quality section in `report.md`
 - **SHELXS / SHELXE** external runners (`ShelX/` gitignored); `shelxs+shelxe` method
 - USER_GUIDE decision tree; SHELXL refinement instructions in `report.md`
 - `trial.res` export for Olex2/SHELXL

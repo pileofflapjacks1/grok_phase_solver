@@ -100,21 +100,45 @@ Finish → trial.res → SHELXL / Olex2
 | Default | `gps-solve --hkl … --ins … --method auto` |
 | Easy / high-res | `auto` or `ensemble` |
 | Hard, pure ab initio | `auto` (expect struggle; see free FOM) |
-| **Hard + known φ / HA** | `partial_phaseed` + `--phase-seed-csv` |
+| **Hard + known φ / fragment / HA** | `partial_phaseed` + seed source (below) |
 | External classical | `shelxs` or `shelxs+shelxe` |
 | After any solve | `trial.res` → **SHELXL** |
 
 ### Partial-φ hard path (recommended when ab initio fails)
 
-Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → hard cells can strict-solve via AI-PhaSeed. Full ab initio priors still sit ~20% within 20°.
+Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → hard cells can strict-solve via AI-PhaSeed. Full ab initio priors still sit ~**21%** within 20° (even after scale-up).
+
+**Any seed source works** — if you pass one of these with `--method auto`, gps-solve switches to `partial_phaseed`:
+
+| Seed source | Flag | Typical origin |
+|-------------|------|----------------|
+| Known phases | `--phase-seed-csv known.csv` | MAD/MR / manual φ (`h,k,l,phase_deg`) |
+| SHELXS / fragment model | `--phase-seed-res model.res` | Q-peaks or partial atoms → Fcalc |
+| Density peaks | `--seed-peaks-csv peaks.csv` | Prior gps-solve peaks as light atoms |
+| Explicit fragment | `--seed-atoms-csv atoms.csv` | `x,y,z,element` fractional |
+| Isomorphous HA | `--native-hkl` + `--derivative-hkl` | Difference Patterson → HA sites |
+| Single-dataset HA | `--patterson-ha` | Weak Patterson heuristic (HA present) |
 
 ```bash
-# CSV: h,k,l,phase_deg  (strong reflections you know)
+# 1) Known phases
 gps-solve --hkl data.hkl --ins data.ins \
-  --method partial_phaseed \
-  --phase-seed-csv known_phases.csv \
-  --out ./out_partial
+  --method partial_phaseed --phase-seed-csv known_phases.csv --out ./out_partial
+
+# 2) SHELXS fragment / trial.res → Fcalc seed (no manual CSV)
+gps-solve --hkl data.hkl --ins data.ins \
+  --method partial_phaseed --phase-seed-res shelxs_job.res --out ./out_frag
+
+# 3) Build seed CSV offline, then solve
+gps-make-seed --hkl data.hkl --ins data.ins --from-res model.res -o seed.csv
+gps-solve --hkl data.hkl --ins data.ins \
+  --method partial_phaseed --phase-seed-csv seed.csv --out ./out_partial
+
+# 4) Isomorphous pair (HA)
+gps-solve --hkl der.hkl --ins data.ins --method ha_phaseed \
+  --native-hkl nat.hkl --derivative-hkl der.hkl --ha-element Br --out ./out_ha
 ```
+
+`report.md` includes a **Partial seed quality** section (strong-|E| coverage vs the 30% bar, free FOM of the raw seed, next-step hints). Size is truth-free; correctness still requires chemistry / refinement.
 
 **Packaged demo** (synthetic hard-ish + 30% oracle seed):
 
@@ -124,6 +148,9 @@ gps-solve --hkl examples/partial_seed_demo/demo_hard.hkl \
   --method partial_phaseed \
   --phase-seed-csv examples/partial_seed_demo/known_phases_30pct.csv \
   --out examples/partial_seed_demo/out_30
+
+# Fragment path: Fcalc from a partial truth model written as .res (see demo README)
+python scripts/run_partial_seed_demo.py
 ```
 
 ### SHELXS → SHELXE → SHELXL (local academic binaries)

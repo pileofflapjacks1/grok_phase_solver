@@ -76,6 +76,22 @@ python scripts/run_wilson_domain_gap.py
 | Fragment fraction | How large a true-atom subset as $F_\mathrm{calc}$ seed is enough? |
 | Wilson gap | How far is hard synthetic \|F\| from experimental Fobs? |
 
+## Product path (Lane B)
+
+Scientist-facing seed importers (`solvers/seed_import.py`, CLI `gps-make-seed`):
+
+| Source | Flag / tool |
+|--------|-------------|
+| Known φ CSV | `--phase-seed-csv` |
+| SHELXS / fragment `.res` | `--phase-seed-res` (Fcalc seed) |
+| `peaks.csv` | `--seed-peaks-csv` |
+| Atoms CSV | `--seed-atoms-csv` |
+| Isomorphous pair | `--native-hkl` + `--derivative-hkl` |
+| Offline build | `gps-make-seed --from-res … -o seed.csv` |
+
+`report.md` reports truth-free **seed quality**: strong-|E| coverage vs the 30% bar
+and free FOM of the raw seed. Size adequacy ≠ correctness.
+
 If oracle ≥30–40% strong φ **solves** while GraphPhaseNet does not, the cliff is
 **prior quality**, not free-FOM or extension — invest in better seeds (partial
 experimental phasing, heavier models, larger nets), not more CF polish.

@@ -50,28 +50,29 @@ def workflow_decision_tree_md() -> str:
 
 ```text
                     ┌─────────────────────┐
-                    │  Have partial phases │
-                    │  (HA/MAD/MR/SHELXS)? │
+                    │  Have partial info?  │
+                    │  φ / fragment / HA   │
                     └──────────┬──────────┘
                          yes   │   no
               ┌────────────────┴────────────────┐
               ▼                                 ▼
      partial_phaseed                    Resolution good?
-     --phase-seed-csv                     (d ≲ 1.1–1.2 Å)
-              │                          yes╱        ╲no
-              │                           ▼          ▼
-              │                       ensemble     hard path:
-              │                       (auto)     strong_prior /
-              │                                  CF / shelxs
+     seed source:                         (d ≲ 1.1–1.2 Å)
+       --phase-seed-csv                  yes╱        ╲no
+       --phase-seed-res                   ▼          ▼
+       --seed-peaks-csv               ensemble     hard path:
+       --native + --derivative        (auto)     strong_prior /
+       gps-make-seed …                           CF / shelxs
               │                                       │
               └───────────────────┬───────────────────┘
                                   ▼
                            Inspect free FOM,
+                           seed quality section,
                            density_slice, peaks
                                   │
                     ┌─────────────┴─────────────┐
                     │ map ugly / unsolved?       │
-                    │ add partial φ or SHELXE    │
+                    │ enlarge seed or SHELXE     │
                     └─────────────┬─────────────┘
                                   ▼
                            trial.res → SHELXL
@@ -82,7 +83,11 @@ def workflow_decision_tree_md() -> str:
 | Default | `gps-solve --hkl … --ins … --method auto` |
 | Easy / high-res | `auto` → **ensemble** |
 | Hard, pure ab initio | `auto` → prior/CF; expect struggle |
-| Hard, have HA/partial φ | `--method partial_phaseed --phase-seed-csv known.csv` |
+| Hard + known φ | `--method partial_phaseed --phase-seed-csv known.csv` |
+| Hard + SHELXS fragment | `--phase-seed-res model.res` (method partial or auto) |
+| Hard + density peaks | `--seed-peaks-csv peaks.csv` |
+| Hard + isomorphous HA | `--native-hkl … --derivative-hkl … --method ha_phaseed` |
+| Build seed only | `gps-make-seed --hkl … --from-res model.res -o seed.csv` |
 | External classical solve | `--method shelxs` or `shelxs+shelxe` |
 | After any solve | Open `trial.res` → **SHELXL** / Olex2 |
 """

@@ -151,6 +151,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "hard_p1_phaseed",
             "strong_prior_phaseed",
             "partial_phaseed",
+            "fragment_phaseed",
+            "ha_phaseed",
             "recycle",
             "direct_methods",
             "hio",
@@ -159,9 +161,11 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "shelxd_or_dual",
             "shelxs",
             "shelxs+shelxe",
-            "partial_phaseed",
         ],
-        help="Phasing method (default: auto = ensemble on easy, priors/CF on hard)",
+        help=(
+            "Phasing method (default: auto = ensemble on easy, priors/CF on hard; "
+            "if a seed source is given, auto → partial_phaseed)"
+        ),
     )
     p.add_argument("--dmin", type=float, default=None, help="High-resolution cutoff Å (optional)")
     p.add_argument("--n-iter", type=int, default=120, help="Iterations for CF/HIO/polish")
@@ -179,7 +183,70 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
     p.add_argument(
         "--phase-seed-csv",
         default=None,
-        help="Partial-φ CSV (h,k,l,phase_deg) for --method partial_phaseed",
+        help="Partial-φ CSV (h,k,l,phase_deg) for partial_phaseed",
+    )
+    p.add_argument(
+        "--phase-seed-res",
+        default=None,
+        help="SHELXS/SHELXL .res atoms → Fcalc phase seed (fragment path)",
+    )
+    p.add_argument(
+        "--seed-atoms-csv",
+        default=None,
+        help="Fragment atoms CSV: x,y,z,element (fractional)",
+    )
+    p.add_argument(
+        "--seed-peaks-csv",
+        default=None,
+        help="Prior gps-solve peaks.csv → light-atom Fcalc seed",
+    )
+    p.add_argument(
+        "--seed-element",
+        default="C",
+        help="Element for peaks.csv seeds (default C)",
+    )
+    p.add_argument(
+        "--seed-n-atoms",
+        type=int,
+        default=None,
+        help="Max atoms from .res / peaks / atoms CSV",
+    )
+    p.add_argument(
+        "--seed-b-iso",
+        type=float,
+        default=8.0,
+        help="B_iso for Fcalc fragment seeds (default 8)",
+    )
+    p.add_argument(
+        "--export-seed-csv",
+        default=None,
+        help="Write the mapped seed phases to this CSV path",
+    )
+    p.add_argument(
+        "--native-hkl",
+        default=None,
+        help="Native amplitudes for isomorphous HA seed (with --derivative-hkl)",
+    )
+    p.add_argument(
+        "--derivative-hkl",
+        default=None,
+        help="Derivative amplitudes for isomorphous HA seed",
+    )
+    p.add_argument(
+        "--n-ha",
+        type=int,
+        default=1,
+        help="Number of heavy-atom sites to place (HA seed)",
+    )
+    p.add_argument(
+        "--ha-element",
+        default="Br",
+        help="Heavy-atom element for HA seed (default Br)",
+    )
+    p.add_argument(
+        "--patterson-ha",
+        action="store_true",
+        help="Single-dataset Patterson→HA heuristic seed (weak; for HA-containing data)",
     )
     p.add_argument(
         "--seed-fraction",
@@ -222,7 +289,19 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         solvent_fraction=args.solvent_fraction,
         verbose=not args.quiet,
         phase_seed_csv=args.phase_seed_csv,
+        phase_seed_res=args.phase_seed_res,
+        seed_atoms_csv=args.seed_atoms_csv,
+        seed_peaks_csv=args.seed_peaks_csv,
+        seed_element=args.seed_element,
+        seed_n_atoms=args.seed_n_atoms,
+        seed_b_iso=args.seed_b_iso,
         seed_fraction=args.seed_fraction,
+        export_seed_csv=args.export_seed_csv,
+        native_hkl=args.native_hkl,
+        derivative_hkl=args.derivative_hkl,
+        n_ha=args.n_ha,
+        ha_element=args.ha_element,
+        patterson_ha=args.patterson_ha,
         shelxe_polish=args.shelxe_polish,
         shelxe_cycles=args.shelxe_cycles,
         shelxe_solvent=args.shelxe_solvent,
@@ -251,19 +330,122 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
     print(f"\nRead {out / 'report.md'} for interpretation and next steps.")
 
 
+def make_seed_main(argv: list[str] | None = None) -> None:
+    """
+    Convert lab artifacts → phase-seed CSV without a full solve.
+
+    Examples
+    --------
+    gps-make-seed --hkl data.hkl --ins data.ins --from-res model.res -o seed.csv
+    gps-make-seed --hkl data.hkl --cell ... --from-peaks peaks.csv -o seed.csv
+    """
+    from grok_phase_solver.io.experiment import load_experiment
+    from grok_phase_solver.solvers.seed_import import (
+        assess_seed_quality,
+        export_seed_csv,
+        resolve_phase_seed,
+    )
+
+    p = argparse.ArgumentParser(
+        prog="gps-make-seed",
+        description=(
+            "Build a partial-φ seed CSV from .res atoms, peaks.csv, atoms CSV, "
+            "or isomorphous HA pair — for use with gps-solve --phase-seed-csv."
+        ),
+    )
+    p.add_argument("--hkl", required=True, help="Reflection file (for indexing)")
+    p.add_argument("--ins", default=None)
+    p.add_argument("--cell", default=None)
+    p.add_argument("--sg", default=None)
+    p.add_argument("--from-res", default=None, help="SHELX .res / .ins atoms")
+    p.add_argument("--from-peaks", default=None, help="peaks.csv")
+    p.add_argument("--from-atoms", default=None, help="x,y,z,element CSV")
+    p.add_argument("--from-phases", default=None, help="existing phase CSV (re-map)")
+    p.add_argument("--native-hkl", default=None)
+    p.add_argument("--derivative-hkl", default=None)
+    p.add_argument("--patterson-ha", action="store_true")
+    p.add_argument("--seed-element", default="C")
+    p.add_argument("--seed-n-atoms", type=int, default=None)
+    p.add_argument("--n-ha", type=int, default=1)
+    p.add_argument("--ha-element", default="Br")
+    p.add_argument("--seed-b-iso", type=float, default=8.0)
+    p.add_argument("-o", "--out", default="phase_seed.csv")
+    p.add_argument("--seed", type=int, default=0)
+    args = p.parse_args(argv)
+
+    table, _ = load_experiment(
+        args.hkl, ins=args.ins, cell=args.cell, space_group=args.sg
+    )
+    hkl, amp, cell = table.hkl, table.amplitudes, table.cell
+    assert cell is not None
+
+    native_amp = deriv_amp = None
+    if args.native_hkl and args.derivative_hkl:
+        t_n, _ = load_experiment(args.native_hkl, ins=args.ins, cell=args.cell, space_group=args.sg)
+        t_d, _ = load_experiment(args.derivative_hkl, ins=args.ins, cell=args.cell, space_group=args.sg)
+        key_n = {(int(r[0]), int(r[1]), int(r[2])): float(a) for r, a in zip(t_n.hkl, t_n.amplitudes)}
+        key_d = {(int(r[0]), int(r[1]), int(r[2])): float(a) for r, a in zip(t_d.hkl, t_d.amplitudes)}
+        native_amp = np.array(
+            [key_n.get((int(r[0]), int(r[1]), int(r[2])), 0.0) for r in hkl]
+        )
+        deriv_amp = np.array(
+            [key_d.get((int(r[0]), int(r[1]), int(r[2])), 0.0) for r in hkl]
+        )
+
+    try:
+        seed_ph, mask, meta = resolve_phase_seed(
+            hkl,
+            amp,
+            cell,
+            phase_seed_csv=args.from_phases,
+            phase_seed_res=args.from_res,
+            seed_atoms_csv=args.from_atoms,
+            seed_peaks_csv=args.from_peaks,
+            seed_element=args.seed_element,
+            seed_n_atoms=args.seed_n_atoms,
+            seed_b_iso=args.seed_b_iso,
+            native_amp=native_amp,
+            derivative_amp=deriv_amp,
+            n_ha=args.n_ha,
+            ha_element=args.ha_element,
+            use_patterson_ha=args.patterson_ha,
+            seed=args.seed,
+        )
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    out = Path(args.out)
+    export_seed_csv(out, hkl, seed_ph, mask)
+    qual = assess_seed_quality(hkl, amp, cell, seed_ph, mask)
+    print(f"Wrote {out.resolve()}  ({int(mask.sum())} reflections)")
+    print(
+        f"  source={meta.get('source', meta.get('kind'))}  "
+        f"frac_strong_seeded={qual['frac_strong_seeded']:.0%}  "
+        f"size_meets_bar={qual['size_meets_bar']}"
+    )
+    for h in qual.get("hints") or []:
+        print(f"  note: {h}")
+
+
 def main(argv: list[str] | None = None) -> None:
-    """Multi-command dispatcher: gps solve | baseline | download-cod"""
+    """Multi-command dispatcher: gps solve | baseline | download-cod | make-seed"""
     # Allow `python -m grok_phase_solver.cli solve ...`
     if argv is None:
         argv = sys.argv[1:]
     if not argv:
-        print("Usage: gps-solve | gps-baseline | gps-download-cod  (see --help on each)")
+        print(
+            "Usage: gps-solve | gps-make-seed | gps-baseline | gps-download-cod  "
+            "(see --help on each)"
+        )
         print("  or:  python -m grok_phase_solver.cli solve --hkl ...")
         sys.exit(0)
     cmd = argv[0]
     rest = argv[1:]
     if cmd in ("solve", "gps-solve"):
         solve_main(rest)
+    elif cmd in ("make-seed", "gps-make-seed"):
+        make_seed_main(rest)
     elif cmd in ("baseline", "gps-baseline"):
         baseline_main(rest)
     elif cmd in ("download-cod", "gps-download-cod"):

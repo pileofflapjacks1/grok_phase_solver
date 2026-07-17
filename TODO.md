@@ -132,6 +132,9 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Exports: phases, density, peaks, report.md
 - [x] User guide + demo (`docs/USER_GUIDE.md`, `examples/demo_solve/`)
 - [x] SHELXL-style `.res` trial model export (`trial.res`)
+- [x] **Lane B partial-φ UX:** `--phase-seed-res` / `--seed-peaks-csv` /
+      `--seed-atoms-csv` / HA pair / `--patterson-ha`; `gps-make-seed`;
+      seed-quality section in `report.md` (`solvers/seed_import.py`)
 - [ ] GUI / web upload
 
 ## Immediate next actions (honest priority)
