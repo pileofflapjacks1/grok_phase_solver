@@ -17,7 +17,7 @@ $$
 | **Audience** | Experimental crystallographers + method developers |
 | **Best at** | Small molecules, good resolution; transparent classical + hybrid pipelines |
 | **Not** | A general protein ab initio solver or a drop-in SHELXL replacement |
-| **Docs** | [User guide](docs/USER_GUIDE.md) · [Math notes](docs/math/) · [Changelog](CHANGELOG.md) · [TODO](TODO.md) |
+| **Docs** | [User guide](docs/USER_GUIDE.md) · [**For reviewers**](docs/FOR_REVIEWERS.md) · [Math notes](docs/math/) · [Changelog](CHANGELOG.md) · [TODO](TODO.md) |
 | **Repo** | https://github.com/pileofflapjacks1/grok_phase_solver |
 
 ---
@@ -117,6 +117,8 @@ Full table and flags: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 ---
 
 ## 4. Key scientific findings (start here if reviewing the work)
+
+**One-pager for referees:** [`docs/FOR_REVIEWERS.md`](docs/FOR_REVIEWERS.md) (claims C1–C8, non-claims, reproduce steps).
 
 Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 ([`metrics/success.py`](src/grok_phase_solver/metrics/success.py)).
 
@@ -267,6 +269,7 @@ gps-download-cod          # helper for COD samples
 
 | For… | Read |
 |------|------|
+| **Reviewing / refereeing** | [**FOR_REVIEWERS**](docs/FOR_REVIEWERS.md) (one-pager) |
 | Running on lab data | [**USER_GUIDE**](docs/USER_GUIDE.md) |
 | Partial-φ theory + API | [docs/math/partial_seed.md](docs/math/partial_seed.md) |
 | Free FOM | [docs/math/free_fom.md](docs/math/free_fom.md) |
