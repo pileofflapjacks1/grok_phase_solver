@@ -155,8 +155,11 @@ AI-driven general solver for the X-ray crystallography phase problem.
 13. [x] Partial-φ / fragment seed API + hard-cliff curves (`partial_seed.py`, `run_partial_seed_benchmark.py`)  
 14. [x] A+B: Wilson-matched retrain + strong-seed metrics/loss (v3; hold-out strong MPE≈59°, frac≤20°≈21% vs 30% bar; still 0% strict)  
 15. [x] Product trio: auto→ensemble (easy), partial-φ hard path + demo, SHELXS+SHELXE polish + SHELXL docs  
-16. [ ] Hit strong-seed bar (≥30% within 20°) via larger data/capacity or better architecture  
-17. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
+16. [~] **Lane A (v4):** residual GNN + Adam + d_in=10 + **1200-struct XL** train  
+      (`--scale-xl --wilson-match`). Hold-out frac≤20° still **~21%** (bar 30%);  
+      seedOK rate 5–12%; strict hard solves still 0%. Checkpoint `strong_prior.npz`  
+      + `strong_prior_v4_xl.npz` / `_ft.npz`. **Mean seed bar not cleared by scale alone.**  
+17. [ ] Further scale (10⁴ cells / torch equivariant) **or** accept ceiling and invest in partial-φ UX  
 18. [~] PyPI packaging ready (build/check); full upload when credentials available  
 19. [ ] More experimental HKL on scoreboard  
 

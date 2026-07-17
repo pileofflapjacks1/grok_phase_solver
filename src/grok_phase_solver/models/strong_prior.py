@@ -219,6 +219,7 @@ def train_graph_on_packed(
     origin_every: int = 3,
     within_weight: float = 0.25,
     within_deg: float = 20.0,
+    optimizer: str = "adam",
 ) -> List[float]:
     """
     Train on one prebuilt structure with OI + triplet aux + strong-seed focus.
@@ -235,15 +236,16 @@ def train_graph_on_packed(
     best_ph = packed["cands"][0]
     thr = np.deg2rad(within_deg)
     for ep in range(n_epochs):
-        if ep % max(origin_every, 1) == 0:
+        need_forward = (ep % max(origin_every, 1) == 0) or (within_weight > 0)
+        z = None
+        if need_forward:
             z, _ = model.forward(X, adj=adj)
+        if ep % max(origin_every, 1) == 0 and z is not None:
             best_ph = _pick_best_origin(z, packed)
         # Soft within-angle boost: increase weight where currently wrong
-        if within_weight > 0:
-            z, _ = model.forward(X, adj=adj)
+        if within_weight > 0 and z is not None:
             ph_p = np.arctan2(z[:, 1], z[:, 0])
             d = np.abs(np.angle(np.exp(1j * (ph_p - best_ph))))
-            # boost nodes worse than threshold
             w_ep = w_s * (1.0 + within_weight * (d > thr).astype(np.float64))
         else:
             w_ep = w_s
@@ -256,7 +258,7 @@ def train_graph_on_packed(
             edge_weight=ewt,
             triplet_weight=triplet_weight,
         )
-        model.step(grads, lr=lr)
+        model.step(grads, lr=lr, optimizer=optimizer)
         losses.append(loss)
     return losses
 
@@ -396,8 +398,8 @@ def train_strong_prior(
     n_layers: int = 3,
     max_reflections: int = 120,
     seed: int = 0,
-    lr: float = 2e-3,
-    lr_refine: float = 6e-4,
+    lr: float = 1.5e-3,
+    lr_refine: float = 4e-4,
     triplet_weight: float = 0.18,
     curriculum: bool = True,
     wilson_match: bool = False,
@@ -406,6 +408,13 @@ def train_strong_prior(
     top_boost: float = 3.0,
     within_weight: float = 0.35,
     within_deg: float = 20.0,
+    residual: bool = True,
+    optimizer: str = "adam",
+    d_in: int = 10,
+    hard_oversample: float = 1.0,
+    scale_tag: str = "v4_scale_seed",
+    init_model: Optional[GraphPhaseNet] = None,
+    bridge_frac: float = 0.30,
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
@@ -413,6 +422,9 @@ def train_strong_prior(
 
     Training emphasizes the hard-cliff seed bar: high |E| nodes, extra loss when
     phase error exceeds ``within_deg`` (default 20°), triplet aux.
+
+    v4 adds residual MP layers, Adam, richer node features (d_in=10), and
+    optional hard-region oversampling for 10³-scale runs.
     """
     from grok_phase_solver.metrics.strong_seed import full_and_strong_metrics
 
@@ -422,8 +434,8 @@ def train_strong_prior(
             seed=seed,
             n_atoms_range=n_atoms_range,
             d_min_range=d_min_range,
-            include_bridge=True,
-            bridge_frac=0.30,
+            include_bridge=bridge_frac > 0,
+            bridge_frac=bridge_frac,
             p_minus1_frac=0.25,
             wilson_match=wilson_match,
         )
@@ -432,22 +444,47 @@ def train_strong_prior(
         samples = sorted(samples, key=lambda s: s["difficulty"])
 
     n_wm = sum(1 for s in samples if s.get("wilson_match", {}).get("matched"))
-    mu, sig = accumulate_feature_stats(samples, max_reflections=max_reflections)
-    model = GraphPhaseNet(d_in=8, hidden=hidden, n_layers=n_layers, seed=seed)
-    model._feat_mu = mu  # type: ignore[attr-defined]
-    model._feat_sig = sig  # type: ignore[attr-defined]
+    if init_model is not None and hasattr(init_model, "_feat_mu"):
+        mu = np.asarray(init_model._feat_mu, dtype=np.float64)  # type: ignore[attr-defined]
+        sig = np.asarray(init_model._feat_sig, dtype=np.float64)  # type: ignore[attr-defined]
+    else:
+        mu, sig = accumulate_feature_stats(samples, max_reflections=max_reflections)
+    # Infer d_in from feature stats if caller left default
+    feat_dim = int(mu.shape[0]) if mu is not None else d_in
+    if init_model is not None:
+        model = init_model
+        # keep architecture of init_model; re-attach feature stats
+        model._feat_mu = mu  # type: ignore[attr-defined]
+        model._feat_sig = sig  # type: ignore[attr-defined]
+        # reset Adam state for fine-tune
+        model._adam_m = None
+        model._adam_v = None
+        model._adam_t = 0
+        if verbose:
+            print(
+                f"  fine-tune from init model "
+                f"(H={model.hidden}, L={model.n_layers}, d_in={model.d_in})"
+            )
+    else:
+        model = GraphPhaseNet(
+            d_in=feat_dim, hidden=hidden, n_layers=n_layers, seed=seed, residual=residual
+        )
+        model._feat_mu = mu  # type: ignore[attr-defined]
+        model._feat_sig = sig  # type: ignore[attr-defined]
 
     if verbose:
         n_bridge = sum(1 for s in samples if s["region"] == "bridge")
         n_p1 = sum(1 for s in samples if s["space_group"] == "P1")
         print(
-            f"Strong prior (v3 seed-retarget): {len(samples)} structs "
+            f"Strong prior ({scale_tag}): {len(samples)} structs "
             f"(bridge={n_bridge}, P1={n_p1}, P-1={len(samples)-n_p1}), "
-            f"hidden={hidden}, layers={n_layers}, max_refl={max_reflections}, "
+            f"hidden={hidden}, layers={n_layers}, residual={residual}, "
+            f"d_in={feat_dim}, max_refl={max_reflections}, "
             f"triplet_w={triplet_weight}, passes={n_global_passes}, "
-            f"epochs/struct={epochs_per}, curriculum={curriculum}, "
+            f"epochs/struct={epochs_per}, opt={optimizer}, curriculum={curriculum}, "
             f"wilson_match={wilson_match} (matched={n_wm}), "
-            f"E^{e_power} top_boost={top_boost} within={within_deg}°"
+            f"E^{e_power} top_boost={top_boost} within={within_deg}° "
+            f"hard_os={hard_oversample}"
         )
 
     packs: List[Dict] = []
@@ -461,6 +498,10 @@ def train_strong_prior(
     if verbose:
         print(f"  prebuilt {len(packs)}/{len(samples)} graph packs")
 
+    # Hard-region oversample indices for large-N runs
+    hard_idx = [i for i, p in enumerate(packs) if p["sample"]["region"] == "hard"]
+    bridge_idx = [i for i, p in enumerate(packs) if p["sample"]["region"] != "hard"]
+
     all_losses: List[float] = []
     all_mpe: List[float] = []
     all_strong_mpe: List[float] = []
@@ -469,21 +510,31 @@ def train_strong_prior(
     pass_frac20: List[float] = []
 
     for gpass in range(n_global_passes):
-        lr_p = lr * (0.7 ** gpass)
-        order = list(range(len(packs)))
-        if curriculum and gpass > 0:
-            order = list(reversed(order))
+        lr_p = lr * (0.75 ** gpass)
         rng = np.random.default_rng(seed + 1000 * gpass)
-        if len(order) > 4:
-            mid = len(order) // 2
-            first, second = order[:mid], order[mid:]
-            rng.shuffle(first)
-            rng.shuffle(second)
-            order = first + second if gpass == 0 else second + first
+        if hard_oversample > 1.0 and hard_idx:
+            n_hard = int(round(len(hard_idx) * hard_oversample))
+            order = list(bridge_idx) + list(
+                rng.choice(hard_idx, size=max(n_hard, len(hard_idx)), replace=True)
+            )
+            rng.shuffle(order)
+            if curriculum and gpass == 0:
+                # easy-first: bridge then hard-ish by difficulty of packed sample
+                order = sorted(order, key=lambda i: packs[i]["sample"]["difficulty"])
+        else:
+            order = list(range(len(packs)))
+            if curriculum and gpass > 0:
+                order = list(reversed(order))
+            if len(order) > 4:
+                mid = len(order) // 2
+                first, second = order[:mid], order[mid:]
+                rng.shuffle(first)
+                rng.shuffle(second)
+                order = first + second if gpass == 0 else second + first
 
         for j, pi in enumerate(order):
-            packed = packs[pi]
-            ep = epochs_per if gpass < n_global_passes - 1 else max(epochs_per // 2, 6)
+            packed = packs[int(pi)]
+            ep = epochs_per if gpass < n_global_passes - 1 else max(epochs_per // 2, 4)
             losses = train_graph_on_packed(
                 model,
                 packed,
@@ -493,10 +544,12 @@ def train_strong_prior(
                 origin_every=3,
                 within_weight=within_weight,
                 within_deg=within_deg,
+                optimizer=optimizer,
             )
             all_losses.append(float(np.mean(losses[-5:])) if losses else 0.0)
 
-            if j < 2 or (j + 1) % max(25, len(packs) // 6) == 0 or j == len(order) - 1:
+            log_every = max(40, len(order) // 8)
+            if j < 2 or (j + 1) % log_every == 0 or j == len(order) - 1:
                 s = packed["sample"]
                 ph_full = predict_full_phases(
                     model, s["hkl"], s["amplitudes"], s["cell"],
@@ -535,21 +588,25 @@ def train_strong_prior(
     if not hard_packs:
         hard_packs = packs
     rng = np.random.default_rng(seed + 7)
-    for j, pi in enumerate(rng.permutation(len(hard_packs))):
+    # Refine: visit hard packs (cap for very large sets)
+    refine_n = min(len(hard_packs), max(len(hard_packs), int(0.5 * len(hard_packs))))
+    refine_order = rng.permutation(len(hard_packs))[:refine_n]
+    for pi in refine_order:
         train_graph_on_packed(
             model,
-            hard_packs[pi],
+            hard_packs[int(pi)],
             n_epochs=epochs_refine,
             lr=lr_refine,
             triplet_weight=triplet_weight * 1.2,
             origin_every=2,
-            within_weight=within_weight * 1.2,
+            within_weight=within_weight * 1.25,
             within_deg=within_deg,
+            optimizer=optimizer,
         )
 
     hold = _holdout_eval(
         model,
-        n_hold=max(6, n_structures // 12),
+        n_hold=max(8, min(40, n_structures // 25)),
         seed=seed + 90000,
         n_atoms_range=n_atoms_range,
         d_min_range=d_min_range,
@@ -560,7 +617,7 @@ def train_strong_prior(
     sm_hold = [h for h in hold if h.get("strong_mpe_oi") is not None]
     meta = {
         "architecture": "GraphPhaseNet",
-        "scale": "v3_seed_retarget",
+        "scale": scale_tag,
         "domain": "hard_multi_SG",
         "n_structures": n_structures,
         "n_packs": len(packs),
@@ -569,6 +626,9 @@ def train_strong_prior(
         "d_min_range": list(d_min_range),
         "hidden": hidden,
         "n_layers": n_layers,
+        "residual": residual,
+        "optimizer": optimizer,
+        "d_in": feat_dim,
         "max_reflections": max_reflections,
         "epochs_per": epochs_per,
         "n_global_passes": n_global_passes,
@@ -581,6 +641,7 @@ def train_strong_prior(
         "top_boost": top_boost,
         "within_weight": within_weight,
         "within_deg": within_deg,
+        "hard_oversample": hard_oversample,
         "seed": seed,
         "train_losses": all_losses,
         "train_mpe_oi": all_mpe,
@@ -600,9 +661,9 @@ def train_strong_prior(
         "feat_mu": mu.tolist(),
         "feat_sig": sig.tolist(),
         "note": (
-            "v3 GraphPhaseNet: Wilson-matchable |F|, strong-|E| loss reweight, "
-            "within-20° boost, triplet aux. Target: ≥30% strong φ within 20° "
-            "for AI-PhaSeed. Not a claimed general experimental solver."
+            "v4 GraphPhaseNet: residual MP, Adam, d_in=10 (deg+E²), Wilson-matchable |F|, "
+            "strong-|E| loss reweight, within-20° boost, hard oversample option. "
+            "Target: ≥30% strong φ within 20° for AI-PhaSeed. Not a general experimental solver."
         ),
     }
     if verbose and hold:

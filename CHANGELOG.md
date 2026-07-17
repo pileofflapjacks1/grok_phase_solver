@@ -12,12 +12,15 @@
 ### Science
 - Free FOM v2.1, failure taxonomy A/B/C, AI-PhaSeed
 - GraphPhaseNet strong prior (v3): Wilson match + strong-seed metrics/loss
+- **Lane A v4 XL:** residual MP + Adam + d_in=10 + `--scale-xl` (1200 structs);
+  fine-tune `--continue-from` / `--hard-only` / `--seed-focus`
 - Oracle partial-φ curves: ≥30% strong φ within 20° → hard strict solves
 - Wilson domain-gap closing (`wilson_match.py`)
 - SHELXS head-to-head scoreboard vs CF/ensemble/priors
 
 ### Honest limits
-- Hard ab initio still ~0% strict success under full priors (seed bar ~21% ≤20°)
+- Hard ab initio still ~0% strict success under full priors
+- **Seed bar ~21% ≤20° plateaus under 5× scale** (v3 → v4 XL); not cleared to 30%
 - Not a general protein ab initio solver
 
 ## 0.1.0 — earlier

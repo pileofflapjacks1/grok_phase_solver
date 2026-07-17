@@ -90,12 +90,13 @@ def build_normalized_adj(
 
 def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell: np.ndarray) -> np.ndarray:
     """
-    Richer node features: [E, s_norm, s², |h|_norm, amp_norm, h/hmax, k/kmax, l/lmax]
+    Node features (d_in=10):
+    [E, s_norm, s², |h|_norm, amp_norm, h/hmax, k/kmax, l/lmax, deg_norm, E²_norm]
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
     amp_s = np.asarray(amp[idx], dtype=np.float64)
-    E = graph["E"]
+    E = np.asarray(graph["E"], dtype=np.float64)
     d = d_spacing(hkl_s, cell)
     s = 1.0 / (2.0 * np.maximum(d, 1e-6))
     s_n = s / (s.max() + 1e-16)
@@ -103,6 +104,20 @@ def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell
     hn = np.linalg.norm(hkl_s, axis=1)
     hn = hn / (hn.max() + 1e-16)
     amp_n = amp_s / (amp_s.std() + 1e-16)
+    n = len(E)
+    deg = np.zeros(n, dtype=np.float64)
+    edges = graph.get("edges")
+    if edges is not None and len(edges) > 0:
+        for e in np.asarray(edges):
+            i, j, k = int(e[0]), int(e[1]), int(e[2])
+            for a, b in ((i, j), (i, k), (j, k)):
+                if a == b or a < 0 or b < 0 or a >= n or b >= n:
+                    continue
+                deg[a] += 1.0
+                deg[b] += 1.0
+    deg_n = deg / (deg.max() + 1e-16)
+    e2 = E ** 2
+    e2_n = e2 / (e2.max() + 1e-16)
     return np.column_stack(
         [
             E,
@@ -113,6 +128,8 @@ def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell
             hkl_s[:, 0] / hmax[0],
             hkl_s[:, 1] / hmax[1],
             hkl_s[:, 2] / hmax[2],
+            deg_n,
+            e2_n,
         ]
     ).astype(np.float64)
 
@@ -195,10 +212,11 @@ def triplet_loss_and_grad(
 class GraphPhaseNet:
     """Message-passing net → (cos φ, sin φ) per strong reflection."""
 
-    d_in: int = 8
+    d_in: int = 10
     hidden: int = 64
     n_layers: int = 2
     seed: int = 0
+    residual: bool = True
 
     W_in: np.ndarray = field(init=False)
     b_in: np.ndarray = field(init=False)
@@ -222,6 +240,9 @@ class GraphPhaseNet:
             self.b_h.append(np.zeros(h))
         self.W_out = rng.normal(0, np.sqrt(2 / h), (h, 2)) * 0.1
         self.b_out = np.zeros(2)
+        self._adam_t = 0
+        self._adam_m: Optional[dict] = None
+        self._adam_v: Optional[dict] = None
 
     def _resolve_adj(
         self,
@@ -245,6 +266,19 @@ class GraphPhaseNet:
                 A[i, int(j)] += float(wj)
         return A
 
+    def _match_features(self, X: np.ndarray) -> np.ndarray:
+        """Pad/truncate node features to ``d_in`` (v3 d_in=8 → v4 d_in=10)."""
+        X = np.asarray(X, dtype=np.float64)
+        if X.ndim != 2:
+            return X
+        d = X.shape[1]
+        if d == self.d_in:
+            return X
+        if d > self.d_in:
+            return X[:, : self.d_in]
+        pad = np.zeros((X.shape[0], self.d_in - d), dtype=np.float64)
+        return np.concatenate([X, pad], axis=1)
+
     def forward(
         self,
         X: np.ndarray,
@@ -253,17 +287,31 @@ class GraphPhaseNet:
         adj: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, dict]:
         """Return (N, 2) cos/sin logits and cache for backward."""
+        X = self._match_features(X)
         A = self._resolve_adj(X, nbrs, wts, adj)
         z0 = X @ self.W_in + self.b_in
         h = _relu(z0)
-        cache = {"X": X, "z0": z0, "h0": h, "hs": [h], "zs": [], "aggs": [], "A": A}
+        cache = {
+            "X": X,
+            "z0": z0,
+            "h0": h,
+            "hs": [h],
+            "zs": [],
+            "aggs": [],
+            "A": A,
+            "residual": self.residual,
+        }
 
         for ell in range(self.n_layers):
             agg = A @ h
             z = h @ self.W_self[ell] + agg @ self.W_msg[ell] + self.b_h[ell]
             cache["zs"].append(z)
             cache["aggs"].append(agg)
-            h = _relu(z)
+            h_act = _relu(z)
+            if self.residual:
+                h = h + h_act
+            else:
+                h = h_act
             cache["hs"].append(h)
 
         out = h @ self.W_out + self.b_out
@@ -336,6 +384,7 @@ class GraphPhaseNet:
 
         h = cache["h_final"]
         A = cache["A"]
+        residual = bool(cache.get("residual", self.residual))
         dW_out = h.T @ dout
         db_out = dout.sum(axis=0)
         dh = dout @ self.W_out.T
@@ -352,6 +401,7 @@ class GraphPhaseNet:
             z = cache["zs"][ell]
             h_prev = cache["hs"][ell]
             agg = cache["aggs"][ell]
+            # residual: h = h_prev + relu(z)  →  dh_act = dh, dh_prev gets skip
             dz = dh * _relu_grad(z)
             dW_self = h_prev.T @ dz
             dW_msg = agg.T @ dz
@@ -360,10 +410,14 @@ class GraphPhaseNet:
             grads["W_msg"].insert(0, dW_msg)
             grads["b_h"].insert(0, db)
 
-            dh_prev = dz @ self.W_self[ell].T
+            dh_from_lin = dz @ self.W_self[ell].T
             dagg = dz @ self.W_msg[ell].T
             # agg = A @ h_prev  →  dh_prev += A.T @ dagg
-            dh = dh_prev + A.T @ dagg
+            dh_prev = dh_from_lin + A.T @ dagg
+            if residual:
+                dh = dh + dh_prev  # skip connection + path through layer
+            else:
+                dh = dh_prev
 
         z0 = cache["z0"]
         dz0 = dh * _relu_grad(z0)
@@ -373,21 +427,96 @@ class GraphPhaseNet:
         grads["b_in"] = db_in
         return float(loss), grads
 
-    def step(self, grads: dict, lr: float = 1e-3, clip: float = 5.0) -> None:
+    def _init_adam(self) -> None:
+        self._adam_m = {
+            "W_in": np.zeros_like(self.W_in),
+            "b_in": np.zeros_like(self.b_in),
+            "W_out": np.zeros_like(self.W_out),
+            "b_out": np.zeros_like(self.b_out),
+            "W_self": [np.zeros_like(w) for w in self.W_self],
+            "W_msg": [np.zeros_like(w) for w in self.W_msg],
+            "b_h": [np.zeros_like(b) for b in self.b_h],
+        }
+        self._adam_v = {
+            "W_in": np.zeros_like(self.W_in),
+            "b_in": np.zeros_like(self.b_in),
+            "W_out": np.zeros_like(self.W_out),
+            "b_out": np.zeros_like(self.b_out),
+            "W_self": [np.zeros_like(w) for w in self.W_self],
+            "W_msg": [np.zeros_like(w) for w in self.W_msg],
+            "b_h": [np.zeros_like(b) for b in self.b_h],
+        }
+        self._adam_t = 0
+
+    def step(
+        self,
+        grads: dict,
+        lr: float = 1e-3,
+        clip: float = 5.0,
+        *,
+        optimizer: str = "adam",
+        beta1: float = 0.9,
+        beta2: float = 0.999,
+        eps: float = 1e-8,
+    ) -> None:
         def _clip(g: np.ndarray) -> np.ndarray:
             n = np.linalg.norm(g)
             if n > clip and n > 0:
                 return g * (clip / n)
             return g
 
-        self.W_in -= lr * _clip(grads["W_in"])
-        self.b_in -= lr * _clip(grads["b_in"])
+        g_in = _clip(grads["W_in"])
+        g_bin = _clip(grads["b_in"])
+        g_out = _clip(grads["W_out"])
+        g_bout = _clip(grads["b_out"])
+        g_self = [_clip(g) for g in grads["W_self"]]
+        g_msg = [_clip(g) for g in grads["W_msg"]]
+        g_bh = [_clip(g) for g in grads["b_h"]]
+
+        if optimizer == "sgd":
+            self.W_in -= lr * g_in
+            self.b_in -= lr * g_bin
+            for ell in range(self.n_layers):
+                self.W_self[ell] -= lr * g_self[ell]
+                self.W_msg[ell] -= lr * g_msg[ell]
+                self.b_h[ell] -= lr * g_bh[ell]
+            self.W_out -= lr * g_out
+            self.b_out -= lr * g_bout
+            return
+
+        # Adam (default)
+        if self._adam_m is None or self._adam_v is None:
+            self._init_adam()
+        assert self._adam_m is not None and self._adam_v is not None
+        self._adam_t += 1
+        t = self._adam_t
+        bc1 = 1.0 - beta1 ** t
+        bc2 = 1.0 - beta2 ** t
+
+        def _adam_update(param: np.ndarray, g: np.ndarray, m: np.ndarray, v: np.ndarray) -> None:
+            m[:] = beta1 * m + (1.0 - beta1) * g
+            v[:] = beta2 * v + (1.0 - beta2) * (g * g)
+            mhat = m / bc1
+            vhat = v / bc2
+            param -= lr * mhat / (np.sqrt(vhat) + eps)
+
+        _adam_update(self.W_in, g_in, self._adam_m["W_in"], self._adam_v["W_in"])
+        _adam_update(self.b_in, g_bin, self._adam_m["b_in"], self._adam_v["b_in"])
         for ell in range(self.n_layers):
-            self.W_self[ell] -= lr * _clip(grads["W_self"][ell])
-            self.W_msg[ell] -= lr * _clip(grads["W_msg"][ell])
-            self.b_h[ell] -= lr * _clip(grads["b_h"][ell])
-        self.W_out -= lr * _clip(grads["W_out"])
-        self.b_out -= lr * _clip(grads["b_out"])
+            _adam_update(
+                self.W_self[ell], g_self[ell],
+                self._adam_m["W_self"][ell], self._adam_v["W_self"][ell],
+            )
+            _adam_update(
+                self.W_msg[ell], g_msg[ell],
+                self._adam_m["W_msg"][ell], self._adam_v["W_msg"][ell],
+            )
+            _adam_update(
+                self.b_h[ell], g_bh[ell],
+                self._adam_m["b_h"][ell], self._adam_v["b_h"][ell],
+            )
+        _adam_update(self.W_out, g_out, self._adam_m["W_out"], self._adam_v["W_out"])
+        _adam_update(self.b_out, g_bout, self._adam_m["b_out"], self._adam_v["b_out"])
 
     def save(self, path: Path) -> None:
         path = Path(path)
@@ -397,6 +526,7 @@ class GraphPhaseNet:
             "hidden": self.hidden,
             "n_layers": self.n_layers,
             "seed": self.seed,
+            "residual": np.array(int(self.residual)),
             "W_in": self.W_in,
             "b_in": self.b_in,
             "W_out": self.W_out,
@@ -417,11 +547,15 @@ class GraphPhaseNet:
     @classmethod
     def load(cls, path: Path) -> "GraphPhaseNet":
         z = np.load(path, allow_pickle=True)
+        residual = True
+        if "residual" in z.files:
+            residual = bool(int(np.asarray(z["residual"]).reshape(-1)[0]))
         m = cls(
             d_in=int(z["d_in"]),
             hidden=int(z["hidden"]),
             n_layers=int(z["n_layers"]),
             seed=int(z["seed"]),
+            residual=residual,
         )
         m.W_in, m.b_in = z["W_in"], z["b_in"]
         m.W_out, m.b_out = z["W_out"], z["b_out"]

@@ -28,7 +28,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C2 | On the same easy panel, ensemble is **competitive with or better than** local SHELXS by mean mapCC under our scoring protocol | same |
 | C3 | **Hard** synthetic cells ($n\gtrsim 12$, $d_{\min}\gtrsim 1.5$ Å) remain **~0% strict success** for CF, ensemble, dual-space, GraphPhaseNet+PhaSeed, and SHELXS in our H2H panels | [`shelxs_h2h.md`](../data/processed/shelxs_h2h.md), [`strong_prior.md`](../data/processed/strong_prior.md) |
 | C4 | If ≥ **~30%** of strong-\|E\| phases are correct within **~20°**, AI-PhaSeed extension can **strict-solve** those hard cells (oracle partial-φ curves) | [`partial_seed_benchmark.md`](../data/processed/partial_seed_benchmark.md), [math](math/partial_seed.md) |
-| C5 | Full ab initio graph prior (v3, Wilson-matched train) still delivers only ~**21%** of strong phases within 20° (below C4 bar) | [`strong_prior.md`](../data/processed/strong_prior.md) |
+| C5 | Full ab initio graph prior still delivers only ~**21%** of strong phases within 20° (below C4 bar) — **including Lane A v4 XL** (1200 structs, residual H=192 L=4, Adam, Wilson-matched); scale alone does not clear the bar | [`strong_prior.md`](../data/processed/strong_prior.md) |
 | C6 | Free FOM v2.1 uses positivity residual $R_+$ (not vacuous post-modulus $R$) and reduces false “solved” gates; hard failures are taxonomy **B+C** | [math/free_fom.md](math/free_fom.md), [math/failure_taxonomy.md](math/failure_taxonomy.md), [`failure_taxonomy.md`](../data/processed/failure_taxonomy.md) |
 | C7 | Synthetic vs experimental \|F\| **Wilson domain gap** can be substantially reduced by slope/shell/quantile matching (e.g. hard gap ~9.5 → ~2.8 on COD Fobs reference) | [`wilson_domain_gap.md`](../data/processed/wilson_domain_gap.md) |
 | C8 | With fair packing + PhAI weights, PhAI hybrids can solve COD **2016452** Fcalc @ 0.9 Å under strict criteria in our suite | [`cod_hybrid_benchmark.md`](../data/processed/cod_hybrid_benchmark.md) |
@@ -43,7 +43,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 |---|---------------------|
 | N1 | A general solution of the phase problem for arbitrary macromolecules |
 | N2 | Pure ab initio superiority over industrial SHELXT/SHELXS on all small-molecule cases |
-| N3 | That GraphPhaseNet / hard-P1 priors currently clear the hard cliff without partial information |
+| N3 | That GraphPhaseNet / hard-P1 priors currently clear the hard cliff without partial information (v4 XL scale does not change this) |
 | N4 | That free FOM proves a correct structure (it is a **truth-free ranking** score) |
 | N5 | Redistribution or equivalence of official SHELX or PhAI binaries/weights |
 

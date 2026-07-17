@@ -28,9 +28,9 @@ def test_graph_forward_backward():
     batch = prepare_graph_batch(
         data["hkl"], data["amplitudes"], st.cell, max_reflections=50
     )
-    model = GraphPhaseNet(d_in=8, hidden=32, n_layers=2, seed=0)
+    model = GraphPhaseNet(d_in=batch["X"].shape[1], hidden=32, n_layers=2, seed=0)
     X = batch["X"]
-    assert X.shape[1] == 8
+    assert X.shape[1] == 10
     assert batch["adj"].shape == (X.shape[0], X.shape[0])
     ph_s = data["phases"][batch["node_idx"]]
     loss, grads = model.loss_and_backward(
@@ -53,7 +53,7 @@ def test_vectorized_matches_list_adj():
     batch = prepare_graph_batch(
         data["hkl"], data["amplitudes"], st.cell, max_reflections=40
     )
-    model = GraphPhaseNet(d_in=8, hidden=24, n_layers=2, seed=2)
+    model = GraphPhaseNet(d_in=batch["X"].shape[1], hidden=24, n_layers=2, seed=2)
     X = batch["X"]
     out_a, _ = model.forward(X, adj=batch["adj"])
     out_b, _ = model.forward(X, nbrs=batch["nbrs"], wts=batch["wts"])
@@ -105,12 +105,14 @@ def test_train_and_phaseed(tmp_path):
         verbose=False,
     )
     assert meta["architecture"] == "GraphPhaseNet"
-    assert meta["scale"] in ("v2", "v3_seed_retarget")
+    assert str(meta["scale"]).startswith("v")
     path = tmp_path / "sp.npz"
     save_strong_prior(model, path, meta=meta)
     m2 = load_strong_prior(path)
     assert m2.hidden == 32
     assert m2.n_layers == 2
+    assert m2.d_in == model.d_in
+    assert m2.residual is True
 
     st = generate_random_organic(n_atoms=12, seed=3, space_group="P1")
     data = structure_to_fcalc(st, d_min=1.5)

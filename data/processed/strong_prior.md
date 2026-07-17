@@ -1,48 +1,73 @@
-# Strong phase prior (GraphPhaseNet) — v3 seed retarget
+# Strong phase prior (GraphPhaseNet) — Lane A v4 scale-xl
 
-Triplet-graph prior with **Wilson-matched |F|** (optional), **strong-|E| loss reweight**, and **within-20°** focus. Success bar for the hard cliff: ≥30% of strong |E| phases within 20° of truth (oracle AI-PhaSeed threshold).
+**Lane A result (honest):** scaling + residual GNN + Adam **does not** clear the
+hard-cliff seed bar on mean metrics. Mean hold-out **frac ≤20° remains ~21%**
+(same as v3). Occasional individual cells hit ≥30% (would_seed_solve 5–12%).
+Strict ab initio hard solves remain **0%**.
 
-- Structures: **250** (packs: 250, Wilson-matched train: 250)
-- Hidden=128, layers=3, max_refl=120
-- wilson_match=**True**, scale=**v3_seed_retarget**
-- Train strong MPE_OI: **64.6°**, frac≤20°: **21%**
-- Hold-out full MPE_OI: **71.3°**, strong MPE: **59.3°**, frac≤20°: **21%**, would_seed_solve: **5%**
-- Weights: `data/processed/strong_prior.npz`
+Oracle bar (partial-φ): ≥**30%** of top-|E| phases within **20°** → AI-PhaSeed
+can strict-solve. See [`docs/math/partial_seed.md`](../../docs/math/partial_seed.md).
 
-## Strong-seed bar (hold-out hard)
+## Scoreboard (hard hold-out)
+
+| Version | N train | Arch | strong MPE | frac≤20° | seedOK rate | +PhaSeed mapCC | Strict |
+|---------|---------|------|------------|----------|-------------|----------------|--------|
+| v3 A+B | 250 | H128 L3 | ~59° | **~21%** | ~5–12% | ~0.50 | 0% |
+| **v4 XL** (default weights) | **1200** | H192 L4 residual Adam d_in=10 | **60°** | **21%** | **5%** (1/12) | **0.51** | **0%** |
+| v4 XL→hard seed-focus FT | +600 | same | 63° | 21% | **12%** (1/12 eval; 12% hold meta) | 0.50 | 0% |
+
+Default weights: `data/processed/strong_prior.npz` (= v4 XL).  
+Checkpoints: `strong_prior_v4_xl.npz`, `strong_prior_v4_ft.npz`.
+
+## v4 XL config
+
+- Structures: **1200** Wilson-matched (bridge + hard multi-SG)
+- Hidden=**192**, layers=**4**, residual=**True**, d_in=**10** (deg + E² feats)
+- Adam, hard_oversample=1.4, max_refl=140, 4 global passes
+- Train ~31 min on laptop CPU
+
+## Strong-seed bar (v4 XL hold-out hard, n=12)
 
 | Metric | Graph prior | Graph+PhaSeed |
 |--------|-------------|---------------|
-| strong MPE_OI | 58.2° | — |
-| frac ≤20° (top 30% \|E\|) | 19% | 21% |
-| would_seed_solve (≥30% within 20°) | 0/8 | 1/8 |
+| strong MPE_OI | ~59° | — |
+| frac ≤20° (top 30% \|E\|) | **22%** | ~21% |
+| would_seed_solve (≥30% within 20°) | **1/12** | 0/12 |
 
-## Hold-out hard-region comparison
+## Hold-out hard-region comparison (v4 XL)
 
 | Method | Solved | Rate | mean mapCC |
 |--------|--------|------|------------|
-| Graph prior only | — | — | 0.460 (full MPE 72°) |
-| **Graph + AI-PhaSeed** | 0 | 0% | **0.502** |
-| CF | 0 | 0% | 0.479 |
-| hard_p1 PhaseMLP + PhaSeed | 0 | 0% | 0.512 |
+| Graph prior only | — | — | ~0.46 (full MPE ~72°) |
+| **Graph + AI-PhaSeed** | 0 | 0% | **~0.51** |
+| CF | 0 | 0% | ~0.50 |
+| hard_p1 PhaseMLP + PhaSeed | 0 | 0% | ~0.52 |
 
-## Per-case
+## Interpretation (Lane A)
 
-| n | d_min | strongMPE | frac20 | seedOK | prior CC | +PS CC | solved | CF |
-|---|-------|-----------|--------|--------|----------|--------|--------|-----|
-| 13 | 2.0 | 59° | 16% | False | 0.52 | 0.54 | False | 0.44 |
-| 16 | 1.7 | 61° | 21% | False | 0.41 | 0.45 | False | 0.45 |
-| 17 | 2.0 | 56° | 20% | False | 0.47 | 0.50 | False | 0.45 |
-| 17 | 1.5 | 63° | 16% | False | 0.45 | 0.48 | False | 0.44 |
-| 12 | 2.0 | 51° | 17% | False | 0.58 | 0.59 | False | 0.57 |
-| 15 | 1.5 | 66° | 19% | False | 0.35 | 0.42 | False | 0.51 |
-| 16 | 1.5 | 51° | 27% | False | 0.46 | 0.55 | False | 0.52 |
-| 13 | 1.7 | 58° | 20% | False | 0.43 | 0.49 | False | 0.46 |
+1. **5× data + residual + Adam + richer features** did **not** move mean
+   frac≤20° off the ~21% plateau (v3 → v4).
+2. **Tail** improves slightly: more frequent individual seedOK cells during train
+   (32–42% on some packs); hold-out seedOK rate up to ~12% after hard FT.
+3. **Strict hard solves** still require **partial φ** (oracle ≥30%/20°) or
+   external classical seed — not pure GraphPhaseNet scale alone.
+4. Product path unchanged: **easy → ensemble**; **hard → partial_phaseed**.
 
-## Notes (A+B)
+## Reproduce
 
-- **A:** train with `--wilson-match` so |F| match experimental Wilson template.
-- **B:** loss targets strong-|E| accuracy (E² weights, top-half boost, extra weight when error >20°).
-- Oracle bar: ≥30% strong phases within 20° → AI-PhaSeed can strict-solve hard cells.
+```bash
+# Full Lane A XL train (~30 min CPU)
+python scripts/train_strong_prior.py --scale-xl --wilson-match
 
-Train 115.9s + eval 16.3s
+# Optional hard seed-focus fine-tune from XL checkpoint
+python scripts/train_strong_prior.py \
+  --continue-from data/processed/strong_prior_v4_xl.npz \
+  --wilson-match --hard-only --seed-focus \
+  --n-structures 600 --epochs-per 12 --n-passes 3
+```
+
+## Notes
+
+- **Wilson:** `--wilson-match` aligns synthetic |F| to experimental template.
+- **Seed loss:** E^p weights, top-|E| boost, within-20° reweight.
+- Not a general experimental multi-SG production solver.

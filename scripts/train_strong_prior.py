@@ -216,7 +216,15 @@ def main():
     p.add_argument(
         "--scale",
         action="store_true",
-        help="Full scale defaults (250 structs, H=128, L=3, 3 passes)",
+        help="v3-scale defaults (250 structs, H=128, L=3, 3 passes)",
+    )
+    p.add_argument(
+        "--scale-xl",
+        action="store_true",
+        help=(
+            "Lane A XL scale: ~1200 structs, H=192, L=4 residual+Adam, "
+            "hard oversample, stronger seed loss (Wilson recommended)"
+        ),
     )
     p.add_argument(
         "--wilson-match",
@@ -225,9 +233,36 @@ def main():
     )
     p.add_argument("--out", type=str, default="data/processed/strong_prior.npz")
     p.add_argument("--n-eval", type=int, default=None)
+    p.add_argument("--hard-oversample", type=float, default=None)
+    p.add_argument("--top-boost", type=float, default=None)
+    p.add_argument("--within-weight", type=float, default=None)
+    p.add_argument("--e-power", type=float, default=None)
+    p.add_argument(
+        "--optimizer",
+        type=str,
+        default=None,
+        choices=["adam", "sgd"],
+        help="Optimizer (default adam for v4)",
+    )
+    p.add_argument(
+        "--continue-from",
+        type=str,
+        default=None,
+        help="Fine-tune from existing strong_prior.npz",
+    )
+    p.add_argument(
+        "--hard-only",
+        action="store_true",
+        help="No bridge curriculum cells (hard region only)",
+    )
+    p.add_argument(
+        "--seed-focus",
+        action="store_true",
+        help="Concentrate loss on top ~30% |E| nodes (seed set)",
+    )
     args = p.parse_args()
 
-    # Defaults: medium (legacy-ish) unless --scale or --quick
+    # Defaults: medium (legacy-ish) unless --scale / --scale-xl / --quick
     cfg = dict(
         n_structures=80,
         epochs_per=20,
@@ -240,6 +275,16 @@ def main():
         n_eval=6,
         curriculum=True,
         wilson_match=False,
+        residual=True,
+        optimizer="adam",
+        e_power=2.0,
+        top_frac=0.50,
+        top_boost=3.0,
+        within_weight=0.35,
+        hard_oversample=1.0,
+        scale_tag="v4_scale_seed",
+        lr=1.5e-3,
+        lr_refine=4e-4,
     )
     if args.scale:
         cfg.update(
@@ -252,6 +297,29 @@ def main():
             max_refl=120,
             triplet_weight=0.18,
             n_eval=8,
+            scale_tag="v4_scale_seed",
+        )
+    if args.scale_xl:
+        cfg.update(
+            n_structures=1200,
+            epochs_per=10,
+            epochs_refine=5,
+            n_global_passes=4,
+            hidden=192,
+            n_layers=4,
+            max_refl=140,
+            triplet_weight=0.22,
+            n_eval=12,
+            e_power=2.5,
+            top_frac=0.40,
+            top_boost=4.0,
+            within_weight=0.55,
+            hard_oversample=1.4,
+            residual=True,
+            optimizer="adam",
+            scale_tag="v4_scale_xl",
+            lr=1.2e-3,
+            lr_refine=3.5e-4,
         )
     if args.quick:
         cfg.update(
@@ -264,6 +332,7 @@ def main():
             max_refl=50,
             triplet_weight=0.1,
             n_eval=3,
+            scale_tag="v4_quick",
         )
 
     # CLI overrides
@@ -287,12 +356,49 @@ def main():
         cfg["n_eval"] = args.n_eval
     if args.wilson_match:
         cfg["wilson_match"] = True
+    if args.hard_oversample is not None:
+        cfg["hard_oversample"] = args.hard_oversample
+    if args.top_boost is not None:
+        cfg["top_boost"] = args.top_boost
+    if args.within_weight is not None:
+        cfg["within_weight"] = args.within_weight
+    if args.e_power is not None:
+        cfg["e_power"] = args.e_power
+    if args.optimizer is not None:
+        cfg["optimizer"] = args.optimizer
+    if args.hard_only:
+        cfg["bridge_frac"] = 0.0
+        cfg["hard_oversample"] = max(cfg.get("hard_oversample", 1.0), 1.0)
+        cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_hard"
+    else:
+        cfg["bridge_frac"] = 0.30
+    if args.seed_focus:
+        cfg["top_frac"] = 0.30
+        cfg["top_boost"] = max(cfg.get("top_boost", 3.0), 6.0)
+        cfg["within_weight"] = max(cfg.get("within_weight", 0.35), 0.75)
+        cfg["e_power"] = max(cfg.get("e_power", 2.0), 3.0)
+        cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_seedfocus"
+
+    init_model = None
+    if args.continue_from:
+        from grok_phase_solver.models.strong_prior import load_strong_prior
+
+        cp = Path(args.continue_from)
+        if not cp.is_absolute():
+            cp = ROOT / cp
+        init_model = load_strong_prior(cp)
+        cfg["hidden"] = init_model.hidden
+        cfg["n_layers"] = init_model.n_layers
+        cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_ft"
+        print(f"Continue from {cp} (H={init_model.hidden}, L={init_model.n_layers})")
 
     print(
         f"Config: structs={cfg['n_structures']} hidden={cfg['hidden']} "
-        f"layers={cfg['n_layers']} passes={cfg['n_global_passes']} "
-        f"epochs/struct={cfg['epochs_per']} max_refl={cfg['max_refl']} "
-        f"triplet_w={cfg['triplet_weight']} wilson_match={cfg['wilson_match']}"
+        f"layers={cfg['n_layers']} residual={cfg['residual']} "
+        f"passes={cfg['n_global_passes']} epochs/struct={cfg['epochs_per']} "
+        f"max_refl={cfg['max_refl']} triplet_w={cfg['triplet_weight']} "
+        f"wilson_match={cfg['wilson_match']} opt={cfg['optimizer']} "
+        f"hard_os={cfg['hard_oversample']} tag={cfg['scale_tag']}"
     )
 
     t0 = time.time()
@@ -307,6 +413,18 @@ def main():
         triplet_weight=cfg["triplet_weight"],
         curriculum=cfg["curriculum"],
         wilson_match=cfg["wilson_match"],
+        e_power=cfg["e_power"],
+        top_frac=cfg["top_frac"],
+        top_boost=cfg["top_boost"],
+        within_weight=cfg["within_weight"],
+        residual=cfg["residual"],
+        optimizer=cfg["optimizer"],
+        hard_oversample=cfg["hard_oversample"],
+        scale_tag=cfg["scale_tag"],
+        lr=cfg["lr"] * (0.4 if init_model is not None else 1.0),
+        lr_refine=cfg["lr_refine"] * (0.5 if init_model is not None else 1.0),
+        init_model=init_model,
+        bridge_frac=cfg.get("bridge_frac", 0.30),
         seed=args.seed,
         verbose=True,
     )
@@ -358,15 +476,20 @@ def main():
         n_h = sum(1 for r in hold if r.get("hard_p1_phaseed_solved"))
 
     md = [
-        "# Strong phase prior (GraphPhaseNet) — v3 seed retarget",
+        f"# Strong phase prior (GraphPhaseNet) — {meta.get('scale', 'v4')}",
         "",
-        "Triplet-graph prior with **Wilson-matched |F|** (optional), **strong-|E| "
-        "loss reweight**, and **within-20°** focus. Success bar for the hard cliff: "
-        "≥30% of strong |E| phases within 20° of truth (oracle AI-PhaSeed threshold).",
+        "Triplet-graph prior with residual MP + Adam (v4), **Wilson-matched |F|** "
+        "(optional), **strong-|E| loss reweight**, and **within-20°** focus. "
+        "Success bar for the hard cliff: ≥30% of strong |E| phases within 20° of "
+        "truth (oracle AI-PhaSeed threshold).",
         "",
         f"- Structures: **{cfg['n_structures']}** (packs: {meta.get('n_packs', '?')}, "
         f"Wilson-matched train: {meta.get('n_wilson_matched', 0)})",
-        f"- Hidden={cfg['hidden']}, layers={cfg['n_layers']}, max_refl={cfg['max_refl']}",
+        f"- Hidden={cfg['hidden']}, layers={cfg['n_layers']}, "
+        f"residual={meta.get('residual', cfg.get('residual'))}, "
+        f"d_in={meta.get('d_in', '?')}, max_refl={cfg['max_refl']}",
+        f"- optimizer=**{meta.get('optimizer', cfg.get('optimizer'))}**, "
+        f"hard_oversample=**{meta.get('hard_oversample', cfg.get('hard_oversample'))}**",
         f"- wilson_match=**{cfg.get('wilson_match')}**, "
         f"scale=**{meta.get('scale')}**",
         f"- Train strong MPE_OI: **{meta.get('mean_train_strong_mpe_oi', float('nan')):.1f}°**, "
@@ -418,12 +541,13 @@ def main():
     md.extend(
         [
             "",
-            "## Notes (A+B)",
+            "## Notes (Lane A / v4)",
             "",
-            "- **A:** train with `--wilson-match` so |F| match experimental Wilson template.",
-            "- **B:** loss targets strong-|E| accuracy (E² weights, top-half boost, "
-            "extra weight when error >20°).",
+            "- **Scale:** `--scale-xl` ≈10³ cells, H=192, L=4 residual MP, Adam.",
+            "- **Wilson:** `--wilson-match` aligns synthetic |F| to experimental template.",
+            "- **Seed loss:** E^p weights, top-|E| boost, within-20° reweight, hard oversample.",
             "- Oracle bar: ≥30% strong phases within 20° → AI-PhaSeed can strict-solve hard cells.",
+            "- v3 baseline was ~21% frac≤20° on hard hold-out; v4 targets ≥30%.",
             "",
             f"Train {meta['train_seconds']:.1f}s + eval {meta['eval_seconds']:.1f}s",
             "",
