@@ -37,6 +37,15 @@ examples/**/out/
 gps_solve_out/
 solve_out/
 
+# Academic SHELX binaries (user-provided; do NOT redistribute)
+ShelX/
+shelx/
+**/shelxs
+**/shelxl
+**/shelxe
+**/shelxd
+**/shelxt
+
 # OS / IDE
 .DS_Store
 .idea/

@@ -145,6 +145,7 @@ See **[`TODO.md`](TODO.md)** for the full phase checklist.
 | **Hard-P1 prior** | `models/hard_p1_prior.py` | Domain-matched PhaseMLP (OI loss) → AI-PhaSeed |
 | **Strong graph prior** | `models/graph_phase_net.py`, `strong_prior.py` | Scaled triplet-GNN (curriculum + triplet aux) → AI-PhaSeed |
 | **Dual-space / SHELXD** | `solvers/dual_space.py`, `shelxd_runner.py` | Educational dual-space + optional external SHELXD H2H |
+| **SHELXS (external)** | `solvers/shelxs_runner.py` | Academic SHELXS binary → peak list → phases (H2H) |
 | **Partial-φ / fragment seed** | `solvers/partial_seed.py` | Known phases or partial model → AI-PhaSeed extension |
 | Phase recycle | `solvers/phase_recycle.py` | Fourier modulus projection loop |
 | Physics-recycle net | `solvers/recycle_net.py` | PhaseMLP inside recycle (hard cells) |
@@ -319,6 +320,7 @@ Strict success = **mapCC_OI ≥ 0.7** + **peak recovery ≥ 0.5** + **R1 ≤ 0.4
 | Experimental HKL scoreboard | `python scripts/run_experimental_scoreboard.py` | [`experimental_scoreboard.md`](data/processed/experimental_scoreboard.md) |
 | Strong GraphPhaseNet prior | `python scripts/train_strong_prior.py --scale --wilson-match` | [`strong_prior.md`](data/processed/strong_prior.md) |
 | SHELXD head-to-head | `python scripts/run_shelxd_h2h.py` | [`shelxd_h2h.md`](data/processed/shelxd_h2h.md), [`docs/math/shelxd_h2h.md`](docs/math/shelxd_h2h.md) |
+| SHELXS head-to-head | `python scripts/run_shelxs_h2h.py` | [`shelxs_h2h.md`](data/processed/shelxs_h2h.md), [`docs/math/shelxs_h2h.md`](docs/math/shelxs_h2h.md) |
 | Partial-φ hard-cliff curves | `python scripts/run_partial_seed_benchmark.py` | [`partial_seed_benchmark.md`](data/processed/partial_seed_benchmark.md), [`docs/math/partial_seed.md`](docs/math/partial_seed.md) |
 | Wilson domain-gap (close gap) | `python scripts/run_wilson_domain_gap.py` | [`wilson_domain_gap.md`](data/processed/wilson_domain_gap.md), [`docs/math/wilson_domain_gap.md`](docs/math/wilson_domain_gap.md) |
 | Math write-ups | — | [`docs/math/free_fom.md`](docs/math/free_fom.md), [`docs/math/failure_taxonomy.md`](docs/math/failure_taxonomy.md), [`docs/math/solvability_and_phai.md`](docs/math/solvability_and_phai.md), [`docs/math/iterative_projections.md`](docs/math/iterative_projections.md) |

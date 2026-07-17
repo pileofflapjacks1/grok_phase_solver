@@ -157,6 +157,7 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "dual_space",
             "shelxd",
             "shelxd_or_dual",
+            "shelxs",
         ],
         help="Phasing method (default: auto = pick best available pipeline)",
     )

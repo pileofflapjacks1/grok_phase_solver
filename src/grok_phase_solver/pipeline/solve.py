@@ -44,6 +44,7 @@ KNOWN_METHODS = (
     "dual_space",
     "shelxd",
     "shelxd_or_dual",
+    "shelxs",
     "partial_phaseed",
 )
 
@@ -252,6 +253,18 @@ def _run_phasing(
             n_atoms=max(8, min(cfg.n_peaks, 40)),
             n_try=max(20, cfg.n_starts * 25),
             seed=max(1, cfg.seed),
+            d_min=d_use,
+            verbose=cfg.verbose,
+        )
+        return method, phases, density, history
+
+    if method == "shelxs":
+        from grok_phase_solver.solvers.shelxs_runner import shelxs_solve
+
+        phases, density, history = shelxs_solve(
+            hkl, amp, cell_arr,
+            n_atoms=max(6, min(cfg.n_peaks, 40)),
+            n_try=max(50, cfg.n_starts * 40),
             d_min=d_use,
             verbose=cfg.verbose,
         )

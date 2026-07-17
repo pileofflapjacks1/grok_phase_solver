@@ -147,10 +147,11 @@ AI-driven general solver for the X-ray crystallography phase problem.
 6. [x] Peak → SHELXL `.res` fragment export (`trial.res`)  
 7. [x] Experimental HKL scoreboard (COD 2017775 + controls)  
 8. [x] External validation vs SHELXD — runner + dual_space baseline + `run_shelxd_h2h.py` (binary optional academic install)  
+8b. [x] SHELXS head-to-head — `shelxs_runner.py` + `run_shelxs_h2h.py` (detect `ShelX/shelxs`, gitignore binaries)  
 9. [x] Wilson domain-gap metrics + **close-the-gap matching** (`wilson_match.py`, template, `--wilson-match` train)  
 10. [x] Stronger prior architecture (GraphPhaseNet triplet GNN + AI-PhaSeed)  
 11. [x] Scale graph prior v2 (250 structs, H=128/L=3, curriculum multi-pass, triplet aux, vectorized Â) — mapCC≈0.51 matches hP1, beats CF; still 0% strict hard solves  
-12. [ ] Re-run H2H with real SHELXD binary when installed (`export SHELXD=…`)  
+12. [x] SHELXS H2H with local academic binary (`ShelX/shelxs`); re-run SHELXD if that binary is added later  
 13. [x] Partial-φ / fragment seed API + hard-cliff curves (`partial_seed.py`, `run_partial_seed_benchmark.py`)  
 14. [x] A+B: Wilson-matched retrain + strong-seed metrics/loss (v3; hold-out strong MPE≈59°, frac≤20°≈21% vs 30% bar; still 0% strict)  
 15. [ ] Hit strong-seed bar (≥30% within 20°) via larger data/capacity or better architecture  
