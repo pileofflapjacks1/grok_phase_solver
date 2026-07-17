@@ -168,7 +168,9 @@ AI-driven general solver for the X-ray crystallography phase problem.
       PyPI upload still needs user API token (`twine upload` — see RELEASE.md)
 19. [x] **Lane C:** expanded experimental COD Fobs scoreboard (2016452, 2100301,
       2017775) + Fcalc controls + oracle partial-φ rows; `arxiv_draft.md`;
-      FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).
+      FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).  
+20. [x] **Paper pack:** Figs. 1–4 from scoreboards; full methods draft; `docs/paper/`  
+21. [ ] Author list + BibTeX + optional pandoc PDF / arXiv submit
 
 ---
 

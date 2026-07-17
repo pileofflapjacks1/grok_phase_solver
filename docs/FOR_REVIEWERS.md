@@ -96,7 +96,8 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 | 15 min | [USER_GUIDE](USER_GUIDE.md) decision tree |
 | 30 min | [partial_seed.md](math/partial_seed.md) + [free_fom.md](math/free_fom.md) + [failure_taxonomy.md](math/failure_taxonomy.md) |
 | 45 min | Scoreboards linked in §2 + [experimental_scoreboard.md](../data/processed/experimental_scoreboard.md) |
-| 60 min | Working draft [arxiv_draft.md](arxiv_draft.md) |
+| 60 min | **Manuscript** [arxiv_draft.md](arxiv_draft.md) + [figures](figures/paper_figure_captions.md) |
+| Paper hub | [docs/paper/README.md](paper/README.md) |
 | Optional | [Cowtan notes](cowtan_phase_problem_notes.md), [arxiv_skeleton.md](arxiv_skeleton.md) |
 
 ---

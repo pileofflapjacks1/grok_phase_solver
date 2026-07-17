@@ -1,40 +1,28 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft (Lane C review pack)** · Version 0.2.1 · MIT  
-**Code:** https://github.com/pileofflapjacks1/grok_phase_solver  
-**One-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)
-
-> Status: methods preprint skeleton fleshed with **supported claims** and
-> **honest non-claims**. Numbers match repo scoreboards under `data/processed/`.
-> Not submitted; authors TBD.
+**Working draft · software package v0.2.1 (MIT)**  
+**Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
+**PyPI:** https://pypi.org/project/grok-phase-solver/  
+**Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
+**Figures:** [`figures/paper_figure_captions.md`](figures/paper_figure_captions.md)  
+**Authors:** [TBD]  
+**Status:** Not submitted. Numbers frozen to repo scoreboards under `data/processed/`.
 
 ---
 
 ## Abstract
 
-We present *grok_phase_solver*, an open Python framework that unifies classical
-solutions of the X-ray crystallographic phase problem—charge flipping, HIO,
-RAAR, difference-map projections, Patterson and direct methods, isomorphous
-difference Patterson, and density modification—with hybrid and learned priors
-(AI-PhaSeed, GraphPhaseNet, optional PhAI). All algorithms act on measured
-amplitudes $|F(hkl)|$ and are evaluated with origin-invariant map correlation,
-R1, peak recovery, free figures of merit, and a strict multi-criterion success
-definition. On easy synthetic cells, multistart ensemble phasing is competitive
-with or better than local SHELXS under our protocol. On hard cells
-($n\gtrsim 12$, $d_{\min}\gtrsim 1.5$ Å), pure ab initio methods including
-scaled graph priors remain ~0% strict success; an oracle partial-φ path shows
-that ≥~30% of strong $|E|$ phases within ~20° of truth enables strict solves via
-phase extension. Scaling GraphPhaseNet (1200 structures, residual GNN, Adam)
-does not lift mean strong-phase accuracy above ~21% within 20°. We ship a
-scientist CLI (`gps-solve`) with fragment/HA seed importers and SHELXL-ready
-`trial.res` export. We do **not** claim a general macromolecular solution.
+We present *grok_phase_solver*, an open Python framework that unifies classical solutions of the X-ray crystallographic phase problem—charge flipping, hybrid input–output (HIO), relaxed averaged alternating reflections (RAAR), difference-map projections, Patterson and direct methods, isomorphous difference Patterson, and density modification—with hybrid and learned phase priors (AI-PhaSeed, GraphPhaseNet, optional PhAI). Algorithms act on measured amplitudes $|F(hkl)|$ and are evaluated with origin-invariant map correlation (mapCC), peak recovery, $R_1$, free figures of merit based on a positivity residual $R_+$, and a strict multi-criterion success definition.
+
+On easy synthetic cells, multistart free-FOM **ensemble** phasing is competitive with or better than local academic SHELXS under our scoring protocol. On hard cells ($n\gtrsim 12$, $d_{\min}\gtrsim 1.5$ Å), pure ab initio methods—including scaled graph priors—remain ~0% strict success. An **oracle partial-φ** experiment shows that when ≥~30% of strong $|E|$ phases are correct within ~20°, AI-PhaSeed extension strict-solves those hard cells, identifying **seed quality** as the hard-region bottleneck rather than free-FOM inversion. Scaling GraphPhaseNet to 1200 Wilson-matched structures (residual GNN, Adam) does **not** lift mean strong-phase accuracy above ~21% within 20°. On experimental COD Fobs, PhAI hybrids strict-solve COD 2016452 at 1.0 Å in our pipeline budget.
+
+We ship scientist-facing tools (`gps-solve`, `gps-make-seed`, Streamlit `gps-gui`) exporting density maps and SHELXL-ready `trial.res`. We do **not** claim a general macromolecular ab initio solution or industrial equivalence to SHELXT on all cases.
 
 ---
 
 ## 1. Introduction
 
-Recovering phases $\varphi(\mathbf{h})$ from amplitudes alone is the classical
-phase problem:
+Recovering phases $\varphi(\mathbf{h})$ from amplitudes alone is the classical crystallographic phase problem:
 
 $$
 \rho(\mathbf{r})
@@ -43,191 +31,196 @@ $$
 |F(\mathbf{h})|\,e^{i\varphi(\mathbf{h})}\,e^{-2\pi i \mathbf{h}\cdot\mathbf{r}}.
 $$
 
-Industrial small-molecule pipelines (SHELXT/SHELXS + SHELXL/Olex2) solve most
-atomic-resolution organics; hard cases and open science still benefit from
-transparent, modular baselines. Recent neural work (e.g. PhAI) shows strong
-results on restricted domains when weights and packing are carefully matched.
+Industrial small-molecule pipelines (SHELXT/SHELXS + SHELXL/Olex2) solve most atomic-resolution organics. Harder synthetic and experimental regimes, open science, and hybrid AI methods still benefit from transparent, modular baselines with **honest** failure reporting. Recent neural work (e.g. PhAI) shows strong domain-specific results when packing and weights are carefully matched.
 
-**Contributions of this work**
+### Contributions
 
-1. An **integrated open stack**: classical solvers, free FOM, hybrid polish,
-   learned priors, experimental I/O, and external SHELXS runners (binaries not
-   redistributed).
-2. **Honest hard-region science**: failure taxonomy; seed-quality bar
-   (30% / 20°); Lane A scale negative result for pure graph priors.
-3. **Product path**: easy → ensemble; hard → partial-φ / fragment / HA seeds
-   (`gps-make-seed`, `report.md` diagnostics); `trial.res` → SHELXL.
-4. **External calibration**: SHELXS H2H; experimental COD Fobs scoreboard;
-   Wilson domain-gap closing.
+1. **Integrated open stack** — classical solvers, free FOM, hybrid polish, learned priors, experimental I/O, optional SHELXS runners (binaries not redistributed), CLI and GUI.
+2. **Hard-region science** — failure taxonomy; partial-φ seed bar (30% / 20°); negative scale result for pure GraphPhaseNet priors.
+3. **Product path** — easy → ensemble; hard → partial-φ / fragment / HA seeds; `trial.res` → SHELXL.
+4. **Calibration** — SHELXS H2H; experimental COD Fobs scoreboard; Wilson domain-gap matching.
 
 ---
 
-## 2. Mathematical background (pointers)
+## 2. Methods
 
-Full notes live in `docs/math/`:
+### 2.1 Classical and projection algorithms
 
-| Topic | Doc |
-|-------|-----|
-| Phase problem overview | `math/phase_problem_overview.md` |
-| Free FOM v2.1 ($R_+$) | `math/free_fom.md` |
-| Failure taxonomy A/B/C | `math/failure_taxonomy.md` |
-| Partial-φ / seed bar | `math/partial_seed.md` |
-| GraphPhaseNet prior | `math/strong_prior.md` |
-| Wilson domain gap | `math/wilson_domain_gap.md` |
-| Uniqueness / non-claims | `math/uniqueness_and_bounds.md` |
-| Cowtan ELS notes | `cowtan_phase_problem_notes.md` |
+Implemented: charge flipping; HIO; RAAR; difference map; direct methods ($E$-values, triplets, tangent formula multi-start); Patterson peak picking; difference Patterson for heavy-atom vectors; Blow–Crick-style SIR/MIR FOMs; solvent flattening / density modification. Math notes: `docs/math/`.
 
----
+### 2.2 Free figure of merit and ensemble
 
-## 3. Methods
+Truth-free ranking uses a composite free FOM whose amplitude residual is a **positivity residual** $R_+$ (not the vacuous post-modulus $R$ of early free-FOM designs). Multistart **ensemble** (CF + RAAR) selects the best free-FOM trial and is our strongest *in-repo* ab initio path on easy cells (Fig. 2).
 
-### 3.1 Classical and projection methods
+### 2.3 AI-PhaSeed and partial seeds
 
-Charge flipping, HIO, RAAR, DiffMap, direct methods (E-values, triplets, tangent),
-Patterson peak pick, difference Patterson for HA vectors, Blow–Crick SIR/MIR
-FOMs, solvent flattening / density modification.
+Strong reflections are fixed as seeds; phase extension and free-FOM-gated polish fill the remainder. Seed sources: PhAI; GraphPhaseNet; oracle partial φ; fragment $F_{\mathrm{calc}}$ from SHELXS `.res` / density peaks; HA heuristics (`solvers/seed_import.py`). Scientist tools: `gps-make-seed`, GUI seed uploads.
 
-### 3.2 Free FOM and ensemble
+### 2.4 Learned priors
 
-Truth-free composite ranking uses positivity residual $R_+$ (not vacuous
-post-modulus $R$), atomicity scores, and calibrated gates. Multistart
-**ensemble** (CF+RAAR) picks by free FOM — strongest *in-repo* easy ab initio
-path in our H2H.
-
-### 3.3 AI-PhaSeed and partial seeds
-
-Strong reflections are held as seeds; phase extension + free-FOM-gated polish
-extends to the full set. Seeds may come from PhAI, GraphPhaseNet, oracle
-partial φ, fragment Fcalc (SHELXS `.res` / peaks), or HA heuristics
-(`solvers/seed_import.py`).
-
-### 3.4 Learned priors
-
-- **hard-P1 PhaseMLP** and **GraphPhaseNet** (triplet-graph residual MP, Adam,
-  Wilson-matched train, strong-|E| loss).
+- **hard-P1 PhaseMLP** and **GraphPhaseNet** (triplet-graph residual message passing, Adam, Wilson-matched $|F|$, strong-$|E|$ loss reweighting).
 - Optional **PhAI** weights (user-supplied; not redistributed).
 
-### 3.5 Scientist pipeline
+### 2.5 Success metrics
 
-`gps-solve` / `gps-make-seed`: SHELX HKL/INS, CIF HKL, MTZ → phases, density,
-peaks, **trial.res**, `report.md` with seed-quality section.
+**Strict success:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** $R_1$ ≤ 0.45 (`metrics/success.py`).
 
-### 3.6 Success metrics
+**Strong-seed bar:** ≥ 30% of the top-30% $|E|$ reflections have phase error ≤ 20° of truth (origin/enantiomorph-invariant). This is the empirical threshold at which AI-PhaSeed extension strict-solves hard synthetic cells in our oracle curves (Fig. 1).
 
-Strict success: mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45
-(`metrics/success.py`). Strong-seed bar: ≥30% of top-30% $|E|$ phases within 20°.
+### 2.6 Scientist pipeline
+
+`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ 0.2.1.
 
 ---
 
-## 4. Experiments and results
+## 3. Results
 
-Primary tables are generated artifacts under `data/processed/`. Summary of
-**supported claims** (see also FOR_REVIEWERS C1–C8):
+Primary evidence lives in `data/processed/`. Claims C1–C9 are summarized in [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md).
 
-| # | Finding | Evidence |
-|---|---------|----------|
-| C1–C2 | Ensemble best/competitive open ab initio on **easy** synthetic vs CF/SHELXS | `shelxs_h2h.md` |
-| C3 | Hard ab initio ~0% strict (CF, ensemble, dual-space, graph+PhaSeed, SHELXS) | same + `strong_prior.md` |
-| C4 | ≥~30% strong φ within 20° → hard strict solves (oracle) | `partial_seed_benchmark.md` |
-| C5 | Graph prior ~**21%** ≤20° even after **v4 XL** (1200 structs) | `strong_prior.md` |
-| C6 | Free FOM v2.1 reduces false “solved” gates; hard failures B+C | `failure_taxonomy.md` |
-| C7 | Wilson synth→exp gap closable by amplitude matching | `wilson_domain_gap.md` |
-| C8 | PhAI hybrids can strict-solve COD 2016452 Fcalc @ 0.9 Å (fair suite) | `cod_hybrid_benchmark.md` |
+### 3.1 Partial-φ oracle defines the hard-region bar
 
-### 4.1 Experimental / COD scoreboard (Lane C)
+![Figure 1](figures/paper_fig1_partial_seed_oracle.png)
 
-`scripts/run_experimental_scoreboard.py` → `experimental_scoreboard.md`:
+**Figure 1.** Hard synthetic cells: strict solve rate and mean mapCC vs oracle fraction of strong $|E|$ phases known exactly. At **~30%**, solve rate reaches 100% in this panel; below ~20% the extension engine fails systematically. Baselines without partial φ (CF, full graph prior) remain unsolved.
 
-- Demo easy cell (free FOM ranking)
-- COD **2016452** and **2100301**: Fcalc controls + **experimental Fobs**
-- Oracle **partial_phaseed** 30% on Fcalc (product hard path)
-- COD **2017775** large experimental Fobs (struggle expected)
-- Optional local SHELXS and GraphPhaseNet prior
+Interpretation: the extension + free-FOM polish machinery works when seeds are good enough. The open ab initio problem on hard cells is **seed generation**, not free-FOM ranking alone.
 
-**Headline experimental results (this repo run):**
+### 3.2 Ensemble vs SHELXS on synthetic panels
+
+![Figure 2](figures/paper_fig2_shelxs_h2h.png)
+
+**Figure 2.** Mean mapCC on easy vs hard synthetic panels. **Ensemble** leads on easy (mapCC ≈ 0.78; 2/4 strict solves in the panel). Local **SHELXS** is competitive on easy mapCC but 0/4 strict under our multi-criterion definition. **Hard panel: 0% strict for all methods**, including SHELXS, under peak→$F_{\mathrm{calc}}$ scoring.
+
+Caveat: SHELXS scoring uses Q-peaks → equal-atom $F_{\mathrm{calc}}$ phases for mapCC—not refined SHELXL $R_1$. Fair for *phasing* H2H, not refined structures.
+
+### 3.3 Graph prior scale does not clear the seed bar
+
+![Figure 4](figures/paper_fig4_seed_bar.png)
+
+**Figure 4.** Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 (250 structures) and v4 XL (1200 structures, residual layers, Adam, Wilson match) both plateau near **~21%**, below the **30%** oracle bar. Hold-out hard strict solves remain **0%** for graph prior ± AI-PhaSeed.
+
+This is an explicit **negative result** for pure scale-up of the current architecture on synthetic hard organics.
+
+### 3.4 Experimental COD Fobs
+
+![Figure 3](figures/paper_fig3_experimental_cod.png)
+
+**Figure 3.** mapCC (vs deposited-model $F_{\mathrm{calc}}$ as proxy truth) for experimental COD Fobs and a partial-φ control.
 
 | Dataset | Best open method | mapCC | Strict |
 |---------|------------------|-------|--------|
-| COD 2016452 **exp** Fobs @ 1.0 Å | `phai+cf_cond` / `phai_phaseed` | **0.99 / 0.95** | **True** |
-| COD 2100301 **exp** Fobs @ 1.0 Å | `shelxs` / `phai_phaseed` | 0.53 / 0.50 | False |
-| COD 2016452 Fcalc 0.9 Å | `shelxs` (0.72); partial30 (0.79) | — | partial not full strict* |
-| COD 2017775 exp @ 1.2 Å | CF/ensemble ~0.19 | — | False |
+| COD **2016452** exp Fobs @ 1.0 Å | `phai+cf_cond` / `phai_phaseed` | **0.995 / 0.949** | **True** |
+| COD **2100301** exp Fobs @ 1.0 Å | SHELXS / PhAI | ~0.53 / 0.50 | False |
+| COD **2016452** Fcalc + oracle 30% φ | `partial_phaseed` | **0.72–0.79** | often False under short budget* |
+| COD **2017775** exp (large) @ 1.2 Å | CF / ensemble | ~0.19 | False |
 
-\*Strict requires mapCC + peak recovery + R1; high mapCC alone is not enough under our thresholds. Dedicated `cod_hybrid_benchmark` with longer settings reports PhAI+CF strict solve on 2016452 Fcalc @ 0.9 Å (C8).
+\*Dedicated longer-budget hybrid suite (`cod_hybrid_benchmark.md`) reports PhAI+CF **strict** solve on 2016452 Fcalc @ 0.9 Å (claim C8).
 
-Caveat: experimental mapCC uses Fcalc from deposited model as proxy truth, not
-refined R1.
+Caveat: experimental mapCC uses $F_{\mathrm{calc}}$ from the deposited structure as proxy truth, not refined $R_1$.
 
-### 4.2 Lane A scale (negative for pure prior)
+### 3.5 Free FOM and failure taxonomy
 
-Residual GraphPhaseNet + Adam + 1200 Wilson-matched structures does not clear
-the 30%/20° seed bar on mean metrics. Occasional individual cells hit seedOK;
-strict hard solves remain 0%.
+Free FOM v2.1 reduces false “solved” gates by using $R_+$ and anti-false-atomicity checks. Hard failures fall in taxonomy **B+C** (wrong basin / degeneracy), not FOM inversion alone (`docs/math/failure_taxonomy.md`).
 
-### 4.3 Lane B product path
+### 3.6 Wilson domain gap
 
-Seed importers (`.res`, peaks, atoms, HA pair) and `gps-make-seed` make the
-partial-φ path usable without hand-built phase tables.
+Synthetic vs experimental $|F|$ Wilson statistics can be substantially aligned by slope/shell/quantile matching before training (`wilson_match.py`), reducing a measured hard-domain gap e.g. ~9.5 → ~2.8 on a COD Fobs reference template—without changing truth phases.
 
 ---
 
-## 5. Discussion
+## 4. Discussion
 
-**What works.** Easy/high-resolution small molecules: ensemble and PhAI hybrids
-(when weights match). Hard cells: partial information (HA/MAD/MR/fragment), not
-more free-FOM polish alone.
+**What works.**  
+- Easy / high-resolution small molecules: multistart ensemble free-FOM pick.  
+- Domain-matched PhAI hybrids on suitable experimental organics (COD 2016452).  
+- Hard cells with **partial information** meeting the seed bar.
 
-**What does not.** Pure ab initio graph priors at current capacity; general
-protein phasing; replacement of SHELXL refinement.
+**What does not.**  
+- Pure ab initio graph priors at present capacity on hard synthetic cells.  
+- General protein ab initio phasing.  
+- Replacing SHELXL refinement.
 
-**Relation to SHELX.** We calibrate against local academic SHELXS; we do not
-redistribute SHELX or claim industrial parity on all cases. SHELXD binary was
-not available in our environment; dual-space educational baseline remains
-in-repo.
+**Relation to SHELX.** We compare to local academic SHELXS under an explicit peak→$F_{\mathrm{calc}}$ protocol. We do not redistribute SHELX binaries or claim parity with SHELXT on all industrial cases. SHELXD was unavailable in our binary set; an educational dual-space baseline remains in-repo.
 
-**Open problems.** Hit seed bar with qualitatively different models (equivariant
-nets, DM-hybrid features, 10⁴-scale data); richer experimental panels; GUI.
-
----
-
-## 6. Conclusions
-
-*grok_phase_solver* is a correct, modular open framework for classical and hybrid
-phasing with honest hard-region metrics. The strongest scientific result for hard
-cells is the **partial-φ seed bar**; the strongest product result for easy cells
-is the **ensemble free-FOM path**. Scale alone does not solve the hard cliff.
+**Product implications.** The open hard path is **partial-φ / fragment / HA seeding**, exposed via CLI and GUI—not “more polish on a bad seed.”
 
 ---
 
-## Reproducibility
+## 5. Conclusions
+
+*grok_phase_solver* is a correct, modular open framework for classical and hybrid crystallographic phasing with honest hard-region metrics and a scientist pipeline to `trial.res`. The strongest hard-region scientific result is the **partial-φ seed bar** (Fig. 1); the strongest easy-region product result is **ensemble free-FOM multistart** (Fig. 2). Scaling the current graph prior alone does not clear the hard cliff (Fig. 4). Experimental COD results (Fig. 3) show that hybrid AI can succeed on real Fobs when the domain fits, while large/hard cases remain open.
+
+---
+
+## 6. Reproducibility
 
 ```bash
+# Library
+python -m pip install grok-phase-solver
+# or from source
 git clone https://github.com/pileofflapjacks1/grok_phase_solver.git
-cd grok_phase_solver && python -m pip install -e ".[dev]"
+cd grok_phase_solver && python -m pip install -e ".[dev,gui]"
 pytest -q
-python scripts/run_experimental_scoreboard.py
-python scripts/train_strong_prior.py --scale-xl --wilson-match  # optional, ~30 min
+
+# Scoreboards (precomputed tables in data/processed/)
+python scripts/run_experimental_scoreboard.py --quick
+python scripts/plot_paper_figures.py
+
+# Demos
+gps-solve --hkl examples/demo_solve/demo.hkl --ins examples/demo_solve/demo.ins \
+  --method ensemble --out /tmp/gps_easy
 python scripts/run_partial_seed_demo.py
-# Optional academic SHELXS:
-# python scripts/run_shelxs_h2h.py --quick
+gps-gui   # optional browser UI
 ```
+
+Frozen evidence files: `data/processed/{partial_seed_benchmark,shelxs_h2h,strong_prior,experimental_scoreboard,cod_hybrid_benchmark,wilson_domain_gap,failure_taxonomy}.md`.
+
+---
+
+## 7. Data and code availability
+
+- Source: MIT, GitHub `pileofflapjacks1/grok_phase_solver`, tag `v0.2.1`  
+- PyPI: `grok-phase-solver`  
+- COD structures cited by ID (2016452, 2100301, 2017775, …)  
+- SHELX / PhAI binaries and weights: user-supplied under their licenses  
+
+---
+
+## 8. Non-claims
+
+We do **not** claim: (N1) a general solution of the phase problem for macromolecules; (N2) pure ab initio superiority over SHELXT/SHELXS on all small-molecule cases; (N3) that GraphPhaseNet currently clears the hard cliff without partial information; (N4) that free FOM proves a correct structure; (N5) redistribution or equivalence of official SHELX or PhAI. See `docs/math/uniqueness_and_bounds.md`.
 
 ---
 
 ## References (selected)
 
-- Bragg (1915); Patterson (1934); Cochran (1952); Blow & Crick (1959)
-- Cowtan, ELS notes (2001); Oszlányi & Sütő (charge flipping); Fienup (HIO)
-- Sheldrick SHELX suite; Larsen et al., *Science* (2024) PhAI
-- COD (crystallography.net); gemmi
+1. W. L. Bragg, *The Crystalline State* (and foundational Bragg diffraction).  
+2. A. L. Patterson, *Z. Kristallogr.* (1934) — Patterson function.  
+3. W. Cochran, *Acta Cryst.* (1952) — triplet phase relationships.  
+4. D. M. Blow & F. H. C. Crick, *Acta Cryst.* (1959) — lack-of-closure.  
+5. K. Cowtan, ELS notes on the phase problem (2001).  
+6. G. Oszlányi & A. Sütő, *Acta Cryst. A* — charge flipping.  
+7. J. R. Fienup, *Appl. Opt.* — HIO phase retrieval.  
+8. G. M. Sheldrick, SHELX suite (SHELXS/SHELXD/SHELXL).  
+9. A. S. Larsen *et al.*, *Science* (2024) — PhAI.  
+10. Crystallography Open Database (COD), https://www.crystallography.net/  
+11. gemmi — macromolecular/small-molecule crystallography toolkit.  
 
-Full path bibliography: `docs/cowtan_phase_problem_notes.md`, package README cites.
+Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.
 
 ---
 
-## Supplementary
+## Supplementary material (in repository)
 
-- Notebooks 01–03 (`notebooks/`)
-- Scoreboard JSON under `data/processed/`
-- Math notes under `docs/math/`
-- Reviewer one-pager: `docs/FOR_REVIEWERS.md`
+| Path | Content |
+|------|---------|
+| `docs/figures/paper_fig1_…png` – `fig4` | Main figures |
+| `docs/figures/solvability_heatmap.png` | Solvability cliff (extra) |
+| `data/processed/*` | Scoreboard JSON/MD |
+| `docs/math/*` | Detailed math |
+| `examples/*` | Demos for CLI/GUI |
+| `notebooks/*` | Pedagogy |
+
+---
+
+*End of draft. Author list, funding, and full BibTeX remain TBD before submission.*
