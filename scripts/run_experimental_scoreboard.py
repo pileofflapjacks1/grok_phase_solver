@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Experimental HKL scoreboard (not only Fcalc).
+Experimental HKL scoreboard (Lane C review pack).
 
 Runs gps-solve methods on:
   - Demo small molecule (examples/demo_solve)
-  - COD 2016452 Fcalc control (PhAI hybrid reference)
-  - COD 2017775 experimental Fobs (large macrolide; capped resolution)
+  - COD 2016452 Fcalc control + **experimental Fobs** (new)
+  - COD 2100301 Fcalc control + **experimental Fobs** (new)
+  - COD 2017775 experimental Fobs (large macrolide; res-capped)
 
-Metrics vs deposited structure Fcalc phases where available:
+Optional: SHELXS when ShelX/shelxs is present; strong_prior_phaseed; PhAI.
+
+Metrics vs deposited structure Fcalc phases when CIF is available:
   mapCC_OI, free FOM (truth-free), peak recovery, R1, wall time.
 
 Writes data/processed/experimental_scoreboard.{json,md}
@@ -19,6 +22,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 
@@ -32,11 +36,14 @@ from grok_phase_solver.metrics.success import SuccessThresholds, evaluate_succes
 from grok_phase_solver.physics.density import density_from_structure_factors
 from grok_phase_solver.pipeline.solve import SolveConfig, solve_structure
 from grok_phase_solver.solvers.baseline import structure_to_fcalc
+from grok_phase_solver.solvers.partial_seed import (
+    oracle_partial_seed,
+    write_phase_seed_csv,
+)
 
 
-def _match_truth_phases(hkl_obs, cell, st, d_min):
+def _match_truth_phases(hkl_obs, st, d_min):
     """Fcalc truth phases on experimental hkl list (by Miller index)."""
-    # Match resolution of the solve to keep Fcalc tractable
     data = structure_to_fcalc(st, d_min=max(d_min or 0.9, 0.85))
     key = {tuple(map(int, h)): i for i, h in enumerate(data["hkl"])}
     ph = np.zeros(len(hkl_obs), dtype=np.float64)
@@ -54,6 +61,24 @@ def _match_truth_phases(hkl_obs, cell, st, d_min):
     return ph, mapped / max(len(hkl_obs), 1), data
 
 
+def _shelxs_available() -> bool:
+    try:
+        from grok_phase_solver.solvers.shelxs_runner import shelxs_available
+
+        return bool(shelxs_available())
+    except Exception:
+        return False
+
+
+def _strong_prior_available() -> bool:
+    try:
+        from grok_phase_solver.models.strong_prior import default_strong_prior_path
+
+        return default_strong_prior_path().exists()
+    except Exception:
+        return False
+
+
 def run_case(
     label: str,
     hkl_path: Path,
@@ -67,6 +92,7 @@ def run_case(
     n_starts: int = 2,
     n_extend: int = 10,
     do_success: bool = True,
+    phase_seed_csv: Path = None,
 ):
     rows = []
     print(f"\n===== {label} =====", flush=True)
@@ -86,6 +112,7 @@ def run_case(
                 n_peaks=25,
                 verbose=False,
                 seed=0,
+                phase_seed_csv=str(phase_seed_csv) if phase_seed_csv else None,
             )
             result = solve_structure(
                 str(hkl_path),
@@ -111,7 +138,7 @@ def run_case(
             if st is not None and do_success:
                 try:
                     ph_t, frac, data = _match_truth_phases(
-                        result.hkl, result.cell, st, d_min=result.d_min
+                        result.hkl, st, d_min=result.d_min
                     )
                     row["frac_truth_mapped"] = frac
                     rho_t = density_from_structure_factors(
@@ -122,7 +149,6 @@ def run_case(
                     )
                     cc, _ = map_correlation_origin_invariant(result.density, rho_t)
                     row["mapcc_oi"] = float(cc)
-                    # Peak recovery can be expensive on huge cells — skip if many atoms
                     n_atoms = len(data.get("fracs", []))
                     if n_atoms <= 80:
                         rep = evaluate_success(
@@ -150,7 +176,7 @@ def run_case(
 
             rows.append(row)
             print(
-                f"  {result.method:18s} CC={row.get('mapcc_oi', float('nan')):.3f} "
+                f"  {result.method:20s} CC={row.get('mapcc_oi', float('nan')):.3f} "
                 f"FOM={row.get('free_fom_composite', float('nan')):.3f} "
                 f"n={row['n_refl']} solved={row.get('solved')} "
                 f"t={row['seconds']:.1f}s",
@@ -162,6 +188,34 @@ def run_case(
     return rows
 
 
+def _write_fcalc_hkl(st, d_min: float, path: Path) -> Path:
+    data = structure_to_fcalc(st, d_min=d_min)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    table = ReflectionTable(
+        hkl=data["hkl"],
+        F_meas=data["amplitudes"],
+        cell=st.cell,
+        space_group_hm=st.space_group_hm,
+    )
+    write_hkl_simple(path, table)
+    return path
+
+
+def _oracle_seed_for_fcalc(st, d_min: float, path: Path, fraction: float = 0.30) -> Path:
+    data = structure_to_fcalc(st, d_min=d_min)
+    seed_ph, mask, _ = oracle_partial_seed(
+        data["hkl"],
+        data["amplitudes"],
+        st.cell,
+        data["phases"],
+        fraction=fraction,
+        mode="strong_E",
+        seed=0,
+    )
+    write_phase_seed_csv(path, data["hkl"], seed_ph, mask=mask)
+    return path
+
+
 def main():
     import argparse
 
@@ -169,22 +223,34 @@ def main():
     p.add_argument("--quick", action="store_true")
     args = p.parse_args()
 
+    shelxs_ok = _shelxs_available()
+    strong_ok = _strong_prior_available()
+    print(f"SHELXS available: {shelxs_ok}; strong_prior: {strong_ok}", flush=True)
+
     if args.quick:
-        methods_small = ["charge_flipping", "ensemble", "auto"]
-        methods_phai = ["charge_flipping", "auto"]
-        n_iter, n_starts = 35, 1
+        methods_core = ["charge_flipping", "ensemble", "auto"]
+        methods_phai = ["charge_flipping", "ensemble", "auto"]
+        n_iter, n_starts, n_extend = 30, 1, 8
     else:
-        methods_small = [
+        methods_core = ["charge_flipping", "ensemble", "auto"]
+        methods_phai = [
             "charge_flipping",
             "ensemble",
             "phai+cf_cond",
             "phai_phaseed",
             "auto",
         ]
-        methods_phai = methods_small
-        n_iter, n_starts = 50, 2
+        if strong_ok:
+            methods_core = methods_core + ["strong_prior_phaseed"]
+            methods_phai = methods_phai + ["strong_prior_phaseed"]
+        if shelxs_ok:
+            methods_core = methods_core + ["shelxs"]
+            methods_phai = methods_phai + ["shelxs"]
+        n_iter, n_starts, n_extend = 50, 2, 10
 
-    all_rows = []
+    all_rows: List[dict] = []
+    proc = ROOT / "data" / "processed"
+    proc.mkdir(parents=True, exist_ok=True)
 
     # 1) Demo
     demo_hkl = ROOT / "examples/demo_solve/demo.hkl"
@@ -194,52 +260,94 @@ def main():
             run_case(
                 "demo_solve",
                 demo_hkl,
-                methods_small,
+                methods_core,
                 ins=demo_ins,
                 n_iter=n_iter,
                 n_starts=n_starts,
+                n_extend=n_extend,
             )
         )
 
-    # 2) COD 2016452 Fcalc control
-    cif_2016452 = ROOT / "data/raw/cod/2016452.cif"
-    if cif_2016452.exists():
-        st = load_cif(cif_2016452)
-        dmins = [0.9] if args.quick else [0.9, 1.5]
+    # Helper: Fcalc + optional oracle partial + experimental HKL for a COD id
+    def cod_panel(cod_id: str, dmins: List[float], exp_dmin: Optional[float]):
+        cif = ROOT / "data/raw/cod" / f"{cod_id}.cif"
+        hkl_exp = ROOT / "data/raw/cod" / f"{cod_id}.hkl"
+        if not cif.exists():
+            print(f"skip COD {cod_id}: no CIF", flush=True)
+            return
+        st = load_cif(cif)
+        cell = ",".join(str(x) for x in st.cell)
+        sg = st.space_group_hm
+        methods = methods_phai if "P21" in (sg or "").upper().replace(" ", "") or "P121" in (sg or "").upper().replace(" ", "") else methods_core
+
         for d_min in dmins:
-            data = structure_to_fcalc(st, d_min=d_min)
-            tmp = ROOT / "data" / "processed" / f"_tmp_2016452_{d_min}.hkl"
-            tmp.parent.mkdir(parents=True, exist_ok=True)
-            table = ReflectionTable(
-                hkl=data["hkl"],
-                F_meas=data["amplitudes"],
-                cell=st.cell,
-                space_group_hm=st.space_group_hm,
-            )
-            write_hkl_simple(tmp, table)
-            cell = ",".join(str(x) for x in st.cell)
+            tmp = proc / f"_tmp_{cod_id}_{d_min}.hkl"
+            _write_fcalc_hkl(st, d_min, tmp)
             all_rows.extend(
                 run_case(
-                    f"COD_2016452_Fcalc_{d_min}",
+                    f"COD_{cod_id}_Fcalc_{d_min}",
                     tmp,
-                    methods_phai,
+                    methods,
                     cell=cell,
-                    sg=st.space_group_hm,
-                    cif_truth=cif_2016452,
+                    sg=sg,
+                    cif_truth=cif,
                     n_iter=n_iter,
                     n_starts=n_starts,
+                    n_extend=n_extend,
+                )
+            )
+            # Oracle partial-φ control (Lane B path on Fcalc)
+            seed_path = proc / f"_tmp_{cod_id}_{d_min}_oracle30.csv"
+            _oracle_seed_for_fcalc(st, d_min, seed_path, fraction=0.30)
+            all_rows.extend(
+                run_case(
+                    f"COD_{cod_id}_Fcalc_{d_min}_partial30",
+                    tmp,
+                    ["partial_phaseed"],
+                    cell=cell,
+                    sg=sg,
+                    cif_truth=cif,
+                    n_iter=n_iter,
+                    n_starts=max(1, n_starts),
+                    n_extend=n_extend,
+                    phase_seed_csv=seed_path,
                 )
             )
 
-    # 3) COD 2017775 experimental Fobs (large) — resolution-capped, light methods
+        if exp_dmin is not None and hkl_exp.exists():
+            all_rows.extend(
+                run_case(
+                    f"COD_{cod_id}_exp_{exp_dmin}",
+                    hkl_exp,
+                    methods_core if args.quick else methods,
+                    cell=cell,
+                    sg=sg,
+                    cif_truth=cif,
+                    d_min=exp_dmin,
+                    n_iter=n_iter if not args.quick else 30,
+                    n_starts=1 if args.quick else n_starts,
+                    n_extend=n_extend,
+                )
+            )
+
+    # 2–3) COD small organics with Fcalc + experimental Fobs
+    if args.quick:
+        cod_panel("2016452", [0.9], 1.0)
+        cod_panel("2100301", [0.9], None)
+    else:
+        cod_panel("2016452", [0.9, 1.2], 1.0)
+        cod_panel("2100301", [0.9, 1.2], 1.0)
+
+    # 4) COD 2017775 large experimental Fobs
     hkl_2017775 = ROOT / "data/raw/cod/2017775.hkl"
     cif_2017775 = ROOT / "data/raw/cod/2017775.cif"
     if hkl_2017775.exists() and cif_2017775.exists():
         st = load_cif(cif_2017775)
         cell = ",".join(str(x) for x in st.cell)
-        # Cap at moderate res so grid FFTs stay tractable
         dcut = 1.5 if args.quick else 1.2
         exp_methods = ["charge_flipping", "ensemble", "auto"]
+        if not args.quick and strong_ok:
+            exp_methods.append("strong_prior_phaseed")
         all_rows.extend(
             run_case(
                 f"COD_2017775_exp_{dcut}",
@@ -251,26 +359,32 @@ def main():
                 d_min=dcut,
                 n_iter=30 if args.quick else 40,
                 n_starts=1,
+                n_extend=8,
                 do_success=True,
             )
         )
 
-    out = ROOT / "data" / "processed"
-    out.mkdir(parents=True, exist_ok=True)
+    out = proc
     jp = out / "experimental_scoreboard.json"
     jp.write_text(json.dumps(all_rows, indent=2, default=float))
 
+    # Build markdown with results + per-dataset best + honest notes
     md = [
-        "# Experimental HKL scoreboard",
+        "# Experimental HKL scoreboard (Lane C)",
         "",
-        "Methods on **experimental-style** data plus COD Fcalc control.",
-        "Strict / mapCC success uses deposited structure Fcalc truth when CIF is available.",
+        "Methods on **experimental Fobs** (COD) plus **Fcalc controls** from deposited CIFs.",
+        "Strict / mapCC success uses Fcalc truth phases matched by Miller index when CIF is available.",
+        "",
+        f"- SHELXS binary: **{'found' if shelxs_ok else 'not found'}**",
+        f"- GraphPhaseNet strong prior: **{'found' if strong_ok else 'not found'}**",
+        f"- SHELXD binary: **not in ShelX/** (dual-space in-repo only; see `shelxd_h2h.md`)",
         "",
         "## Results",
         "",
         "| Dataset | Method | mapCC | free FOM | peaks | solved | s |",
         "|---------|--------|-------|----------|-------|--------|---|",
     ]
+    by_ds: dict = {}
     for r in all_rows:
         if "error" in r:
             md.append(f"| {r['dataset']} | `{r['method']}` | ERROR | — | — | — | — |")
@@ -282,20 +396,41 @@ def main():
             f"{r.get('n_peaks', 0)} | {r.get('solved')} | "
             f"{r.get('seconds', 0):.1f} |"
         )
-    md.extend([
-        "",
-        "## Notes",
-        "",
-        "- **demo_solve**: small synthetic-style demo with INS.",
-        "- **COD 2016452 Fcalc**: PhAI/AI-PhaSeed control (should show strong hybrids).",
-        "- **COD 2017775**: large experimental Fobs (roxithromycin); ab initio expected "
-        "to struggle — free FOM still ranks without truth; resolution capped for runtime.",
-        "- `auto` selects phai_phaseed / ensemble / CF by SG, resolution, and weights.",
-        "- `trial.res` is written by `gps-solve` for Olex2/SHELXL loading.",
-        "",
-        f"JSON: `{jp.relative_to(ROOT)}`",
-        "",
-    ])
+        ds = r["dataset"]
+        by_ds.setdefault(ds, []).append(r)
+
+    md.extend(["", "## Best mapCC per dataset (truth-matched)", "", "| Dataset | Best method | mapCC | solved |", "|---------|-------------|-------|--------|"])
+    for ds, rows in by_ds.items():
+        scored = [r for r in rows if r.get("mapcc_oi") is not None and "error" not in r]
+        if not scored:
+            md.append(f"| {ds} | — | n/a (no truth mapCC) | — |")
+            continue
+        best = max(scored, key=lambda r: r.get("mapcc_oi") or -1)
+        md.append(
+            f"| {ds} | `{best.get('method')}` | {best.get('mapcc_oi'):.3f} | {best.get('solved')} |"
+        )
+
+    md.extend(
+        [
+            "",
+            "## Notes",
+            "",
+            "- **demo_solve**: packaged easy demo (INS); free FOM ranks without truth.",
+            "- **COD 2016452**: small P2₁/c organic; Fcalc control + **experimental Fobs** from COD.",
+            "- **COD 2100301**: dinicotinic acid P2₁/c (neutron structure); Fcalc + **experimental Fobs**.",
+            "- **`*_partial30`**: oracle 30% strong-|E| phases → `partial_phaseed` (Lane B hard path).",
+            "- **COD 2017775**: large experimental Fobs (roxithromycin); ab initio expected to struggle.",
+            "- Experimental Fobs mapCC uses Fcalc from deposited model as proxy truth (not refined R1).",
+            "- `auto` selects ensemble / PhAI / prior / CF by SG, resolution, and available weights.",
+            "- Industrial SHELXD not redistributed; local SHELXS used when present.",
+            "",
+            "Related scoreboards: `cod_hybrid_benchmark.md`, `shelxs_h2h.md`, `strong_prior.md`, "
+            "`partial_seed_benchmark.md`.",
+            "",
+            f"JSON: `{jp.relative_to(ROOT)}`",
+            "",
+        ]
+    )
     mp = out / "experimental_scoreboard.md"
     mp.write_text("\n".join(md))
     print(f"\nWrote {jp}\nWrote {mp}", flush=True)

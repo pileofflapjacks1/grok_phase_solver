@@ -42,12 +42,17 @@ def find_model_path() -> Optional[Path]:
 
 
 def phai_available() -> bool:
+    """True if PhAI weights exist and torch/einops import cleanly enough to load."""
     try:
         import torch  # noqa: F401
         import einops  # noqa: F401
-    except ImportError:
+    except Exception:
+        # ImportError, or broken torch/numpy ABI (e.g. NumPy 2.x vs torch wheel)
         return False
-    return find_model_path() is not None
+    try:
+        return find_model_path() is not None
+    except Exception:
+        return False
 
 
 def _build_hkl_array(max_index: int = 10) -> np.ndarray:

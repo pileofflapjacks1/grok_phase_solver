@@ -1,6 +1,9 @@
 # arXiv preprint skeleton
 
-**Title:** Toward an Open, Physics-Informed Framework for the Crystallographic Phase Problem
+**Fleshed draft (Lane C):** [`arxiv_draft.md`](arxiv_draft.md) — abstract through conclusions
+with claims C1–C8, scoreboard pointers, and reproduce steps.
+
+**Title:** Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
 **Authors:** [TBD]
 
@@ -25,18 +28,22 @@ We present *grok_phase_solver*, an open-source Python framework that unifies cla
 ### 3.3 Synthetic data generation
 ### 3.4 Neural baseline (architecture, loss \(1-\cos\Delta\varphi\))
 ### 3.5 Hybrid loops (seed + polish)
+### 3.6 Partial-φ / fragment / HA seeds (product path)
+### 3.7 Free FOM v2.1 + ensemble
 
 ## 4. Experiments
-- Synthetic P1 atomic resolution
-- COD 2100301 resolution series
-- MIR simulation FOM vs map CC
-- Domain-gap Wilson plots
-- Failure cases
+- Synthetic P1 atomic resolution; solvability cliff
+- Easy ensemble vs SHELXS H2H
+- Hard partial-φ oracle curves (30%/20° bar)
+- GraphPhaseNet scale (Lane A: ~21% ≤20°)
+- COD 2016452 / 2100301 Fcalc + experimental Fobs scoreboard
+- Wilson domain-gap closing
+- Failure taxonomy A/B/C
 
 ## 5. Discussion
 - What is solved / not solved
 - Relation to PhAI and SHELX
-- Roadmap
+- Roadmap (10⁴ priors vs partial-φ UX)
 
 ## 6. Conclusions
 
@@ -47,3 +54,4 @@ We present *grok_phase_solver*, an open-source Python framework that unifies cla
 
 ## Supplementary
 - Notebooks with proofs; benchmark JSON; code DOI
+- FOR_REVIEWERS one-pager; USER_GUIDE

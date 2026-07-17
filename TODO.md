@@ -164,7 +164,9 @@ AI-driven general solver for the X-ray crystallography phase problem.
       + `strong_prior_v4_xl.npz` / `_ft.npz`. **Mean seed bar not cleared by scale alone.**  
 17. [ ] Further scale (10⁴ cells / torch equivariant) **or** accept ceiling and invest in partial-φ UX  
 18. [~] PyPI packaging ready (build/check); full upload when credentials available  
-19. [ ] More experimental HKL on scoreboard  
+19. [x] **Lane C:** expanded experimental COD Fobs scoreboard (2016452, 2100301,
+      2017775) + Fcalc controls + oracle partial-φ rows; `arxiv_draft.md`;
+      FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).
 
 ---
 

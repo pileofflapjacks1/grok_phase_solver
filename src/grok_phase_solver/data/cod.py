@@ -21,7 +21,15 @@ COD_SAMPLE_IDS = {
         "name": "pyridine-3,5-dicarboxylic acid (dinicotinic acid)",
         "formula": "C7 H5 N O4",
         "space_group": "P21/c",
-        "notes": "Small organic, P21/c — PhAI-relevant SG; neutron structure",
+        "notes": "Small organic, P21/c — PhAI-relevant SG; neutron structure + COD HKL",
+        "has_hkl": True,
+    },
+    "2016452": {
+        "name": "small organic (PhAI COD sample)",
+        "formula": "—",
+        "space_group": "P21/c",
+        "notes": "PhAI hybrid benchmark + experimental Fobs HKL in COD",
+        "has_hkl": True,
     },
     "2017775": {
         "name": "roxithromycin",

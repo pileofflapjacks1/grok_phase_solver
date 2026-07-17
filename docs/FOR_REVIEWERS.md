@@ -32,6 +32,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C6 | Free FOM v2.1 uses positivity residual $R_+$ (not vacuous post-modulus $R$) and reduces false “solved” gates; hard failures are taxonomy **B+C** | [math/free_fom.md](math/free_fom.md), [math/failure_taxonomy.md](math/failure_taxonomy.md), [`failure_taxonomy.md`](../data/processed/failure_taxonomy.md) |
 | C7 | Synthetic vs experimental \|F\| **Wilson domain gap** can be substantially reduced by slope/shell/quantile matching (e.g. hard gap ~9.5 → ~2.8 on COD Fobs reference) | [`wilson_domain_gap.md`](../data/processed/wilson_domain_gap.md) |
 | C8 | With fair packing + PhAI weights, PhAI hybrids can solve COD **2016452** Fcalc @ 0.9 Å under strict criteria in our suite | [`cod_hybrid_benchmark.md`](../data/processed/cod_hybrid_benchmark.md) |
+| C9 | Experimental COD **Fobs** scoreboard (2016452, 2100301, 2017775) + Fcalc controls + oracle partial-φ rows; pipeline methods ranked by mapCC/free FOM | [`experimental_scoreboard.md`](../data/processed/experimental_scoreboard.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 
@@ -78,9 +79,12 @@ python scripts/run_partial_seed_demo.py
 # Optional: SHELXS H2H if you place academic binary at ShelX/shelxs
 # xattr -dr com.apple.quarantine ShelX && chmod +x ShelX/shelxs
 # python scripts/run_shelxs_h2h.py --quick
+
+# Experimental COD Fobs + Fcalc scoreboard (Lane C)
+python scripts/run_experimental_scoreboard.py --quick
 ```
 
-Precomputed report tables (no recompute needed for reading): `data/processed/*_h2h.md`, `partial_seed_benchmark.md`, `strong_prior.md`, `failure_taxonomy.md`.
+Precomputed report tables (no recompute needed for reading): `data/processed/*_h2h.md`, `partial_seed_benchmark.md`, `strong_prior.md`, `failure_taxonomy.md`, `experimental_scoreboard.md`.
 
 ---
 
@@ -91,7 +95,8 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 | 5 min | This page + [README §1–4](../README.md) |
 | 15 min | [USER_GUIDE](USER_GUIDE.md) decision tree |
 | 30 min | [partial_seed.md](math/partial_seed.md) + [free_fom.md](math/free_fom.md) + [failure_taxonomy.md](math/failure_taxonomy.md) |
-| 45 min | Scoreboards linked in §2 |
+| 45 min | Scoreboards linked in §2 + [experimental_scoreboard.md](../data/processed/experimental_scoreboard.md) |
+| 60 min | Working draft [arxiv_draft.md](arxiv_draft.md) |
 | Optional | [Cowtan notes](cowtan_phase_problem_notes.md), [arxiv_skeleton.md](arxiv_skeleton.md) |
 
 ---

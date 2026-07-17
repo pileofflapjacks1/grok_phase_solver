@@ -17,7 +17,7 @@ $$
 | **Audience** | Experimental crystallographers + method developers |
 | **Best at** | Small molecules, good resolution; transparent classical + hybrid pipelines |
 | **Not** | A general protein ab initio solver or a drop-in SHELXL replacement |
-| **Docs** | [User guide](docs/USER_GUIDE.md) · [**For reviewers**](docs/FOR_REVIEWERS.md) · [Math notes](docs/math/) · [Changelog](CHANGELOG.md) · [TODO](TODO.md) |
+| **Docs** | [User guide](docs/USER_GUIDE.md) · [**For reviewers**](docs/FOR_REVIEWERS.md) · [arXiv draft](docs/arxiv_draft.md) · [Math notes](docs/math/) · [Changelog](CHANGELOG.md) · [TODO](TODO.md) |
 | **Repo** | https://github.com/pileofflapjacks1/grok_phase_solver |
 
 ---
@@ -283,7 +283,7 @@ gps-download-cod          # helper for COD samples
 | Wilson matching | [docs/math/wilson_domain_gap.md](docs/math/wilson_domain_gap.md) |
 | Uniqueness / non-claims | [docs/math/uniqueness_and_bounds.md](docs/math/uniqueness_and_bounds.md) |
 | Cowtan overview | [docs/cowtan_phase_problem_notes.md](docs/cowtan_phase_problem_notes.md) |
-| arXiv skeleton | [docs/arxiv_skeleton.md](docs/arxiv_skeleton.md) |
+| arXiv draft | [docs/arxiv_draft.md](docs/arxiv_draft.md) · [skeleton](docs/arxiv_skeleton.md) |
 | Notebooks | [01](notebooks/01_math_and_baseline.md) · [02](notebooks/02_patterson_and_triplets.md) · [03](notebooks/03_uniqueness_parseval_friedel.md) |
 
 ---

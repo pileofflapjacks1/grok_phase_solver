@@ -21,10 +21,17 @@
 - Wilson domain-gap closing (`wilson_match.py`)
 - SHELXS head-to-head scoreboard vs CF/ensemble/priors
 
+### Review pack (Lane C)
+- Expanded **experimental scoreboard**: COD 2016452/2100301 Fobs + Fcalc,
+  2017775, oracle partial-φ rows, optional SHELXS / strong prior
+- Working draft `docs/arxiv_draft.md`; FOR_REVIEWERS claim **C9**
+- COD download list includes 2016452 + HKL flags for 2100301
+
 ### Honest limits
 - Hard ab initio still ~0% strict success under full priors
 - **Seed bar ~21% ≤20° plateaus under 5× scale** (v3 → v4 XL); not cleared to 30%
 - Not a general protein ab initio solver
+- SHELXD binary not available in default `ShelX/` (SHELXS present when installed)
 
 ## 0.1.0 — earlier
 
