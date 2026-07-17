@@ -15,12 +15,15 @@ Opens **http://localhost:8501** by default.
 
 ## What you can do
 
-1. **Upload** experimental `.hkl` and optional `.ins` (or type cell + space group).
-2. **Choose method** (`auto`, `ensemble`, `partial_phaseed`, PhAI, SHELXS, …).
-3. **Hard-path seeds** — phase CSV, fragment `.res`, or `peaks.csv`.
-4. **Packaged demos** — easy ensemble; hard + 30% oracle φ; hard + fragment `.res`.
-5. **Inspect** free FOM, density slice, peaks, full `report.md` (including seed quality).
-6. **Download** `trial.res`, CSVs, or a zip of the export folder → Olex2 / SHELXL.
+1. **Scenario wizard** — Easy / hard / known φ / fragment / HA / SHELXS / advanced  
+2. **Upload** experimental `.hkl` / `.mtz` and optional `.ins`  
+3. **Cell paste** — comma list or full `CELL 0.71 a b c α β γ` line  
+4. **Hard-path seeds** — phase CSV, fragment `.res`, or `peaks.csv`  
+5. **Packaged demos** — easy ensemble; hard + 30% φ; hard + fragment  
+6. **Inspect** free FOM, density, peaks, report, **quality hints**  
+7. **Retry with peaks as seed** if the first map looks poor  
+8. **SHELXL handoff** — copy-paste shell snippet + download `trial.res`  
+9. **Downloads** — individual files or zip; last work dir remembered in the sidebar  
 
 ## Architecture
 
@@ -32,9 +35,17 @@ Opens **http://localhost:8501** by default.
 
 No separate phasing engine: the GUI only stages files and calls the library.
 
+### Backend helpers (testable)
+
+- `parse_cell_string` — CELL line / free-form cell  
+- `resolve_wizard` — scenario → method defaults  
+- `format_user_error` / `map_quality_hints` — scientist-facing messages  
+- `shelxl_handoff_snippet` — post-solve refinement recipe  
+
 ## Limits
 
-- Local single-user tool (not multi-tenant server hardening).
-- Does **not** replace SHELXL / Olex2 refinement.
-- Optional heavy methods (PhAI, SHELXS) need weights/binaries as for the CLI.
-- For automation and CI, prefer `gps-solve` on the command line.
+- Local single-user tool (not multi-tenant server hardening).  
+- Does **not** replace SHELXL / Olex2 refinement.  
+- Optional heavy methods (PhAI, SHELXS) need weights/binaries as for the CLI.  
+- Streamlit does not support mid-job **cancel** of native NumPy solvers cleanly; stop the browser tab / Ctrl+C the process if needed.  
+- For automation and CI, prefer `gps-solve` on the command line.  

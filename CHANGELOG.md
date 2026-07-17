@@ -10,6 +10,8 @@
   `gps-make-seed` CLI; seed-quality section in `report.md`
 - **GUI:** Streamlit app (`gps-gui`, extras `.[gui]`) — upload HKL/INS/seeds,
   run same pipeline, download `trial.res` / zip
+- **GUI polish:** scenario wizard, CELL-line parser, quality hints, peaks-as-seed
+  retry, SHELXL handoff tab, solver log capture, clearer errors
 - **SHELXS / SHELXE** external runners (`ShelX/` gitignored); `shelxs+shelxe` method
 - USER_GUIDE decision tree; SHELXL refinement instructions in `report.md`
 - `trial.res` export for Olex2/SHELXL
