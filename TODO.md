@@ -117,7 +117,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] arXiv preprint skeleton (`docs/arxiv_skeleton.md`)
 - [x] GitHub Actions CI (pytest)
 - [x] Math failure documentation
-- [x] Head-to-head harness vs SHELXD (runner + dual_space; binary external)
+- [x] Head-to-head harness vs SHELXD/SHELXS (runners + dual_space; binaries external)
 - [ ] PyMOL / web density viewer
 - [ ] PyPI release
 - [ ] Full public multi-TB dataset mirrors
@@ -131,7 +131,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Loaders: SHELX hkl/ins, CIF HKL, MTZ
 - [x] Exports: phases, density, peaks, report.md
 - [x] User guide + demo (`docs/USER_GUIDE.md`, `examples/demo_solve/`)
-- [ ] SHELXL-style `.res` trial model export
+- [x] SHELXL-style `.res` trial model export (`trial.res`)
 - [ ] GUI / web upload
 
 ## Immediate next actions (honest priority)
@@ -157,7 +157,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
 15. [x] Product trio: auto→ensemble (easy), partial-φ hard path + demo, SHELXS+SHELXE polish + SHELXL docs  
 16. [ ] Hit strong-seed bar (≥30% within 20°) via larger data/capacity or better architecture  
 17. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
-18. [ ] PyPI release / more experimental HKL scoreboard  
+18. [~] PyPI packaging ready (build/check); full upload when credentials available  
+19. [ ] More experimental HKL on scoreboard  
 
 ---
 

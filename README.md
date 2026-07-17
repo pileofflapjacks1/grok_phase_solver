@@ -55,11 +55,21 @@ Then refine in **SHELXL / Olex2** as usual. This tool helps **phase** the data; 
 ### Demo (no lab data)
 
 ```bash
+# Easy classical demo
 gps-solve --hkl examples/demo_solve/demo.hkl --ins examples/demo_solve/demo.ins \
-  --method charge_flipping --n-iter 100 --out examples/demo_solve/out
+  --method ensemble --n-iter 100 --out examples/demo_solve/out
+
+# Hard-ish + partial-φ (oracle 30% strong phases) — the path that works when ab initio fails
+python scripts/run_partial_seed_demo.py
+# or manually:
+gps-solve --hkl examples/partial_seed_demo/demo_hard.hkl \
+  --ins examples/partial_seed_demo/demo_hard.ins \
+  --method partial_phaseed \
+  --phase-seed-csv examples/partial_seed_demo/known_phases_30pct.csv \
+  --out examples/partial_seed_demo/out_30
 ```
 
-**Scope:** strongest for **small molecules** at good resolution. Not a general protein ab initio solver. Always validate with refinement R-factors.
+**Scope:** strongest for **small molecules** at good resolution (`auto` → ensemble). Hard cells need partial phases or struggle. Not a general protein ab initio solver. Always validate with refinement R-factors.
 
 ---
 

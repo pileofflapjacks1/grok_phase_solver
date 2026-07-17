@@ -2,7 +2,7 @@
 
 Compare **synthetic** |F| to **experimental** COD, then apply Wilson-slope + shell-mean + quantile matching (`data/wilson_match.py`).
 
-- Synthetic structures: **20** (easy≈10, hard≈10)
+- Synthetic structures: **8** (easy≈4, hard≈4)
 - Experimental reference: **COD_2017775_exp_dmin1.2**
 - Training template saved: `data/processed/wilson_ref_template.npz`
 
@@ -10,32 +10,32 @@ Compare **synthetic** |F| to **experimental** COD, then apply Wilson-slope + she
 
 | Cohort | mean gap | std | min | max |
 |--------|----------|-----|-----|-----|
-| easy | 2.185 | 1.069 | 0.820 | 3.695 |
-| hard | 9.499 | 2.901 | 3.779 | 13.236 |
-| all | 5.842 | 4.261 | 0.820 | 13.236 |
+| easy | 2.136 | 1.035 | 1.125 | 3.575 |
+| hard | 11.743 | 11.832 | 3.917 | 32.170 |
+| all | 6.939 | 9.675 | 1.125 | 32.170 |
 
 ## After full matching (slope + shells + quantiles + noise)
 
 | Cohort | mean gap before | mean gap after | reduction | frac ↓ |
 |--------|-----------------|----------------|-----------|--------|
-| easy | 2.185 | 2.251 | -0.066 | -0% |
-| hard | 9.499 | 2.839 | 6.660 | 64% |
-| all | 5.842 | 2.503 | 3.340 | 33% |
+| easy | 2.136 | 2.286 | -0.151 | 7% |
+| hard | 11.743 | 2.532 | 9.211 | 60% |
+| all | 6.939 | 2.264 | 4.675 | 37% |
 
 ## Ablations (hard cohort)
 
 | Recipe | mean gap after | reduction frac |
 |--------|----------------|----------------|
-| `slope_only` | 3.301 | 58% |
-| `slope_shells` | 3.018 | 61% |
-| `full` | 2.839 | 64% |
+| `slope_only` | 2.504 | 58% |
+| `slope_shells` | 2.787 | 53% |
+| `full` | 2.532 | 60% |
 
 ## Example hard structure
 
-- Gap 13.236 → **2.822** (79% reduction)
-- Wilson B: 26.3 → target ~14.3 (after match B_a=15.7)
+- Gap 32.170 → **2.963** (91% reduction)
+- Wilson B: 44.0 → target ~14.3 (after match B_a=13.4)
 
-Hard-vs-hard self gap (sanity): **4.640**
+Hard-vs-hard self gap (sanity): **25.755**
 
 ## How to use in training
 
