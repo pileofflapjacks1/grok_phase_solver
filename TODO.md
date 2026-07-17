@@ -154,9 +154,10 @@ AI-driven general solver for the X-ray crystallography phase problem.
 12. [x] SHELXS H2H with local academic binary (`ShelX/shelxs`); re-run SHELXD if that binary is added later  
 13. [x] Partial-φ / fragment seed API + hard-cliff curves (`partial_seed.py`, `run_partial_seed_benchmark.py`)  
 14. [x] A+B: Wilson-matched retrain + strong-seed metrics/loss (v3; hold-out strong MPE≈59°, frac≤20°≈21% vs 30% bar; still 0% strict)  
-15. [ ] Hit strong-seed bar (≥30% within 20°) via larger data/capacity or better architecture  
-16. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
-17. [ ] PyPI release / more experimental HKL scoreboard  
+15. [x] Product trio: auto→ensemble (easy), partial-φ hard path + demo, SHELXS+SHELXE polish + SHELXL docs  
+16. [ ] Hit strong-seed bar (≥30% within 20°) via larger data/capacity or better architecture  
+17. [ ] Further scale (10³–10⁴ cells / optional torch) if pursuing pure ab initio strict hard solves  
+18. [ ] PyPI release / more experimental HKL scoreboard  
 
 ---
 

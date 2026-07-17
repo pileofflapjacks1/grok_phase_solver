@@ -50,7 +50,7 @@ gps-solve --hkl mycrystal.hkl \
 
 Then refine in **SHELXL / Olex2** as usual. This tool helps **phase** the data; it does not replace refinement.
 
-`auto` picks among charge flipping, multistart ensemble, PhAI+AI-PhaSeed, and free-FOM–gated hybrids based on space group, resolution, and available weights.
+`auto` prefers **ensemble** on easy/high-res data (best open ab initio in our SHELXS H2H); hard resolution uses graph/hard-P1 priors or CF. For hard data with known phases use `--method partial_phaseed --phase-seed-csv …`. Optional external **SHELXS±SHELXE** if `ShelX/` binaries are installed.
 
 ### Demo (no lab data)
 

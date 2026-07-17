@@ -158,8 +158,10 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "shelxd",
             "shelxd_or_dual",
             "shelxs",
+            "shelxs+shelxe",
+            "partial_phaseed",
         ],
-        help="Phasing method (default: auto = pick best available pipeline)",
+        help="Phasing method (default: auto = ensemble on easy, priors/CF on hard)",
     )
     p.add_argument("--dmin", type=float, default=None, help="High-resolution cutoff Å (optional)")
     p.add_argument("--n-iter", type=int, default=120, help="Iterations for CF/HIO/polish")
@@ -185,6 +187,23 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         default=0.30,
         help="Strong-seed fraction for PhaSeed-style methods (default 0.30)",
     )
+    p.add_argument(
+        "--shelxe-polish",
+        action="store_true",
+        help="After shelxs, run SHELXE density mod (or use method shelxs+shelxe)",
+    )
+    p.add_argument(
+        "--shelxe-cycles",
+        type=int,
+        default=15,
+        help="SHELXE -m density-modification cycles (default 15)",
+    )
+    p.add_argument(
+        "--shelxe-solvent",
+        type=float,
+        default=0.45,
+        help="SHELXE -s solvent fraction (default 0.45)",
+    )
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", "-o", default="./gps_solve_out", help="Output directory")
     p.add_argument("--quiet", action="store_true")
@@ -204,6 +223,9 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         verbose=not args.quiet,
         phase_seed_csv=args.phase_seed_csv,
         seed_fraction=args.seed_fraction,
+        shelxe_polish=args.shelxe_polish,
+        shelxe_cycles=args.shelxe_cycles,
+        shelxe_solvent=args.shelxe_solvent,
     )
 
     try:

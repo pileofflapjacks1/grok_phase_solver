@@ -86,14 +86,23 @@ def test_solve_with_explicit_cell(tmp_path: Path):
 
 
 def test_resolve_method_auto_policy():
+    # Easy / high-res → ensemble (SHELXS H2H policy)
+    m_easy, reason_easy = resolve_method("auto", "P1", data_dmin=0.9, n_refl=500)
+    assert m_easy == "ensemble"
+    assert "ensemble" in reason_easy.lower() or "easy" in reason_easy.lower()
+
     m, reason = resolve_method("auto", "P 1 21/c 1", data_dmin=0.9, n_refl=500)
-    # With or without PhAI, should return a known concrete method
     assert m != "auto"
-    assert "auto" in reason or m in (
-        "phai_phaseed", "phai+cf_cond", "ensemble", "charge_flipping", "hard_p1_phaseed"
+    assert m in (
+        "ensemble", "phai_phaseed", "phai+cf_cond", "charge_flipping",
+        "hard_p1_phaseed", "strong_prior_phaseed",
     )
-    m2, _ = resolve_method("auto", "P1", data_dmin=0.85, n_refl=200)
-    assert m2 in ("ensemble", "charge_flipping", "hard_p1_phaseed", "phai+cf_cond")
+    # Hard res → prior or CF (not ensemble-first)
+    m_hard, reason_hard = resolve_method("auto", "P1", data_dmin=1.7, n_refl=200)
+    assert m_hard in (
+        "strong_prior_phaseed", "hard_p1_phaseed", "charge_flipping",
+    )
+    assert "hard" in reason_hard.lower() or "prior" in reason_hard.lower() or "CF" in reason_hard
 
 
 def test_export_writes_trial_res(tmp_path: Path):

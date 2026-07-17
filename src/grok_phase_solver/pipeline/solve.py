@@ -45,6 +45,7 @@ KNOWN_METHODS = (
     "shelxd",
     "shelxd_or_dual",
     "shelxs",
+    "shelxs+shelxe",
     "partial_phaseed",
 )
 
@@ -67,6 +68,10 @@ class SolveConfig:
     # Partial-φ seed file (CSV: h,k,l,phase_deg) for method=partial_phaseed
     phase_seed_csv: Optional[str] = None
     seed_fraction: float = 0.30
+    # Optional SHELXE density-mod polish after shelxs / when method=shelxs+shelxe
+    shelxe_polish: bool = False
+    shelxe_cycles: int = 15
+    shelxe_solvent: float = 0.45
 
 
 @dataclass
@@ -127,11 +132,15 @@ def resolve_method(
     """
     Resolve ``auto`` to a concrete method.
 
-    Policy (highest expected impact given repo benchmarks):
-    - P2₁/c-like + PhAI weights → ``phai_phaseed`` (AI-PhaSeed + gated polish)
-    - P1 + hard-P1 prior weights + low res → ``hard_p1_phaseed``
-    - high res (d_min ≤ 1.0) small-ish data → ``ensemble`` multistart CF+RAAR
-    - else → ``charge_flipping``
+    Policy (SHELXS H2H + hard-region benchmarks, 2026):
+    - **Easy / high-res** (d_min ≤ 1.15, enough refl): ``ensemble`` (beats CF/SHELXS on easy)
+    - P2₁/c-like + PhAI weights: ``phai_phaseed``
+    - **Hard-ish** P1 (d_min ≥ 1.3): strong graph prior if weights exist, else hard_p1, else CF
+    - PhAI available + moderate res: ``phai+cf_cond``
+    - else: ``charge_flipping``
+
+    Hard data with *known partial phases* is not auto-detected — use
+    ``--method partial_phaseed --phase-seed-csv …`` (see USER_GUIDE).
     """
     m = method.lower().strip()
     if m != "auto":
@@ -142,24 +151,45 @@ def resolve_method(
     sg = space_group or ""
     phai = _phai_ok()
     hp1 = _hard_p1_prior_available()
-
-    if phai and _is_p21c_like(sg):
-        return "phai_phaseed", "auto: P21/c-like + PhAI → AI-PhaSeed"
-    # Prefer graph strong prior when available on hard P1-like data
     try:
         from grok_phase_solver.models.strong_prior import default_strong_prior_path
 
         strong_ok = default_strong_prior_path().exists()
     except Exception:
         strong_ok = False
-    if strong_ok and (_is_p1(sg) or not sg) and data_dmin >= 1.3:
-        return "strong_prior_phaseed", "auto: P1-ish hard-res + GraphPhaseNet prior"
-    if hp1 and (_is_p1(sg) or not sg) and data_dmin >= 1.3:
-        return "hard_p1_phaseed", "auto: P1-ish hard-res + hard_p1 prior"
-    if data_dmin <= 1.0 and n_refl >= 80:
-        return "ensemble", "auto: high-res multistart CF+RAAR free-FOM"
-    if phai and data_dmin <= 1.2:
+
+    # 1) Easy / high-resolution: ensemble is the best in-repo ab initio (H2H)
+    if data_dmin <= 1.15 and n_refl >= 80:
+        return "ensemble", "auto: easy/high-res → multistart ensemble (CF+RAAR free-FOM)"
+
+    # 2) PhAI path for common small-molecule SGs when weights exist
+    if phai and _is_p21c_like(sg):
+        return "phai_phaseed", "auto: P21/c-like + PhAI → AI-PhaSeed"
+    if phai and data_dmin <= 1.25:
         return "phai+cf_cond", "auto: PhAI + free-FOM–gated CF"
+
+    # 3) Hard-resolution / sparse data: domain priors, then CF
+    if data_dmin >= 1.3 and (_is_p1(sg) or not sg or n_refl < 400):
+        if strong_ok:
+            return (
+                "strong_prior_phaseed",
+                "auto: hard-res → GraphPhaseNet prior + AI-PhaSeed "
+                "(if unsolved, use partial_phaseed + phase-seed CSV)",
+            )
+        if hp1:
+            return (
+                "hard_p1_phaseed",
+                "auto: hard-res → hard_p1 prior + AI-PhaSeed "
+                "(if unsolved, use partial_phaseed + phase-seed CSV)",
+            )
+        return (
+            "charge_flipping",
+            "auto: hard-res → CF (consider partial_phaseed if you have HA/MAD/partial φ)",
+        )
+
+    # 4) Mid-resolution default
+    if data_dmin <= 1.4 and n_refl >= 100:
+        return "ensemble", "auto: mid-res → ensemble"
     return "charge_flipping", "auto: classical charge flipping default"
 
 
@@ -258,7 +288,7 @@ def _run_phasing(
         )
         return method, phases, density, history
 
-    if method == "shelxs":
+    if method in ("shelxs", "shelxs+shelxe"):
         from grok_phase_solver.solvers.shelxs_runner import shelxs_solve
 
         phases, density, history = shelxs_solve(
@@ -268,6 +298,28 @@ def _run_phasing(
             d_min=d_use,
             verbose=cfg.verbose,
         )
+        want_e = method == "shelxs+shelxe" or cfg.shelxe_polish
+        if want_e:
+            try:
+                from grok_phase_solver.solvers.shelxe_runner import shelxe_polish
+
+                fracs = history.get("fracs")
+                elements = history.get("elements")
+                if fracs is not None and len(fracs):
+                    phases, density, h2 = shelxe_polish(
+                        hkl, amp, cell_arr, fracs, elements,
+                        n_mod_cycles=cfg.shelxe_cycles,
+                        solvent_fraction=cfg.shelxe_solvent,
+                        d_min=d_use,
+                        verbose=cfg.verbose,
+                    )
+                    history = {**history, "shelxe": h2, "shelxe_applied": True}
+                    method = "shelxs+shelxe"
+                else:
+                    warnings.append("SHELXE polish skipped: no atom list from SHELXS")
+            except Exception as e:
+                warnings.append(f"SHELXE polish failed ({e}); keeping SHELXS phases")
+                history["shelxe_applied"] = False
         return method, phases, density, history
 
     if method == "shelxd_or_dual":

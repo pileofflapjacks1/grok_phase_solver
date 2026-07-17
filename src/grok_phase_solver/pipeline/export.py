@@ -173,22 +173,45 @@ def _render_report(result: "SolveResult") -> str:
             "",
             "## Suggested next steps (crystallography practice)",
             "",
-            "1. **Inspect** `density_slice.png` and peak heights in `peaks.csv` "
-            "(look for chemically sensible peak counts).",
+            "1. **Inspect** `density_slice.png` and peak heights in `peaks.csv`.",
             "2. **Open** `trial.res` in Olex2 / ShelXle — assign element types to Q peaks.",
-            "3. **Refine** with SHELXL against your experimental intensities "
-            "(this tool does **not** replace SHELXL refinement).",
-            "4. If the map looks noisy: try `--method ensemble` (high-res), "
-            "`--method phai_phaseed` (P2₁/c + PhAI weights), or more `--n-iter`.",
-            "5. Free-FOM composite in diagnostics is a **truth-free** ranking score, not proof of solution.",
-            "6. PhAI weights: see `third_party/phai/README.md`. Hard-P1 prior: "
-            "`python scripts/train_hard_p1_prior.py`.",
+            "3. **Refine** with **SHELXL** (local `ShelX/shelxl` if installed):",
+            "   ```bash",
+            "   cp trial.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work",
+            "   ```",
+            "4. If the map is poor:",
+            "   - Easy/high-res: `--method ensemble` (default `auto` already prefers this).",
+            "   - Hard ab initio failed: `--method partial_phaseed --phase-seed-csv known.csv` "
+            "(HA/MAD/MR-lite / partial SHELXS fragment).",
+            "   - Classical external: `--method shelxs` or `shelxs+shelxe` "
+            "(needs `ShelX/shelxs` + `shelxe`).",
+            "5. Free-FOM composite is a **truth-free** ranking score, not proof of solution.",
+            "6. Demo hard + partial-φ: `examples/partial_seed_demo/`.",
+            "",
+            "## Decision tree",
+            "",
+        ]
+    )
+    try:
+        from grok_phase_solver.solvers.workflow import (
+            shelxl_refinement_instructions,
+            workflow_decision_tree_md,
+        )
+
+        lines.append(workflow_decision_tree_md())
+        lines.append("")
+        lines.append(shelxl_refinement_instructions(Path(".")))
+    except Exception:
+        pass
+    lines.extend(
+        [
             "",
             "## Honest scope",
             "",
-            "gps-solve is an **open ab initio / hybrid phasing assistant**. It is strongest for "
-            "small-molecule data at good resolution. It is **not** a guaranteed replacement for "
-            "SHELXT/SHELXD or experimental phasing (MIR/MAD/MR) for proteins.",
+            "gps-solve is an **open ab initio / hybrid phasing assistant**. Strongest for "
+            "small-molecule data at good resolution (ensemble). Hard cells need better "
+            "seeds (partial-φ) or external SHELXS — pure priors still lag the 30%/20° bar. "
+            "Not a general protein ab initio solver.",
             "",
         ]
     )

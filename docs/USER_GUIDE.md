@@ -67,26 +67,80 @@ gps-solve \
 
 | `--method` | When to use |
 |------------|-------------|
-| `auto` (default) | Smart pick: AI-PhaSeed if P2₁/c+PhAI; ensemble at high res; else CF |
-| `charge_flipping` | Robust classical default |
-| `ensemble` | Multistart CF+RAAR ranked by free FOM (good high-res) |
-| `phai_phaseed` | **AI-PhaSeed**: PhAI seed → phase extension → free-FOM polish |
-| `phai+cf_cond` | PhAI + CF only if free FOM accepts polish |
-| `phai` / `phai+cf` | PhAI alone or unconditional CF polish (needs weights) |
-| `hard_p1_phaseed` | Domain-matched hard-P1 prior + AI-PhaSeed (synthetic-trained) |
-| `strong_prior_phaseed` | Triplet-graph GNN prior + AI-PhaSeed (hard multi-SG) |
-| `raar` / `recycle` / `hio` | Projection / positivity variants |
-| `direct_methods` | Educational multi-start triplets (not SHELXD-strength) |
+| **`auto` (default)** | **Easy/high-res → ensemble**; hard → graph/hard-P1 prior or CF; P2₁/c+PhAI → AI-PhaSeed |
+| `ensemble` | Best open ab initio on easy data (CF+RAAR multistart, free-FOM pick) |
+| `charge_flipping` | Fast classical baseline |
+| **`partial_phaseed`** | **Hard-data path** when you have partial phases (HA/MAD/MR-lite) — see below |
+| `shelxs` / `shelxs+shelxe` | External academic SHELXS (± SHELXE density mod); needs `ShelX/` binaries |
+| `strong_prior_phaseed` / `hard_p1_phaseed` | Learned priors + AI-PhaSeed (hard synthetic domain) |
+| `phai_phaseed` / `phai+cf_cond` | PhAI seed hybrids (needs weights) |
+| `raar` / `recycle` / `hio` / `direct_methods` | Projection / educational DM |
 
 Examples:
 
 ```bash
 gps-solve --hkl data.hkl --ins data.ins --method auto --n-iter 150 --out out_auto
-gps-solve --hkl data.hkl --ins data.ins --method phai_phaseed --out out_phaseed
 gps-solve --hkl data.hkl --ins data.ins --method ensemble --n-starts 4 --out out_ens
+gps-solve --hkl data.hkl --ins data.ins --method shelxs+shelxe --out out_shelx
 ```
 
-`auto` policy (simplified): P2₁/c + PhAI weights → `phai_phaseed`; high resolution → `ensemble`; else `charge_flipping`. Free-FOM composite is written into diagnostics.
+### Decision tree (what to run)
+
+```text
+Have partial phases (HA / MAD / MR / SHELXS fragment)?
+   YES →  --method partial_phaseed --phase-seed-csv known.csv
+   NO  →  resolution good (d ≲ 1.15 Å)?
+            YES → auto (ensemble)
+            NO  → auto (prior/CF) — if map fails, get partial φ or try shelxs
+Finish → trial.res → SHELXL / Olex2
+```
+
+| Situation | Command |
+|-----------|---------|
+| Default | `gps-solve --hkl … --ins … --method auto` |
+| Easy / high-res | `auto` or `ensemble` |
+| Hard, pure ab initio | `auto` (expect struggle; see free FOM) |
+| **Hard + known φ / HA** | `partial_phaseed` + `--phase-seed-csv` |
+| External classical | `shelxs` or `shelxs+shelxe` |
+| After any solve | `trial.res` → **SHELXL** |
+
+### Partial-φ hard path (recommended when ab initio fails)
+
+Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → hard cells can strict-solve via AI-PhaSeed. Full ab initio priors still sit ~20% within 20°.
+
+```bash
+# CSV: h,k,l,phase_deg  (strong reflections you know)
+gps-solve --hkl data.hkl --ins data.ins \
+  --method partial_phaseed \
+  --phase-seed-csv known_phases.csv \
+  --out ./out_partial
+```
+
+**Packaged demo** (synthetic hard-ish + 30% oracle seed):
+
+```bash
+gps-solve --hkl examples/partial_seed_demo/demo_hard.hkl \
+  --ins examples/partial_seed_demo/demo_hard.ins \
+  --method partial_phaseed \
+  --phase-seed-csv examples/partial_seed_demo/known_phases_30pct.csv \
+  --out examples/partial_seed_demo/out_30
+```
+
+### SHELXS → SHELXE → SHELXL (local academic binaries)
+
+Place binaries in `ShelX/` (gitignored — do not push):
+
+```bash
+# Solve with SHELXS, density-mod with SHELXE
+gps-solve --hkl data.hkl --ins data.ins --method shelxs+shelxe --out out_sx
+
+# Refine trial model with SHELXL (outside gps-solve)
+cp out_sx/trial.res work.ins
+cp data.hkl work.hkl
+ShelX/shelxl work
+```
+
+macOS: `xattr -dr com.apple.quarantine ShelX && chmod +x ShelX/*`
 
 ---
 

@@ -34,6 +34,7 @@ third_party/phai/weights/**/*.pth
 *.ckpt
 .tmp/
 examples/**/out/
+examples/**/out_*/
 gps_solve_out/
 solve_out/
 
