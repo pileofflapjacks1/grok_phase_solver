@@ -194,17 +194,20 @@ We do **not** claim: (N1) a general solution of the phase problem for macromolec
 
 ## References (selected)
 
-1. W. L. Bragg, *The Crystalline State* (and foundational Bragg diffraction).  
-2. A. L. Patterson, *Z. Kristallogr.* (1934) — Patterson function.  
-3. W. Cochran, *Acta Cryst.* (1952) — triplet phase relationships.  
-4. D. M. Blow & F. H. C. Crick, *Acta Cryst.* (1959) — lack-of-closure.  
-5. K. Cowtan, ELS notes on the phase problem (2001).  
-6. G. Oszlányi & A. Sütő, *Acta Cryst. A* — charge flipping.  
-7. J. R. Fienup, *Appl. Opt.* — HIO phase retrieval.  
-8. G. M. Sheldrick, SHELX suite (SHELXS/SHELXD/SHELXL).  
-9. A. S. Larsen *et al.*, *Science* (2024) — PhAI.  
-10. Crystallography Open Database (COD), https://www.crystallography.net/  
-11. gemmi — macromolecular/small-molecule crystallography toolkit.  
+BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patterson1934`, `cochran1952`, `blow1959`, `cowtan2001els`, `oszlanyi2004`, `fienup1982`, `sheldrick2008`, `sheldrick2015`, `larsen2024phai`, `cod`, `gemmi`, `grokphasesolver2026`).
+
+1. Bragg & Bragg (1915) — X-rays and crystal structure.  
+2. Patterson (1934) — Patterson function.  
+3. Cochran (1952) — triplet phase relationships.  
+4. Blow & Crick (1959) — lack-of-closure.  
+5. Cowtan (2001) — ELS notes on the phase problem.  
+6. Oszlányi & Sütő (2004) — charge flipping.  
+7. Fienup (1982) — HIO phase retrieval.  
+8. Sheldrick (2008, 2015) — SHELX / SHELXT.  
+9. Larsen *et al.* (2024) — PhAI.  
+10. COD — crystallography.net.  
+11. gemmi — crystallography toolkit.  
+12. Grok / xAI (2026) — *grok_phase_solver* v0.2.1 (this work).  
 
 Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.
 

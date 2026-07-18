@@ -24,27 +24,36 @@ $$
 
 ## 1. Five-minute start (scientist path)
 
-### Install
+### Install (recommended: PyPI)
+
+```bash
+python -m pip install grok-phase-solver
+gps-solve --help
+
+# Optional browser UI
+python -m pip install "grok-phase-solver[gui]"
+gps-gui
+# → http://localhost:8501  (upload HKL/INS, download trial.res)
+```
+
+On macOS, use `python3` or Anaconda if `python` is not found:
+
+```bash
+source ~/anaconda3/bin/activate   # if you use Anaconda
+python -m pip install grok-phase-solver
+```
+
+### Install from source (developers)
 
 ```bash
 git clone https://github.com/pileofflapjacks1/grok_phase_solver.git
 cd grok_phase_solver
-python -m pip install -e .
+python -m pip install -e ".[gui]"
 gps-solve --help
 ```
 
-Optional: `python -m pip install -e ".[ml]"` for PhAI (weights not included — see [`third_party/phai/README.md`](third_party/phai/README.md)).
-
-From PyPI (after publish):
-
-```bash
-python -m pip install grok-phase-solver
-python -m pip install "grok-phase-solver[gui]"   # optional browser UI
-```
-
-**GUI (browser):** `python -m pip install -e ".[gui]"` then `gps-gui` → http://localhost:8501  
-Upload HKL/INS, pick method or hard-path seeds, download `trial.res`.  
-Release notes: [`docs/RELEASE.md`](docs/RELEASE.md).
+Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.2.1 notes](docs/RELEASE_NOTES_v0.2.1.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 
 ### Phase your data
 

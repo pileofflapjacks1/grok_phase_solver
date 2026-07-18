@@ -25,6 +25,11 @@ data/synthetic/*
 # Keep COD samples under version if small; ignore huge extras
 data/processed/*
 !data/processed/.gitkeep
+# Junk / incomplete COD pulls (no HKL used in scoreboards)
+data/raw/cod/1500001.cif
+data/raw/cod/2000000.cif
+data/raw/cod/4113083.cif
+data/raw/cod/7206078.cif
 
 # ML weights (PhAI_model.pth ~162MB — download locally; do not commit)
 third_party/phai/weights/*.pth

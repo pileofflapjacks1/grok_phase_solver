@@ -3,6 +3,8 @@
 | Document | Role |
 |----------|------|
 | [**Manuscript draft**](../arxiv_draft.md) | Full methods-style draft (abstract → conclusions) |
+| [**PDF**](arxiv_draft.pdf) | Pandoc + tectonic build |
+| [**BibTeX**](references.bib) | Selected references |
 | [FOR_REVIEWERS](../FOR_REVIEWERS.md) | One-page claims C1–C9 |
 | [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–4 |
 | Figures | `docs/figures/paper_fig{1..4}_*.png` |

@@ -10,6 +10,9 @@
   (`scripts/plot_paper_figures.py` → `docs/figures/paper_fig*`), hub `docs/paper/`
 - **PDF:** `docs/paper/arxiv_draft.pdf` via pandoc + tectonic
   (`scripts/build_paper_pdf.py`); author line Grok (xAI)
+- **BibTeX:** `docs/paper/references.bib`
+- **GitHub Release** v0.2.1 with wheel, sdist, and paper PDF assets
+- README: PyPI-first install path; release notes page
 
 ### Included since 0.2.0 (product freeze for tag)
 - Streamlit **gps-gui** + polish (wizard, CELL parse, peaks retry, SHELXL handoff)

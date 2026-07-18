@@ -170,7 +170,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
       2017775) + Fcalc controls + oracle partial-φ rows; `arxiv_draft.md`;
       FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).  
 20. [x] **Paper pack:** Figs. 1–4 from scoreboards; full methods draft; `docs/paper/`  
-21. [ ] Author list + BibTeX + optional pandoc PDF / arXiv submit
+21. [x] BibTeX + pandoc PDF + GitHub Release v0.2.1 assets  
+22. [ ] Additional human co-authors + arXiv submit (optional)
 
 ---
 
