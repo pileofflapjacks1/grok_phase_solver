@@ -171,7 +171,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
       FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).  
 20. [x] **Paper pack:** Figs. 1–4 from scoreboards; full methods draft; `docs/paper/`  
 21. [x] BibTeX + pandoc PDF + GitHub Release v0.2.1 assets  
-22. [ ] Additional human co-authors + arXiv submit (optional)
+22. [x] Authors: Grok (xAI) and Joe  
+23. [ ] Affiliations / funding + arXiv submit (optional)
 
 ---
 

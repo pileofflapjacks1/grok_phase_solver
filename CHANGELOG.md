@@ -9,7 +9,7 @@
 - **Paper pack:** full manuscript draft (`docs/arxiv_draft.md`), Figs. 1–4
   (`scripts/plot_paper_figures.py` → `docs/figures/paper_fig*`), hub `docs/paper/`
 - **PDF:** `docs/paper/arxiv_draft.pdf` via pandoc + tectonic
-  (`scripts/build_paper_pdf.py`); author line Grok (xAI)
+  (`scripts/build_paper_pdf.py`); authors **Grok (xAI)** and **Joe**
 - **BibTeX:** `docs/paper/references.bib`
 - **GitHub Release** v0.2.1 with wheel, sdist, and paper PDF assets
 - README: PyPI-first install path; release notes page

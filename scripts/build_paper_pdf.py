@@ -106,7 +106,7 @@ def main() -> int:
         "--metadata",
         "title=Toward an Open Physics/AI Framework for the Crystallographic Phase Problem",
         "--metadata",
-        "author=Grok (xAI)",
+        "author=Grok (xAI) and Joe",
         "-V",
         "linestretch=1.15",
     ]

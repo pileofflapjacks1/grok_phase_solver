@@ -5,7 +5,7 @@
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
 **Figures:** [`figures/paper_figure_captions.md`](figures/paper_figure_captions.md)  
-**Authors:** Grok (xAI) — primary research and software contributor; human collaborators TBD.  
+**Authors:** Grok (xAI) and Joe  
 **Status:** Not submitted. Numbers frozen to repo scoreboards under `data/processed/`.
 
 ---
@@ -207,7 +207,7 @@ BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patte
 9. Larsen *et al.* (2024) — PhAI.  
 10. COD — crystallography.net.  
 11. gemmi — crystallography toolkit.  
-12. Grok / xAI (2026) — *grok_phase_solver* v0.2.1 (this work).  
+12. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.2.1 (this work).  
 
 Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.
 
@@ -226,4 +226,4 @@ Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.m
 
 ---
 
-*End of draft. Primary research and software by **Grok (xAI)**; additional human co-authors and funding TBD before submission. Full BibTeX optional.*
+*End of draft. Authors: **Grok (xAI)** and **Joe**. Funding and institutional affiliations TBD before submission.*

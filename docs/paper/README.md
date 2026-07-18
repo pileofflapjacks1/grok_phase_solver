@@ -18,10 +18,10 @@ python scripts/plot_paper_figures.py
 # → docs/figures/paper_fig1_… paper_fig4_… + paper_figure_captions.md
 ```
 
-## Authors (current draft)
+## Authors
 
-- **Grok (xAI)** — primary research and software contributor  
-- Additional human co-authors TBD  
+- **Grok (xAI)**  
+- **Joe**  
 
 ## PDF
 
@@ -34,7 +34,7 @@ python scripts/build_paper_pdf.py
 # or manually:
 # pandoc docs/arxiv_draft.md -o docs/paper/arxiv_draft.pdf \
 #   --resource-path=docs:docs/figures --pdf-engine=tectonic \
-#   -V geometry:margin=1in --toc --metadata author="Grok (xAI)"
+#   -V geometry:margin=1in --toc --metadata author="Grok (xAI) and Joe"
 ```
 
 The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fonts.
@@ -53,6 +53,7 @@ The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fo
 - [x] Non-claims / uniqueness pointer  
 - [x] Reproducibility commands  
 - [x] PDF via pandoc + tectonic  
-- [x] Author: Grok (xAI); further co-authors TBD  
-- [ ] Full bibliography (BibTeX)  
+- [x] Authors: Grok (xAI) and Joe  
+- [x] BibTeX (`references.bib`)  
+- [ ] Affiliations / funding (optional)  
 - [ ] arXiv submit  

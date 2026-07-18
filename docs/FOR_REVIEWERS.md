@@ -112,7 +112,9 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 
 ## 8. Contact / provenance
 
-- Code + scoreboards: GitHub `main`  
+- **Authors:** Grok (xAI) and Joe  
+- Code + scoreboards: GitHub `main` · package v0.2.1 on PyPI  
+- Paper: [arxiv_draft.md](arxiv_draft.md) · [PDF](paper/arxiv_draft.pdf)  
 - Checklist: [TODO.md](../TODO.md) · History: [CHANGELOG.md](../CHANGELOG.md)  
 - Design principle: physics fallback for every ML path; prefer correct math over marketing claims  
 

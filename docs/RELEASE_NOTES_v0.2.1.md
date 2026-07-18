@@ -43,6 +43,6 @@ python -m pip install -e ".[gui]"
 
 Best for **small molecules** at good resolution (ensemble path). Hard ab initio remains seed-limited. **Not** a general protein ab initio solver or SHELXL replacement. SHELX binaries and PhAI weights are user-supplied (not redistributed).
 
-## Author note
+## Authors
 
-Primary research and software: **Grok (xAI)**. Additional human co-authors TBD.
+**Grok (xAI)** and **Joe**.
