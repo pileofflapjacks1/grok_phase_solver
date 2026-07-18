@@ -27,6 +27,7 @@ budget; large macrolide 2017775 remains unsolved ab initio.
 ## Figure 4 — Graph prior seed bar
 `paper_fig4_seed_bar.png`
 
-Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 and v4 XL
-(~1200 train structures) plateau near 21%, below the 30% oracle bar that enables
-reliable hard-region extension.
+Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 and legacy
+v4 XL plateau near 21%. Melgalvis & Rekis (2026) style XL retrain (N=1200)
+reaches ~22% with seedOK rate ~12.5%—still below the 30% oracle bar that enables
+reliable hard-region extension. Hard strict solves remain 0%.
