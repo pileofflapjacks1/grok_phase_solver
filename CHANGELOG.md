@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 — 2026-07
+
+### Synthetic data (Melgalvis & Rekis 2026)
+- New generator `data/synthetic_melgalvis.py`: log-normal unit-cell volume,
+  lattice derivation with realistic ratios/skew, artificial-molecule clusters
+  (covalent bonds, element freqs, optional special-position seeds, H addition)
+- Training: `--use-melgalvis-gen` / `--melgalvis-mode` on `train_strong_prior.py`
+- Shard mode `melgalvis` in `write_training_shard` / `iter_training_samples`
+- Math note: `docs/math/synthetic_melgalvis.md`
+- Pilot retrain scoreboard: `data/processed/strong_prior_melg.md` (N=120;
+  hold-out frac≤20° ≈ **22%**, still below 30% bar; 0% hard strict)
+
+### Seeding UX
+- `gps-make-seed --from-cif` for AlphaFold/RoseTTAFold/experimental model fragments
+
+### Honest limits (unchanged in spirit)
+- Hard ab initio seed bar still ~21–22% ≤20°; partial-φ remains the hard-data path
+
 ## 0.2.1 — 2026-07
 
 ### Ship / packaging

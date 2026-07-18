@@ -18,6 +18,13 @@ from .synthetic_v2 import (
     add_heavy_atom,
     make_centrosymmetric_copy,
 )
+from .synthetic_melgalvis import (
+    MelgalvisGenConfig,
+    generate_melgalvis_structure,
+    sample_volume,
+    sample_lattice_from_volume,
+    iter_melgalvis_samples,
+)
 
 __all__ = [
     "download_cod_cif",
@@ -41,4 +48,9 @@ __all__ = [
     "apply_partial_occupancy",
     "add_heavy_atom",
     "make_centrosymmetric_copy",
+    "MelgalvisGenConfig",
+    "generate_melgalvis_structure",
+    "sample_volume",
+    "sample_lattice_from_volume",
+    "iter_melgalvis_samples",
 ]

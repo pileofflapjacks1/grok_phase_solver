@@ -153,6 +153,8 @@ def iter_training_samples(
     """
     Yield dicts ready for dataset serialization:
     {hkl, amplitudes, phases, cell, meta}
+
+    mode: ``fragment`` | ``random`` | ``melgalvis`` | ``melgalvis_cluster``
     """
     rng = np.random.default_rng(seed)
     for i in range(n_samples):
@@ -160,6 +162,16 @@ def iter_training_samples(
         if mode == "fragment":
             st = generate_fragment_structure(
                 n_fragments=int(rng.integers(1, 4)), seed=s
+            )
+        elif mode in ("melgalvis", "melgalvis_cluster", "melgalvis_hybrid"):
+            from grok_phase_solver.data.synthetic_melgalvis import (
+                MelgalvisGenConfig,
+                generate_melgalvis_structure,
+            )
+
+            m = "hybrid" if mode == "melgalvis" else mode.replace("melgalvis_", "")
+            st = generate_melgalvis_structure(
+                seed=s, cfg=MelgalvisGenConfig(mode=m if m != "melgalvis" else "hybrid")
             )
         else:
             st = generate_random_organic(n_atoms=int(rng.integers(6, 16)), seed=s)
@@ -173,6 +185,7 @@ def iter_training_samples(
             "n_atoms": data["n_atoms_cell"],
             "space_group": st.space_group_hm,
             "d_min": d_min,
+            "generator": mode,
         }
 
 

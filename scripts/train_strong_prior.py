@@ -260,6 +260,21 @@ def main():
         action="store_true",
         help="Concentrate loss on top ~30% |E| nodes (seed set)",
     )
+    p.add_argument(
+        "--use-melgalvis-gen",
+        action="store_true",
+        help=(
+            "Use Melgalvis & Rekis (2026) style synthetic structures "
+            "(log-normal volume lattice + artificial-molecule clusters)"
+        ),
+    )
+    p.add_argument(
+        "--melgalvis-mode",
+        type=str,
+        default="hybrid",
+        choices=["cluster", "rejection", "hybrid"],
+        help="Melgalvis generator mode (default hybrid)",
+    )
     args = p.parse_args()
 
     # Defaults: medium (legacy-ish) unless --scale / --scale-xl / --quick
@@ -378,6 +393,10 @@ def main():
         cfg["within_weight"] = max(cfg.get("within_weight", 0.35), 0.75)
         cfg["e_power"] = max(cfg.get("e_power", 2.0), 3.0)
         cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_seedfocus"
+    cfg["use_melgalvis_gen"] = bool(args.use_melgalvis_gen)
+    cfg["melgalvis_mode"] = args.melgalvis_mode
+    if args.use_melgalvis_gen:
+        cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_melg"
 
     init_model = None
     if args.continue_from:
@@ -425,6 +444,8 @@ def main():
         lr_refine=cfg["lr_refine"] * (0.5 if init_model is not None else 1.0),
         init_model=init_model,
         bridge_frac=cfg.get("bridge_frac", 0.30),
+        use_melgalvis_gen=cfg.get("use_melgalvis_gen", False),
+        melgalvis_mode=cfg.get("melgalvis_mode", "hybrid"),
         seed=args.seed,
         verbose=True,
     )
@@ -553,7 +574,7 @@ def main():
             "",
         ]
     )
-    mp = out.parent / "strong_prior.md"
+    mp = out.with_suffix(".md")
     mp.write_text("\n".join(md))
     print(f"Wrote {mp}")
     print(

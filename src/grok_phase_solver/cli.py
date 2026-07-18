@@ -339,11 +339,14 @@ def make_seed_main(argv: list[str] | None = None) -> None:
     gps-make-seed --hkl data.hkl --ins data.ins --from-res model.res -o seed.csv
     gps-make-seed --hkl data.hkl --cell ... --from-peaks peaks.csv -o seed.csv
     """
+    import numpy as np
+
     from grok_phase_solver.io.experiment import load_experiment
     from grok_phase_solver.solvers.seed_import import (
         assess_seed_quality,
         export_seed_csv,
         resolve_phase_seed,
+        seed_from_fragment_atoms,
     )
 
     p = argparse.ArgumentParser(
@@ -361,6 +364,14 @@ def make_seed_main(argv: list[str] | None = None) -> None:
     p.add_argument("--from-peaks", default=None, help="peaks.csv")
     p.add_argument("--from-atoms", default=None, help="x,y,z,element CSV")
     p.add_argument("--from-phases", default=None, help="existing phase CSV (re-map)")
+    p.add_argument(
+        "--from-cif",
+        default=None,
+        help=(
+            "Partial model CIF (e.g. AlphaFold/RoseTTAFold fragment or experimental "
+            "model) → Fcalc seed phases via fragment path"
+        ),
+    )
     p.add_argument("--native-hkl", default=None)
     p.add_argument("--derivative-hkl", default=None)
     p.add_argument("--patterson-ha", action="store_true")
@@ -392,6 +403,37 @@ def make_seed_main(argv: list[str] | None = None) -> None:
             [key_d.get((int(r[0]), int(r[1]), int(r[2])), 0.0) for r in hkl]
         )
 
+    # Structure-prediction / model CIF → temporary atoms CSV or direct fragment
+    seed_atoms = args.from_atoms
+    if args.from_cif:
+        try:
+            from grok_phase_solver.io.cif import load_cif
+
+            st = load_cif(args.from_cif)
+            fracs = np.array([a.fract for a in st.atoms], dtype=np.float64)
+            els = [a.element for a in st.atoms]
+            if args.seed_n_atoms is not None:
+                fracs, els = fracs[: args.seed_n_atoms], els[: args.seed_n_atoms]
+            seed_ph, mask, meta = seed_from_fragment_atoms(
+                hkl, amp, cell, fracs, els, b_iso=args.seed_b_iso, seed=args.seed
+            )
+            meta["source"] = "from_cif"
+            meta["path"] = args.from_cif
+            out = Path(args.out)
+            export_seed_csv(out, hkl, seed_ph, mask)
+            qual = assess_seed_quality(hkl, amp, cell, seed_ph, mask)
+            print(f"Wrote {out.resolve()}  ({int(mask.sum())} reflections)")
+            print(
+                f"  source=from_cif  frac_strong_seeded={qual['frac_strong_seeded']:.0%}  "
+                f"size_meets_bar={qual['size_meets_bar']}"
+            )
+            for h in qual.get("hints") or []:
+                print(f"  note: {h}")
+            return
+        except Exception as e:
+            print(f"ERROR loading --from-cif: {e}", file=sys.stderr)
+            sys.exit(1)
+
     try:
         seed_ph, mask, meta = resolve_phase_seed(
             hkl,
@@ -399,7 +441,7 @@ def make_seed_main(argv: list[str] | None = None) -> None:
             cell,
             phase_seed_csv=args.from_phases,
             phase_seed_res=args.from_res,
-            seed_atoms_csv=args.from_atoms,
+            seed_atoms_csv=seed_atoms,
             seed_peaks_csv=args.from_peaks,
             seed_element=args.seed_element,
             seed_n_atoms=args.seed_n_atoms,

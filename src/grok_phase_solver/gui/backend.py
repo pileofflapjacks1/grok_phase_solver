@@ -70,9 +70,9 @@ WIZARD_SCENARIOS = {
         "n_starts": 2,
     },
     "have_fragment": {
-        "label": "Have fragment / SHELXS .res",
+        "label": "Have fragment / SHELXS .res / model CIF",
         "method": "partial_phaseed",
-        "help": "Upload .res atoms → Fcalc seed → extension.",
+        "help": "Upload .res atoms or use gps-make-seed --from-cif (AF/RF model) → Fcalc seed.",
         "n_iter": 80,
         "n_starts": 2,
     },

@@ -149,6 +149,7 @@ Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → 
 | SHELXS / fragment model | `--phase-seed-res model.res` | Q-peaks or partial atoms → Fcalc |
 | Density peaks | `--seed-peaks-csv peaks.csv` | Prior gps-solve peaks as light atoms |
 | Explicit fragment | `--seed-atoms-csv atoms.csv` | `x,y,z,element` fractional |
+| Structure-prediction model | `gps-make-seed --from-cif model.cif` | AF/RoseTTAFold/experimental CIF → seed CSV |
 | Isomorphous HA | `--native-hkl` + `--derivative-hkl` | Difference Patterson → HA sites |
 | Single-dataset HA | `--patterson-ha` | Weak Patterson heuristic (HA present) |
 

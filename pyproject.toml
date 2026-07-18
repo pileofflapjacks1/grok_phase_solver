@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grok-phase-solver"
-version = "0.2.1"
+version = "0.3.0"
 description = "Open physics/AI phasing assistant for X-ray crystallography (gps-solve)"
 readme = "README.md"
 license = { text = "MIT" }

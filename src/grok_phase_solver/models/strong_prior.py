@@ -40,11 +40,17 @@ def iter_hard_multsg_samples(
     bridge_frac: float = 0.25,
     wilson_match: bool = False,
     wilson_template: Optional[Dict] = None,
+    use_melgalvis_gen: bool = False,
+    melgalvis_mode: str = "hybrid",
 ) -> Iterator[Dict]:
     """Yield hard-region samples in P1 and P-1 (optional bridge easy cells).
 
     If ``wilson_match`` is True, |F| are transformed toward an experimental
     Wilson template (phases from Fcalc unchanged).
+
+    If ``use_melgalvis_gen`` is True, structures come from Melgalvis & Rekis
+    (2026) style volume + artificial-molecule generation
+    (`data/synthetic_melgalvis.py`).
     """
     from grok_phase_solver.data.synthetic import generate_random_organic
     from grok_phase_solver.data.synthetic_v2 import make_centrosymmetric_copy
@@ -61,6 +67,11 @@ def iter_hard_multsg_samples(
             template = load_reference_template()
         except Exception:
             template = None
+    melg_cfg = None
+    if use_melgalvis_gen:
+        from grok_phase_solver.data.synthetic_melgalvis import MelgalvisGenConfig
+
+        melg_cfg = MelgalvisGenConfig(mode=melgalvis_mode)
     for i in range(n_samples):
         s = int(rng.integers(0, 2**31 - 1))
         if include_bridge and (rng.random() < bridge_frac):
@@ -71,7 +82,16 @@ def iter_hard_multsg_samples(
             n_atoms = int(rng.integers(n_lo, n_hi + 1))
             d_min = float(rng.uniform(d_lo, d_hi))
             region = "hard"
-        st = generate_random_organic(n_atoms=n_atoms, seed=s, space_group="P1")
+        if use_melgalvis_gen and melg_cfg is not None:
+            from grok_phase_solver.data.synthetic_melgalvis import generate_melgalvis_structure
+
+            st = generate_melgalvis_structure(
+                seed=s, cfg=melg_cfg, space_group="P1", n_nonh=n_atoms
+            )
+            gen_tag = "melgalvis2026"
+        else:
+            st = generate_random_organic(n_atoms=n_atoms, seed=s, space_group="P1")
+            gen_tag = "legacy_random"
         sg = "P1"
         if rng.random() < p_minus1_frac:
             try:
@@ -91,7 +111,7 @@ def iter_hard_multsg_samples(
             )
             wmeta["matched"] = bool(wmeta.get("matched", True))
         # curriculum score: lower = easier
-        difficulty = float(n_atoms) * float(d_min)
+        difficulty = float(data["n_atoms_cell"]) * float(d_min)
         yield {
             "name": st.name,
             "hkl": data["hkl"],
@@ -107,6 +127,7 @@ def iter_hard_multsg_samples(
             "elements": data["elements"],
             "difficulty": difficulty,
             "wilson_match": wmeta,
+            "generator": gen_tag,
         }
 
 
@@ -415,6 +436,8 @@ def train_strong_prior(
     scale_tag: str = "v4_scale_seed",
     init_model: Optional[GraphPhaseNet] = None,
     bridge_frac: float = 0.30,
+    use_melgalvis_gen: bool = False,
+    melgalvis_mode: str = "hybrid",
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
@@ -438,6 +461,8 @@ def train_strong_prior(
             bridge_frac=bridge_frac,
             p_minus1_frac=0.25,
             wilson_match=wilson_match,
+            use_melgalvis_gen=use_melgalvis_gen,
+            melgalvis_mode=melgalvis_mode,
         )
     )
     if curriculum:
@@ -484,7 +509,8 @@ def train_strong_prior(
             f"epochs/struct={epochs_per}, opt={optimizer}, curriculum={curriculum}, "
             f"wilson_match={wilson_match} (matched={n_wm}), "
             f"E^{e_power} top_boost={top_boost} within={within_deg}° "
-            f"hard_os={hard_oversample}"
+            f"hard_os={hard_oversample} melgalvis={use_melgalvis_gen}"
+            f"({melgalvis_mode if use_melgalvis_gen else '-'})"
         )
 
     packs: List[Dict] = []
@@ -642,6 +668,8 @@ def train_strong_prior(
         "within_weight": within_weight,
         "within_deg": within_deg,
         "hard_oversample": hard_oversample,
+        "use_melgalvis_gen": use_melgalvis_gen,
+        "melgalvis_mode": melgalvis_mode,
         "seed": seed,
         "train_losses": all_losses,
         "train_mpe_oi": all_mpe,

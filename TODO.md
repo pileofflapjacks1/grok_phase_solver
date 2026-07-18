@@ -103,9 +103,11 @@ AI-driven general solver for the X-ray crystallography phase problem.
 ### Still open research / scale
 - [ ] Envelope detection tuned for proteins (solvent_fraction API only)
 - [ ] Diffusion generative models conditioned on |F|
-- [ ] Full AlphaFold-MR production pipeline
+- [~] Structure-prediction seeding: `gps-make-seed --from-cif` (AF/RF fragments); full AF-MR pipeline optional
 - [ ] Radiation-damage / anisotropy physical models (beyond isotropic B)
 - [ ] Agentic auto-benchmark at COD/PDB scale
+- [x] Melgalvis & Rekis (2026) synthetic generator + train flag; pilot retrain (frac≤20°~22%)
+- [ ] Scale Melgalvis train to 10³–10⁴ + optional PhAI fine-tune on new synth
 - [~] Hard-region strict success ~0% ab initio; partial-φ path formalized (oracle/fragment curves)
 
 ---

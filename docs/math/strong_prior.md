@@ -98,9 +98,18 @@ from grok_phase_solver.models.strong_prior import strong_prior_phaseed_solve
 phases, rho, info = strong_prior_phaseed_solve(hkl, amp, cell)
 ```
 
+## Melgalvis generator (v0.3)
+
+```bash
+python scripts/train_strong_prior.py --use-melgalvis-gen --wilson-match --scale
+```
+
+See `docs/math/synthetic_melgalvis.md` and Melgalvis & Rekis, Acta Cryst. A 82 (2026).
+Pilot N=120: hold-out frac≤20° ≈22% (`strong_prior_melg.md`) — not past 30% bar.
+
 ## Next upgrades (if still pursuing pure ab initio)
 
-1. 10⁴-scale synthetic multi-SG (overnight / shard pipeline)
+1. Scale Melgalvis on-the-fly train to 10³–10⁴ (overnight)
 2. Torch GNN + equivariant layers when stack is stable
 3. Patterson voxel / DM tangent hybrid as node features or post-process
 4. Fragment / HA-conditioned priors (merge with partial-φ product path)

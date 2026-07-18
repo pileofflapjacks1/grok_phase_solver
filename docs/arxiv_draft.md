@@ -1,6 +1,6 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft · software package v0.2.1 (MIT)**  
+**Working draft · software package v0.3.0 (MIT)**  
 **Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
@@ -39,6 +39,8 @@ Industrial small-molecule pipelines (SHELXT/SHELXS + SHELXL/Olex2) solve most at
 2. **Hard-region science** — failure taxonomy; partial-φ seed bar (30% / 20°); negative scale result for pure GraphPhaseNet priors.
 3. **Product path** — easy → ensemble; hard → partial-φ / fragment / HA seeds; `trial.res` → SHELXL.
 4. **Calibration** — SHELXS H2H; experimental COD Fobs scoreboard; Wilson domain-gap matching.
+5. **Realistic synthetics** — Melgalvis & Rekis (2026) style volume + artificial-molecule
+   generation for prior training (`synthetic_melgalvis.py`).
 
 ---
 
@@ -93,13 +95,13 @@ Interpretation: the extension + free-FOM polish machinery works when seeds are g
 
 Caveat: SHELXS scoring uses Q-peaks → equal-atom $F_{\mathrm{calc}}$ phases for mapCC—not refined SHELXL $R_1$. Fair for *phasing* H2H, not refined structures.
 
-### 3.3 Graph prior scale does not clear the seed bar
+### 3.3 Graph prior scale and Melgalvis synthetics do not yet clear the seed bar
 
 ![Figure 4](figures/paper_fig4_seed_bar.png)
 
-**Figure 4.** Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 (250 structures) and v4 XL (1200 structures, residual layers, Adam, Wilson match) both plateau near **~21%**, below the **30%** oracle bar. Hold-out hard strict solves remain **0%** for graph prior ± AI-PhaSeed.
+**Figure 4.** Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 (250 structures) and v4 XL (1200 structures, residual layers, Adam, Wilson match) both plateau near **~21%**, below the **30%** oracle bar. A v0.3 pilot retrain on Melgalvis & Rekis (2026) style artificial crystals (N=120, hybrid mode) reaches ≈**22%**—training-stable but **not** past the bar. Hold-out hard strict solves remain **0%** for graph prior ± AI-PhaSeed.
 
-This is an explicit **negative result** for pure scale-up of the current architecture on synthetic hard organics.
+This is an explicit **negative result** for pure scale-up of the current architecture on synthetic hard organics; improved generators are necessary infrastructure for further gains (as argued by Melgalvis & Rekis) but do not by themselves solve hard ab initio phasing in our metrics.
 
 ### 3.4 Experimental COD Fobs
 
@@ -205,9 +207,10 @@ BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patte
 7. Fienup (1982) — HIO phase retrieval.  
 8. Sheldrick (2008, 2015) — SHELX / SHELXT.  
 9. Larsen *et al.* (2024) — PhAI.  
-10. COD — crystallography.net.  
-11. gemmi — crystallography toolkit.  
-12. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.2.1 (this work).  
+10. Melgalvis & Rekis (2026) — artificial crystal generation for DL phasing.  
+11. COD — crystallography.net.  
+12. gemmi — crystallography toolkit.  
+13. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.3.0 (this work).  
 
 Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.
 
