@@ -99,7 +99,7 @@ Caveat: SHELXS scoring uses Q-peaks → equal-atom $F_{\mathrm{calc}}$ phases fo
 
 ![Figure 4](figures/paper_fig4_seed_bar.png)
 
-**Figure 4.** Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 (250 structures) and v4 XL (1200 structures, residual layers, Adam, Wilson match) both plateau near **~21%**, below the **30%** oracle bar. A v0.3 pilot retrain on Melgalvis & Rekis (2026) style artificial crystals (N=120, hybrid mode) reaches ≈**22%**—training-stable but **not** past the bar. Hold-out hard strict solves remain **0%** for graph prior ± AI-PhaSeed.
+**Figure 4.** Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 (250 structures) and v4 XL (1200 structures, residual layers, Adam, Wilson match) both plateau near **~21%**, below the **30%** oracle bar. A full Melgalvis & Rekis (2026) style XL retrain (N=1200 hybrid artificial crystals, same capacity) reaches ≈**22%** frac≤20° and **12.5%** seedOK rate—training-stable and slightly better seedOK than legacy, but **not** past the bar. Hold-out hard strict solves remain **0%** for graph prior ± AI-PhaSeed.
 
 This is an explicit **negative result** for pure scale-up of the current architecture on synthetic hard organics; improved generators are necessary infrastructure for further gains (as argued by Melgalvis & Rekis) but do not by themselves solve hard ab initio phasing in our metrics.
 

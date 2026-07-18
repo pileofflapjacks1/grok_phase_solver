@@ -9,8 +9,10 @@
 - Training: `--use-melgalvis-gen` / `--melgalvis-mode` on `train_strong_prior.py`
 - Shard mode `melgalvis` in `write_training_shard` / `iter_training_samples`
 - Math note: `docs/math/synthetic_melgalvis.md`
-- Pilot retrain scoreboard: `data/processed/strong_prior_melg.md` (N=120;
-  hold-out frac≤20° ≈ **22%**, still below 30% bar; 0% hard strict)
+- Pilot retrain: `strong_prior_melg.md` (N=120; frac≤20° ≈22%)
+- **Long Melgalvis XL retrain** (N=1200, H=192, L=4, ~32 min): 
+  `strong_prior_melg_xl.npz` — hold-out frac≤20° ≈**22%**, seedOK rate **12.5%**,
+  mapCC ≈0.49, hard strict **0/12** (still below 30% bar)
 
 ### Seeding UX
 - `gps-make-seed --from-cif` for AlphaFold/RoseTTAFold/experimental model fragments

@@ -33,7 +33,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C7 | Synthetic vs experimental \|F\| **Wilson domain gap** can be substantially reduced by slope/shell/quantile matching (e.g. hard gap ~9.5 → ~2.8 on COD Fobs reference) | [`wilson_domain_gap.md`](../data/processed/wilson_domain_gap.md) |
 | C8 | With fair packing + PhAI weights, PhAI hybrids can solve COD **2016452** Fcalc @ 0.9 Å under strict criteria in our suite | [`cod_hybrid_benchmark.md`](../data/processed/cod_hybrid_benchmark.md) |
 | C9 | Experimental COD **Fobs** scoreboard (2016452, 2100301, 2017775) + Fcalc controls + oracle partial-φ rows; pipeline methods ranked by mapCC/free FOM | [`experimental_scoreboard.md`](../data/processed/experimental_scoreboard.md) |
-| C10 | Melgalvis & Rekis (2026) style synthetic generator is implemented and trains GraphPhaseNet; pilot N=120 yields seed frac≤20° ≈**22%** (comparable to legacy ~21%, **not yet** ≥30% bar) | [`strong_prior_melg.md`](../data/processed/strong_prior_melg.md), [math](math/synthetic_melgalvis.md) |
+| C10 | Melgalvis & Rekis (2026) style synthetic generator trains GraphPhaseNet at scale (N=**1200** XL): seed frac≤20° ≈**22%**, seedOK rate **12.5%**, hard strict still **0%** (comparable to legacy XL ~21%; **not yet** ≥30% bar) | [`strong_prior_melg_xl.md`](../data/processed/strong_prior_melg_xl.md), [math](math/synthetic_melgalvis.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 
