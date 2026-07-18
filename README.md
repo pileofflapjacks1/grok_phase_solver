@@ -53,7 +53,7 @@ gps-solve --help
 ```
 
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
-Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.2.1 notes](docs/RELEASE_NOTES_v0.2.1.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.3.0 notes](docs/RELEASE_NOTES_v0.3.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 
 ### Phase your data
 
@@ -313,8 +313,8 @@ gps-download-cod          # helper for COD samples
 
 ```bash
 pytest -q
-python -m build && python -m twine check dist/*   # optional; package 0.2.1
-# PyPI (needs API token): python -m twine upload dist/grok_phase_solver-0.2.1*
+python -m build && python -m twine check dist/grok_phase_solver-0.3.0*
+# PyPI (needs API token): python -m twine upload dist/grok_phase_solver-0.3.0*
 ```
 
 PyPI upload is optional (`twine upload dist/*` with your API token). GitHub source install is fully supported.
