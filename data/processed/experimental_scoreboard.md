@@ -7,6 +7,10 @@ Strict / mapCC success uses Fcalc truth phases matched by Miller index when CIF 
 - GraphPhaseNet strong prior: **found**
 - SHELXD binary: **not in ShelX/** (dual-space in-repo only; see `shelxd_h2h.md`)
 
+**v0.4.0 companion:** stratified AI-PhaSeed / DM+AI hybrid subset harness →
+[`ai_phaseed_extended_benchmark.md`](ai_phaseed_extended_benchmark.md)
+(Carrozzini 2025 alignment; not a full 1505-COD replication).
+
 ## Results
 
 | Dataset | Method | mapCC | free FOM | peaks | solved | s |

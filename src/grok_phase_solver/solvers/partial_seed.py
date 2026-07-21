@@ -361,6 +361,10 @@ def partial_phaseed_solve(
     prior_weight: float = 0.35,
     use_free_fom_gate: bool = True,
     select_by: str = "E",
+    dm_ai_weight: float = 0.0,
+    low_res_path: bool = False,
+    assess_seed_quality: bool = True,
+    seed_quality_filter: bool = False,
     verbose: bool = False,
     meta: Optional[Dict] = None,
 ):
@@ -369,6 +373,9 @@ def partial_phaseed_solve(
 
     If ``mask`` is given, only masked reflections are treated as the hard seed
     set (``n_seed`` ignored for selection); ``seed_phases`` must be full-length.
+
+    Extra hybrid flags (``dm_ai_weight``, ``low_res_path``, seed-quality) are
+    forwarded when the full-vector path calls ``ai_phaseed_solve``.
     """
     seed_phases = np.asarray(seed_phases, dtype=np.float64)
     if mask is not None:
@@ -411,6 +418,8 @@ def partial_phaseed_solve(
                 d_min=d_min,
                 full_prior=seed_phases if prior_weight > 0 else None,
                 prior_weight=prior_weight,
+                dm_ai_weight=float(dm_ai_weight),
+                low_res_path=bool(low_res_path),
                 verbose=verbose and s == 0,
             )
             if polish and polish != "none" and use_free_fom_gate:
@@ -452,6 +461,10 @@ def partial_phaseed_solve(
         prior_weight=prior_weight,
         use_free_fom_gate=use_free_fom_gate,
         select_by=select_by,
+        dm_ai_weight=float(dm_ai_weight),
+        low_res_path=bool(low_res_path),
+        assess_seed_quality=assess_seed_quality,
+        seed_quality_filter=seed_quality_filter,
         verbose=verbose,
     )
     info["algorithm"] = "partial_phaseed"

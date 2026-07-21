@@ -42,6 +42,7 @@ def iter_hard_multsg_samples(
     wilson_template: Optional[Dict] = None,
     use_melgalvis_gen: bool = False,
     melgalvis_mode: str = "hybrid",
+    melgalvis_large_vol: bool = False,
 ) -> Iterator[Dict]:
     """Yield hard-region samples in P1 and P-1 (optional bridge easy cells).
 
@@ -51,6 +52,9 @@ def iter_hard_multsg_samples(
     If ``use_melgalvis_gen`` is True, structures come from Melgalvis & Rekis
     (2026) style volume + artificial-molecule generation
     (`data/synthetic_melgalvis.py`).
+
+    ``melgalvis_large_vol``: bias Melgalvis volumes toward ~1000–3500 Å³ and
+    slightly lower resolution — useful for AI-PhaSeed / Carrozzini-like regimes.
     """
     from grok_phase_solver.data.synthetic import generate_random_organic
     from grok_phase_solver.data.synthetic_v2 import make_centrosymmetric_copy
@@ -71,7 +75,20 @@ def iter_hard_multsg_samples(
     if use_melgalvis_gen:
         from grok_phase_solver.data.synthetic_melgalvis import MelgalvisGenConfig
 
-        melg_cfg = MelgalvisGenConfig(mode=melgalvis_mode)
+        if melgalvis_large_vol:
+            # Carrozzini-friendly volume band + lower-res diversity
+            melg_cfg = MelgalvisGenConfig(
+                mode=melgalvis_mode,
+                log_v_mu=float(np.log(1800.0)),
+                log_v_sigma=0.45,
+                v_min=900.0,
+                v_max=4000.0,
+                n_nonh_lo=max(n_lo, 12),
+                n_nonh_hi=max(n_hi, 40),
+            )
+            d_lo, d_hi = min(d_lo, 1.2), max(d_hi, 1.6)
+        else:
+            melg_cfg = MelgalvisGenConfig(mode=melgalvis_mode)
     for i in range(n_samples):
         s = int(rng.integers(0, 2**31 - 1))
         if include_bridge and (rng.random() < bridge_frac):
@@ -438,6 +455,7 @@ def train_strong_prior(
     bridge_frac: float = 0.30,
     use_melgalvis_gen: bool = False,
     melgalvis_mode: str = "hybrid",
+    melgalvis_large_vol: bool = False,
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
@@ -448,6 +466,9 @@ def train_strong_prior(
 
     v4 adds residual MP layers, Adam, richer node features (d_in=10), and
     optional hard-region oversampling for 10³-scale runs.
+
+    ``melgalvis_large_vol``: when using Melgalvis generator, bias toward larger
+    volumes / lower-res shards (AI-PhaSeed curriculum).
     """
     from grok_phase_solver.metrics.strong_seed import full_and_strong_metrics
 
@@ -463,6 +484,7 @@ def train_strong_prior(
             wilson_match=wilson_match,
             use_melgalvis_gen=use_melgalvis_gen,
             melgalvis_mode=melgalvis_mode,
+            melgalvis_large_vol=melgalvis_large_vol,
         )
     )
     if curriculum:

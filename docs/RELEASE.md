@@ -1,76 +1,47 @@
-# Release checklist — grok-phase-solver
+# Release process — grok-phase-solver
 
-Current version: **0.3.0** (tag `v0.3.0`)
+Current version: **0.4.0** (tag `v0.4.0`)
 
-## Build (always)
+## Build
 
 ```bash
 cd /path/to/grok_phase_solver
 python -m pip install -U build twine
-rm -rf dist build src/*.egg-info
+rm -rf dist build *.egg-info
 python -m build
-python -m twine check dist/grok_phase_solver-0.3.0*
-# Expect: PASSED for sdist + wheel
+python -m twine check dist/grok_phase_solver-0.4.0*
 ```
 
 Artifacts:
 
-- `dist/grok_phase_solver-0.3.0.tar.gz`
-- `dist/grok_phase_solver-0.3.0-py3-none-any.whl`
+- `dist/grok_phase_solver-0.4.0.tar.gz`
+- `dist/grok_phase_solver-0.4.0-py3-none-any.whl`
 
-## Git tag + GitHub Release
+## GitHub tag + release
 
 ```bash
-git tag -a v0.3.0 -m "v0.3.0: Melgalvis synthetics, XL retrain, CIF seeds"
+git tag -a v0.4.0 -m "v0.4.0: Carrozzini AI-PhaSeed hybrid, seed quality, DM+AI"
 git push origin main
-git push origin v0.3.0
+git push origin v0.4.0
 
-gh release create v0.3.0 \
-  --title "v0.3.0 — Melgalvis synthetics" \
-  --notes-file docs/RELEASE_NOTES_v0.3.0.md \
-  dist/grok_phase_solver-0.3.0-py3-none-any.whl \
-  dist/grok_phase_solver-0.3.0.tar.gz \
+gh release create v0.4.0 \
+  --title "v0.4.0 — Carrozzini AI-PhaSeed alignment" \
+  --notes-file docs/RELEASE_NOTES_v0.4.0.md \
+  dist/grok_phase_solver-0.4.0-py3-none-any.whl \
+  dist/grok_phase_solver-0.4.0.tar.gz \
   docs/paper/arxiv_draft.pdf
 ```
 
-## PyPI upload
-
-Create an API token at https://pypi.org/manage/account/token/  
-(scope: project `grok-phase-solver` or entire account).
+## PyPI upload (user token required)
 
 ```bash
-export TWINE_USERNAME=__token__
-export TWINE_PASSWORD='pypi-...'   # do not commit
-python -m twine upload dist/grok_phase_solver-0.3.0*
-unset TWINE_PASSWORD
+python -m twine upload dist/grok_phase_solver-0.4.0*
 ```
 
-Or:
+## Pre-release checklist
 
-```bash
-python -m twine upload dist/grok_phase_solver-0.3.0* \
-  -u __token__ -p 'pypi-YOUR_TOKEN'
-```
-
-Install after publish:
-
-```bash
-python -m pip install -U grok-phase-solver
-python -c "import grok_phase_solver; print(grok_phase_solver.__version__)"
-```
-
-## What is / is not in the wheel
-
-| Included | Not included |
-|----------|----------------|
-| Source under `src/grok_phase_solver/` | SHELX binaries (`ShelX/`) |
-| Console scripts (`gps-solve`, `gps-gui`, …) | PhAI weights |
-| Melgalvis generator code | Large local scoreboard NPZs optional on PyPI (code only) |
-
-## Post-release smoke
-
-```bash
-python -m pip install -U grok-phase-solver
-python -c "import grok_phase_solver; print(grok_phase_solver.__version__)"  # 0.3.0
-gps-solve --help
-```
+- [ ] `pytest -q` green
+- [ ] Version aligned: `pyproject.toml`, `__init__.__version__`, CHANGELOG
+- [ ] RELEASE_NOTES_v0.4.0.md accurate
+- [ ] No overclaims (hard ab initio limits, partial-φ bar)
+- [ ] Optional: re-run `scripts/run_ai_phaseed_extended_benchmark.py`

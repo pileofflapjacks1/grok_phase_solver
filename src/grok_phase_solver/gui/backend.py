@@ -203,6 +203,32 @@ def format_user_error(exc: BaseException) -> str:
     return f"{msg}\n\n({type(exc).__name__})"
 
 
+def format_seed_quality_panel(diagnostics: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    GUI panel payload for Carrozzini-style / partial seed quality.
+
+    Returns a dict ready for Streamlit metrics: class, P(success), warnings, features.
+    """
+    d = diagnostics or {}
+    sq = d.get("seed_quality") or {}
+    panel: Dict[str, Any] = {
+        "has_quality": bool(sq),
+        "predicted_class": sq.get("predicted_class", d.get("seed_predicted_class")),
+        "success_probability": sq.get(
+            "success_probability", d.get("seed_success_probability")
+        ),
+        "predicted_mpe_deg": sq.get("predicted_mpe_deg", d.get("seed_predicted_mpe_deg")),
+        "predicted_corr": sq.get("predicted_corr"),
+        "warning": sq.get("warning"),
+        "recommend_fallback": bool(sq.get("recommend_fallback")),
+        "features": sq.get("features") or {},
+        "size_meets_bar": sq.get("size_meets_bar", d.get("seed_size_meets_bar")),
+        "frac_strong_seeded": sq.get("frac_strong_seeded", d.get("seed_frac_strong")),
+        "method": sq.get("method"),
+    }
+    return panel
+
+
 def map_quality_hints(summary: Dict[str, Any]) -> List[str]:
     """Truth-free post-run guidance for the GUI banner."""
     hints: List[str] = []
@@ -210,6 +236,17 @@ def map_quality_hints(summary: Dict[str, Any]) -> List[str]:
     fom = d.get("free_fom_composite")
     n_peaks = summary.get("n_peaks") or 0
     method = summary.get("method") or ""
+
+    sq = d.get("seed_quality") or {}
+    if isinstance(sq, dict) and sq.get("predicted_class") == 0:
+        hints.append(
+            "Seed quality Class 0 — AI-PhaSeed alone may fail. "
+            "Prefer partial-φ / fragment / HA, or enable DM+AI hybrid."
+        )
+    elif d.get("seed_predicted_class") == 0:
+        hints.append(
+            "Seed quality Class 0 — consider partial-φ fallback or --ai-dm-hybrid."
+        )
 
     if fom is not None:
         try:
@@ -319,6 +356,11 @@ def run_solve_job(
     patterson_ha: bool = False,
     ha_element: str = "Br",
     n_ha: int = 1,
+    dm_ai_weight: float = 0.0,
+    low_res_path: bool = False,
+    seed_quality_filter: bool = False,
+    assess_seed_quality: bool = True,
+    prior_weight: float = 0.30,
     verbose: bool = False,
     progress: Optional[Callable[[str], None]] = None,
     capture_log: bool = True,
@@ -380,6 +422,11 @@ def run_solve_job(
         patterson_ha=patterson_ha,
         ha_element=ha_element,
         n_ha=n_ha,
+        dm_ai_weight=float(dm_ai_weight),
+        low_res_path=bool(low_res_path),
+        seed_quality_filter=bool(seed_quality_filter),
+        assess_seed_quality=bool(assess_seed_quality),
+        prior_weight=float(prior_weight),
     )
     if phase_seed_csv_bytes:
         p = write_upload(phase_seed_csv_bytes, work / "phase_seed.csv")

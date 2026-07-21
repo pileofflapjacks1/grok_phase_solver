@@ -4,6 +4,10 @@
 
 Hard synthetic cells ($n \gtrsim 12$, $d_{\min} \gtrsim 1.5\,\text{Å}$) remain
 **strict-unsolved** under CF, dual-space, and full AI priors (mapCC ≈ 0.5).
+See also [AI-PhaSeed](ai_phaseed.md) (Carrozzini 2025 hybrid: DM+AI tangent,
+seed Class 0/1 predictor, low-res EDM path). Partial seeds remain the
+**hard-data product path** when ab initio / AI priors are Class 0.
+
 Oracle AI-PhaSeed tests show the *extension engine* works when enough strong
 phases are correct. Track B makes that path explicit:
 

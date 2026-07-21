@@ -142,6 +142,17 @@ AI-driven general solver for the X-ray crystallography phase problem.
 
 ## Immediate next actions (honest priority)
 
+### v0.4.0 Carrozzini 2025 track
+- [x] `seed_quality_predictor` (`metrics/seed_quality.py`) — heuristic Class 0/1
+- [x] `DM+AI tangent hybrid` (`dm_ai_weight` / modified tangent)
+- [x] Expanded COD AI-PhaSeed subset bench (`run_ai_phaseed_extended_benchmark.py`)
+- [x] Docs + CHANGELOG 0.4.0 + CLI/GUI flags
+- [ ] Optional: train/persist sklearn RF on COD/synthetic oracle labels
+- [ ] Optional: download larger COD Vol 1000–3500 Å³ subset for stratified bench
+- [ ] Phase binning + gemmi full SG expansion for non-centro generalization
+- [ ] Profile/vectorize `phase_extend` hot loops
+- [ ] Experimental `models/diffusion_phase.py` density-completion research stub
+
 1. [x] PhAI weights runner + scoreboard  
 2. [x] Scientist-facing `gps-solve` pipeline  
 3. [x] Free-FOM science fix + calibration (v2)  

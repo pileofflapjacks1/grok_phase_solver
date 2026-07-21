@@ -164,15 +164,38 @@ def tangent_formula_iteration(
     triplets: Sequence[Triplet],
     n_iter: int = 20,
     use_kappa: bool = True,
+    ai_phases: Optional[np.ndarray] = None,
+    ai_weight: float = 0.0,
+    ai_reliability: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """
     κ-weighted Karle–Hauptman tangent formula.
 
     Accumulator for reflection h:
       Σ_t w_t exp(i(φ_k + φ_{h-k})) with w_t = κ_t (or |EEE|).
+
+    Optional AI prior (Carrozzini et al. 2025 modified tangent)::
+
+        A_h ← Σ_triplets … + λ · r_h · |E_h| · exp(i φ_h^{AI})
+
+    where ``ai_weight`` is λ ∈ [0, 1+] scaling a priori AI phases and
+    ``ai_reliability`` r_h ∈ [0, 1] is a per-reflection weight (default 1 on
+    all strong indices). When ``ai_weight=0`` (default), behaviour is unchanged.
     """
     phases = np.asarray(phases, dtype=np.float64).copy()
     n = len(phases)
+    ai_w = float(max(ai_weight, 0.0))
+    ai_ph = None if ai_phases is None else np.asarray(ai_phases, dtype=np.float64)
+    if ai_ph is not None and len(ai_ph) != n:
+        raise ValueError("ai_phases length must match strong-phase vector")
+    if ai_reliability is not None:
+        r_ai = np.asarray(ai_reliability, dtype=np.float64)
+        if len(r_ai) != n:
+            raise ValueError("ai_reliability length mismatch")
+    else:
+        r_ai = np.ones(n, dtype=np.float64)
+
+    E = np.asarray(E, dtype=np.float64)
     for _ in range(n_iter):
         acc = np.zeros(n, dtype=np.complex128)
         for t in triplets:
@@ -183,10 +206,105 @@ def tangent_formula_iteration(
             acc[t.i_h] += w * np.exp(1j * (pm - pk))
             acc[t.i_k] += w * np.exp(1j * (pm - ph))
             acc[t.i_hpk] += w * np.exp(1j * (ph + pk))
+        # Modified tangent: inject AI phases as a priori complex weights
+        if ai_w > 0.0 and ai_ph is not None:
+            # Scale relative to mean triplet weight so λ~0.5 is meaningful
+            scale = float(np.mean(np.abs(acc)) + 1e-12)
+            acc += ai_w * scale * r_ai * np.maximum(E, 0.0) * np.exp(1j * ai_ph)
         mag = np.abs(acc)
         mask = mag > 1e-12
         phases[mask] = np.angle(acc[mask])
     return phases
+
+
+def dm_ai_hybrid_refine(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    phases_full: np.ndarray,
+    ai_phases: np.ndarray,
+    *,
+    ai_weight: float = 0.5,
+    seed_idx: Optional[np.ndarray] = None,
+    n_atoms_approx: float = 30.0,
+    e_min: float = 1.1,
+    max_reflections: int = 150,
+    tangent_iter: int = 8,
+    ai_reliability: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, Dict]:
+    """
+    One-shot DM+AI hybrid: κ-tangent on strong set with AI prior (modified TF).
+
+    Aligns with Carrozzini et al. (2025) eqs. 3–5 style: AI phases enter the
+    tangent accumulator with reliability weights rather than only as hard seeds
+    after density modification.
+
+    Parameters
+    ----------
+    phases_full : current full phase list (length M)
+    ai_phases : AI prior phases (length M)
+    ai_weight : λ for AI a priori term (0 = classical tangent only)
+    seed_idx : if given, boost reliability on seed reflections
+
+    Returns
+    -------
+    phases_full_updated, info
+    """
+    hkl = np.asarray(hkl, dtype=int)
+    amp = np.asarray(amplitudes, dtype=np.float64)
+    ph = np.asarray(phases_full, dtype=np.float64).copy()
+    ai = np.asarray(ai_phases, dtype=np.float64)
+    E = normalize_E(hkl, amp, cell, n_atoms_approx=int(n_atoms_approx))
+    strong_idx, E_s, triplets = build_triplets(
+        hkl,
+        E,
+        e_min=e_min,
+        max_reflections=max_reflections,
+        n_atoms_approx=float(n_atoms_approx),
+    )
+    if len(strong_idx) < 3 or not triplets:
+        return ph, {
+            "algorithm": "dm_ai_hybrid",
+            "applied": False,
+            "reason": "insufficient strong reflections/triplets",
+            "n_strong": int(len(strong_idx)),
+            "n_triplets": len(triplets),
+        }
+
+    # Map full → strong
+    ph_s = ph[strong_idx].copy()
+    ai_s = ai[strong_idx].copy()
+    r_s = np.ones(len(strong_idx), dtype=np.float64)
+    if ai_reliability is not None:
+        r_full = np.asarray(ai_reliability, dtype=np.float64)
+        r_s = r_full[strong_idx]
+    elif seed_idx is not None:
+        # Higher reliability on explicit seed set
+        seed_set = set(int(i) for i in np.asarray(seed_idx, dtype=int))
+        for j, gi in enumerate(strong_idx):
+            r_s[j] = 1.0 if int(gi) in seed_set else 0.55
+
+    ph_s = tangent_formula_iteration(
+        ph_s,
+        E_s,
+        triplets,
+        n_iter=tangent_iter,
+        use_kappa=True,
+        ai_phases=ai_s,
+        ai_weight=float(ai_weight),
+        ai_reliability=r_s,
+    )
+    ph[strong_idx] = ph_s
+    fom = figure_of_merit_triplets(ph_s, triplets, use_kappa=True)
+    return ph, {
+        "algorithm": "dm_ai_hybrid",
+        "applied": True,
+        "ai_weight": float(ai_weight),
+        "n_strong": int(len(strong_idx)),
+        "n_triplets": len(triplets),
+        "triplet_fom": float(fom),
+        "mean_kappa": float(np.mean([t.kappa for t in triplets])) if triplets else 0.0,
+    }
 
 
 @dataclass

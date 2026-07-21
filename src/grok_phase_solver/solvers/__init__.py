@@ -3,7 +3,14 @@
 from .charge_flipping import charge_flipping_solve
 from .hio import hio_solve
 from .baseline import run_physics_baseline, BaselineResult
-from .direct_methods import direct_methods_solve, normalize_E, build_triplets, cochran_alpha
+from .direct_methods import (
+    direct_methods_solve,
+    normalize_E,
+    build_triplets,
+    cochran_alpha,
+    dm_ai_hybrid_refine,
+    tangent_formula_iteration,
+)
 from .patterson import patterson_solve
 from .difference_patterson import locate_heavy_atom_vectors, difference_patterson_map
 from .mir_blow_crick import combine_mir_phases, single_isomorphous_replacement
@@ -43,6 +50,8 @@ __all__ = [
     "normalize_E",
     "build_triplets",
     "cochran_alpha",
+    "dm_ai_hybrid_refine",
+    "tangent_formula_iteration",
     "patterson_solve",
     "locate_heavy_atom_vectors",
     "difference_patterson_map",

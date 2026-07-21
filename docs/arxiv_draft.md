@@ -1,6 +1,6 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft · software package v0.3.0 (MIT)**  
+**Working draft · software package v0.4.0 (MIT)**  
 **Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
@@ -56,6 +56,8 @@ Truth-free ranking uses a composite free FOM whose amplitude residual is a **pos
 
 ### 2.3 AI-PhaSeed and partial seeds
 
+AI-PhaSeed (Carrozzini *et al.*, 2025; PhAI foundation Larsen *et al.*, 2024) selects strong-$|E|$ seeds from an AI phase vector, extends by density modification with seed re-imposition, and optionally polishes under free-FOM gate. v0.4 adds a **modified-tangent DM+AI hybrid** (AI phases as a priori weights with reliability factors) and a **seed-quality Class 0/1 diagnostic** (heuristic features: max $W$, $N_{\mathrm{asym}}$, Vol, seed fraction, free-FOM proxies—not a claim of the published RF on 1505 COD structures). Partial-φ / fragment / HA seeds remain the hard-data product path when Class 0 is predicted.
+
 Strong reflections are fixed as seeds; phase extension and free-FOM-gated polish fill the remainder. Seed sources: PhAI; GraphPhaseNet; oracle partial φ; fragment $F_{\mathrm{calc}}$ from SHELXS `.res` / density peaks; HA heuristics (`solvers/seed_import.py`). Scientist tools: `gps-make-seed`, GUI seed uploads.
 
 ### 2.4 Learned priors
@@ -71,7 +73,7 @@ Strong reflections are fixed as seeds; phase extension and free-FOM-gated polish
 
 ### 2.6 Scientist pipeline
 
-`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ 0.2.1.
+`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ 0.4.0.
 
 ---
 
@@ -134,8 +136,9 @@ Synthetic vs experimental $|F|$ Wilson statistics can be substantially aligned b
 
 **What works.**  
 - Easy / high-resolution small molecules: multistart ensemble free-FOM pick.  
-- Domain-matched PhAI hybrids on suitable experimental organics (COD 2016452).  
-- Hard cells with **partial information** meeting the seed bar.
+- Domain-matched PhAI hybrids on suitable experimental organics (COD 2016452), especially $P2_1/c$-like.  
+- Hard cells with **partial information** meeting the seed bar.  
+- Carrozzini-aligned hybrid *tooling* (DM+AI tangent, seed Class diagnostics, low-res EDM path) for better use of existing seeds — without clearing the ab initio seed bar.
 
 **What does not.**  
 - Pure ab initio graph priors at present capacity on hard synthetic cells.  
@@ -207,10 +210,11 @@ BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patte
 7. Fienup (1982) — HIO phase retrieval.  
 8. Sheldrick (2008, 2015) — SHELX / SHELXT.  
 9. Larsen *et al.* (2024) — PhAI.  
-10. Melgalvis & Rekis (2026) — artificial crystal generation for DL phasing.  
-11. COD — crystallography.net.  
-12. gemmi — crystallography toolkit.  
-13. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.3.0 (this work).  
+10. Carrozzini *et al.* (2025) — AI-PhaSeed; modified tangent + Class 0/1 seed statistics (*J. Appl. Cryst.* **58**, 1859–1869).  
+11. Melgalvis & Rekis (2026) — artificial crystal generation for DL phasing.  
+12. COD — crystallography.net.  
+13. gemmi — crystallography toolkit.  
+14. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.4.0 (this work).  
 
 Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.
 

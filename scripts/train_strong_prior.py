@@ -275,6 +275,14 @@ def main():
         choices=["cluster", "rejection", "hybrid"],
         help="Melgalvis generator mode (default hybrid)",
     )
+    p.add_argument(
+        "--melgalvis-large-vol",
+        action="store_true",
+        help=(
+            "Bias Melgalvis volumes toward ~1000–3500 Å³ and lower res "
+            "(AI-PhaSeed / Carrozzini-like curriculum diversity)"
+        ),
+    )
     args = p.parse_args()
 
     # Defaults: medium (legacy-ish) unless --scale / --scale-xl / --quick
@@ -395,8 +403,11 @@ def main():
         cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_seedfocus"
     cfg["use_melgalvis_gen"] = bool(args.use_melgalvis_gen)
     cfg["melgalvis_mode"] = args.melgalvis_mode
+    cfg["melgalvis_large_vol"] = bool(args.melgalvis_large_vol)
     if args.use_melgalvis_gen:
         cfg["scale_tag"] = cfg.get("scale_tag", "v4") + "_melg"
+        if args.melgalvis_large_vol:
+            cfg["scale_tag"] += "_lgvol"
 
     init_model = None
     if args.continue_from:
@@ -446,6 +457,7 @@ def main():
         bridge_frac=cfg.get("bridge_frac", 0.30),
         use_melgalvis_gen=cfg.get("use_melgalvis_gen", False),
         melgalvis_mode=cfg.get("melgalvis_mode", "hybrid"),
+        melgalvis_large_vol=cfg.get("melgalvis_large_vol", False),
         seed=args.seed,
         verbose=True,
     )

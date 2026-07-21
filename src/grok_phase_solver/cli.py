@@ -255,6 +255,38 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         help="Strong-seed fraction for PhaSeed-style methods (default 0.30)",
     )
     p.add_argument(
+        "--ai-dm-hybrid",
+        action="store_true",
+        help="Enable DM+AI modified-tangent hybrid (Carrozzini 2025; dm_ai_weight=0.5)",
+    )
+    p.add_argument(
+        "--dm-ai-weight",
+        type=float,
+        default=None,
+        help="AI weight λ in modified tangent (0=off; typical 0.5). Overrides --ai-dm-hybrid.",
+    )
+    p.add_argument(
+        "--low-res-path",
+        action="store_true",
+        help="EDM-friendly extension schedule (more solvent, longer seed anneal)",
+    )
+    p.add_argument(
+        "--prior-weight",
+        type=float,
+        default=0.30,
+        help="Soft full AI prior weight during phase extension (default 0.30)",
+    )
+    p.add_argument(
+        "--seed-quality-filter",
+        action="store_true",
+        help="Warn / note when predicted seed Class is 0 (still runs solve)",
+    )
+    p.add_argument(
+        "--no-seed-quality",
+        action="store_true",
+        help="Skip seed-quality prediction diagnostics",
+    )
+    p.add_argument(
         "--shelxe-polish",
         action="store_true",
         help="After shelxs, run SHELXE density mod (or use method shelxs+shelxe)",
@@ -296,6 +328,15 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         seed_n_atoms=args.seed_n_atoms,
         seed_b_iso=args.seed_b_iso,
         seed_fraction=args.seed_fraction,
+        dm_ai_weight=(
+            float(args.dm_ai_weight)
+            if args.dm_ai_weight is not None
+            else (0.5 if args.ai_dm_hybrid else 0.0)
+        ),
+        low_res_path=bool(args.low_res_path),
+        prior_weight=float(args.prior_weight),
+        seed_quality_filter=bool(args.seed_quality_filter),
+        assess_seed_quality=not bool(args.no_seed_quality),
         export_seed_csv=args.export_seed_csv,
         native_hkl=args.native_hkl,
         derivative_hkl=args.derivative_hkl,

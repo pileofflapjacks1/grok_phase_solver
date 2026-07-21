@@ -25,6 +25,17 @@
 - [x] MIR / MAD / MR simulators + hybrid AI test design
 - [x] Wire into baseline API (`patterson`, `direct_methods`)
 
+## Phase 3.5 — Carrozzini 2025 AI-PhaSeed alignment (v0.4.0) ✅
+
+- [x] Modified tangent DM+AI hybrid (`dm_ai_weight`)
+- [x] Seed-quality Class 0/1 predictor (heuristic; optional sklearn RF)
+- [x] Low-res / large-Vol EDM path
+- [x] CLI / GUI flags + report diagnostics
+- [x] Extended subset benchmark harness
+- [ ] Full COD 1505-style stratified panel (optional download)
+- [ ] gemmi SG expansion + non-centro phase binning productization
+- [ ] Conditional diffusion density completion (stub only)
+
 ## Phase 2 — Enhanced synthetic data & training 🚧
 
 - [x] Fragment-based molecule builder (benzene / carboxyl / peptide)

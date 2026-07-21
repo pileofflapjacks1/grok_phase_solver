@@ -12,6 +12,14 @@ from .failure_taxonomy import (
     inversion_rate,
     TaxonomyResult,
 )
+from .seed_quality import (
+    predict_seed_quality,
+    extract_seed_features,
+    oracle_seed_metrics,
+    label_class_from_oracle,
+    SeedQualityReport,
+)
+from .strong_seed import strong_seed_metrics, select_strong_indices
 
 __all__ = [
     "mean_phase_error",
@@ -31,4 +39,11 @@ __all__ = [
     "summarize_taxonomy",
     "inversion_rate",
     "TaxonomyResult",
+    "predict_seed_quality",
+    "extract_seed_features",
+    "oracle_seed_metrics",
+    "label_class_from_oracle",
+    "SeedQualityReport",
+    "strong_seed_metrics",
+    "select_strong_indices",
 ]

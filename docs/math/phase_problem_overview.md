@@ -216,12 +216,20 @@ In coherent diffraction imaging, if \(\rho\) is supported on a set \(S\) whose c
 
 Discrete FFT conventions in `physics/density.py` are chosen so that this holds approximately on fine grids; tests monitor relative energy error.
 
-## 9. Roadmap of theorems / notes to expand
+## 9. Related project notes
+
+- [AI-PhaSeed](ai_phaseed.md) — Carrozzini 2025 hybrid (modified tangent, Class 0/1 seeds, EDM path)
+- [Partial seeds](partial_seed.md) — hard-data φ / fragment / HA path
+- [Free FOM v2.1](free_fom.md) · [Failure taxonomy](failure_taxonomy.md)
+- [Melgalvis synthetics](synthetic_melgalvis.md) · [Strong prior](strong_prior.md)
+
+## 10. Roadmap of theorems / notes to expand
 
 1. Closed-form triplet phase expectations under random atom models  
 2. Bounds relating Patterson peak resolution to phase error  
 3. Convergence of charge flipping for sparse non-negative signals (connections to GESPAR / compressed sensing)  
 4. Domain-gap metrics between synthetic and COD experimental \(|F|\) distributions  
+5. Formal connection between free-FOM proxies and Carrozzini MPE_seed / CORR_seed under origin ambiguity  
 
 ---
 

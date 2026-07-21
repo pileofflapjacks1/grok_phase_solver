@@ -113,3 +113,64 @@ def test_phase_extend_runs():
     assert len(hist["R"]) == 5
     assert len(ph) == len(amp)
     assert rho.ndim == 3
+
+
+def test_dm_ai_hybrid_oracle_keeps_mapcc():
+    """DM+AI hybrid with true phases as prior should not destroy a good seed."""
+    st, data = _struct(n=6, seed=4)
+    hkl, amp, ph_t = data["hkl"], data["amplitudes"], data["phases"]
+    ph, rho, info = ai_phaseed_solve(
+        hkl,
+        amp,
+        st.cell,
+        ph_t,
+        seed_fraction=0.3,
+        n_extend=8,
+        dm_ai_weight=0.5,
+        polish="none",
+        n_starts=1,
+        seed=0,
+        d_min=1.0,
+        assess_seed_quality=True,
+    )
+    rho_t = density_from_structure_factors(
+        hkl, amp * np.exp(1j * ph_t), st.cell, shape=rho.shape
+    )
+    cc, _ = map_correlation_origin_invariant(rho, rho_t)
+    assert info["dm_ai_weight"] == 0.5
+    assert info.get("seed_quality") is not None
+    assert "predicted_class" in info["seed_quality"]
+    assert cc > 0.65
+
+
+def test_phase_extend_dm_ai_and_low_res():
+    st, data = _struct(n=5, seed=5)
+    hkl, amp, ph_t = data["hkl"], data["amplitudes"], data["phases"]
+    idx = select_seed_indices(hkl, amp, st.cell, n_seed=20)
+    rng = np.random.default_rng(1)
+    ph0 = build_initial_phases(len(amp), idx, ph_t[idx], rng)
+    ph, rho, hist = phase_extend(
+        hkl,
+        amp,
+        st.cell,
+        ph0,
+        idx,
+        ph_t[idx],
+        n_cycles=6,
+        full_prior=ph_t,
+        prior_weight=0.2,
+        dm_ai_weight=0.4,
+        dm_ai_every=2,
+        low_res_path=True,
+        d_min=1.0,
+    )
+    assert hist["dm_ai_weight"] > 0
+    assert hist["low_res_path"] is True
+    assert len(hist["R"]) >= 6
+    assert len(ph) == len(amp)
+
+
+def test_discretize_bins():
+    ph = np.linspace(-np.pi, np.pi, 16, endpoint=False)
+    d = discretize_phases(ph, mode="bins", n_bins=4)
+    assert len(np.unique(np.round(d, 5))) <= 4

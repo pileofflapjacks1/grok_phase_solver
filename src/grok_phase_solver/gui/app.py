@@ -77,6 +77,21 @@ def _sidebar() -> dict:
             step=0.05,
         )
         seed = st.number_input("Random seed", min_value=0, value=0, step=1)
+        ai_dm_hybrid = st.checkbox(
+            "DM+AI hybrid tangent (Carrozzini)",
+            value=False,
+            help="Modified tangent weights AI phases as a priori info (λ=0.5).",
+        )
+        low_res_path = st.checkbox(
+            "Low-res / large-Vol EDM path",
+            value=False,
+            help="More solvent flatten + longer seed anneal (hybrid-friendly).",
+        )
+        seed_quality_filter = st.checkbox(
+            "Warn on Class 0 seed quality",
+            value=True,
+            help="Carrozzini-style Class 0/1 predictor diagnostics.",
+        )
         show_log = st.checkbox("Capture solver log", value=True)
         verbose = st.checkbox("Verbose solver prints", value=False)
 
@@ -122,6 +137,9 @@ def _sidebar() -> dict:
         "n_ha": int(n_ha),
         "show_log": show_log,
         "verbose": verbose,
+        "ai_dm_hybrid": bool(ai_dm_hybrid),
+        "low_res_path": bool(low_res_path),
+        "seed_quality_filter": bool(seed_quality_filter),
         "wizard_label": wiz.get("label", ""),
     }
 
@@ -277,6 +295,9 @@ def _collect_inputs(params: dict) -> dict | None:
         "seed": params["seed"],
         "verbose": params["verbose"],
         "capture_log": params["show_log"],
+        "dm_ai_weight": 0.5 if params.get("ai_dm_hybrid") else 0.0,
+        "low_res_path": bool(params.get("low_res_path")),
+        "seed_quality_filter": bool(params.get("seed_quality_filter")),
     }
 
 
@@ -322,6 +343,9 @@ def _run_job(job: dict, *, status) -> dict | None:
                 "seed",
                 "verbose",
                 "capture_log",
+                "dm_ai_weight",
+                "low_res_path",
+                "seed_quality_filter",
             }
         })
         # Persist inputs for peak-retry (drop large seeds except we re-read peaks from disk)
@@ -403,13 +427,37 @@ def _render_results(summary: dict, params: dict) -> None:
         else:
             st.info(h)
 
-    if d.get("seed_size_meets_bar") is not None:
-        st.info(
-            f"Seed quality (truth-free): strong-|E| coverage "
-            f"**{100 * float(d.get('seed_frac_strong') or 0):.0f}%** · "
-            f"size bar: **{'OK' if d.get('seed_size_meets_bar') else 'BELOW'}** · "
-            f"source: `{d.get('seed_kind') or d.get('seed_source') or '—'}`"
-        )
+    # Carrozzini-style / partial seed quality panel
+    from grok_phase_solver.gui.backend import format_seed_quality_panel
+
+    sq_panel = format_seed_quality_panel(d)
+    if sq_panel.get("has_quality") or d.get("seed_size_meets_bar") is not None:
+        st.markdown("##### Seed quality")
+        c1, c2, c3, c4 = st.columns(4)
+        if sq_panel.get("predicted_class") is not None:
+            c1.metric("Predicted class", sq_panel["predicted_class"])
+            p_succ = sq_panel.get("success_probability")
+            c2.metric(
+                "P(success)",
+                f"{float(p_succ):.2f}" if p_succ is not None else "—",
+            )
+            mpe = sq_panel.get("predicted_mpe_deg")
+            c3.metric("Est. seed MPE°", f"{float(mpe):.0f}" if mpe is not None else "—")
+            feats = sq_panel.get("features") or {}
+            c4.metric("max |E|", f"{feats.get('max_W', float('nan')):.2f}" if feats.get("max_W") is not None else "—")
+        if d.get("seed_size_meets_bar") is not None:
+            st.info(
+                f"Partial-φ size bar: strong-|E| coverage "
+                f"**{100 * float(d.get('seed_frac_strong') or 0):.0f}%** · "
+                f"size: **{'OK' if d.get('seed_size_meets_bar') else 'BELOW'}** · "
+                f"source: `{d.get('seed_kind') or d.get('seed_source') or '—'}`"
+            )
+        if sq_panel.get("warning"):
+            st.warning(sq_panel["warning"])
+        if sq_panel.get("recommend_fallback"):
+            st.warning(
+                "Class 0 seed — prefer fragment/HA partial-φ or enable DM+AI hybrid."
+            )
 
     # One-click hard path recovery
     fom_v = float(fom) if fom is not None else 0.0

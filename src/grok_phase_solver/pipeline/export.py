@@ -159,30 +159,67 @@ def _render_report(result: "SolveResult") -> str:
         else:
             lines.append(f"- **{k}:** {v}")
 
-    # Partial-seed quality section (Lane B product path)
+    # Seed quality: Lane B partial-φ metrics and/or Carrozzini Class 0/1 predictor
     sq = d.get("seed_quality")
     if isinstance(sq, dict):
-        lines.extend(
-            [
-                "",
-                "## Partial seed quality (truth-free)",
-                "",
-                f"- **Source / kind:** {d.get('seed_kind', d.get('seed_source', '—'))}",
-                f"- **Seeded reflections:** {sq.get('n_seed')} "
-                f"({100 * float(sq.get('fraction_all') or 0):.1f}% of all)",
-                f"- **Strong-|E| coverage:** {sq.get('n_strong_seeded')}/"
-                f"{sq.get('n_strong')} "
-                f"({100 * float(sq.get('frac_strong_seeded') or 0):.0f}%)",
-                f"- **Size vs 30% oracle bar:** "
-                f"{'OK' if sq.get('size_meets_bar') else 'BELOW BAR'}",
-                f"- **Seed free-FOM composite:** {sq.get('seed_free_fom_composite')}",
-                f"- **Final free-FOM composite:** {d.get('free_fom_composite')}",
-                "",
-            ]
-        )
-        for h in sq.get("hints") or []:
-            lines.append(f"- 💡 {h}")
-        if not sq.get("size_meets_bar"):
+        # Carrozzini-style predictor (keys: predicted_class, success_probability, …)
+        if "predicted_class" in sq:
+            feats = sq.get("features") or {}
+            lines.extend(
+                [
+                    "",
+                    "## AI-PhaSeed seed quality (Carrozzini-style Class 0/1)",
+                    "",
+                    f"- **Predicted class:** {sq.get('predicted_class')} "
+                    f"(1 ≈ high-success band; heuristic / optional RF)",
+                    f"- **P(success) estimate:** {sq.get('success_probability')}",
+                    f"- **Est. seed MPE (°):** {sq.get('predicted_mpe_deg')}",
+                    f"- **Est. seed CORR:** {sq.get('predicted_corr')}",
+                    f"- **max |E| (max W):** {feats.get('max_W')}",
+                    f"- **Vol (Å³):** {feats.get('Vol')}",
+                    f"- **Seed fraction:** {feats.get('seed_fraction')}",
+                    f"- **Predictor:** {sq.get('method')}",
+                    f"- **Final free-FOM composite:** {d.get('free_fom_composite')}",
+                    "",
+                ]
+            )
+            if sq.get("warning"):
+                lines.append(f"- ⚠️ {sq['warning']}")
+            for n in (sq.get("notes") or [])[:6]:
+                lines.append(f"- note: {n}")
+            if sq.get("recommend_fallback"):
+                lines.extend(
+                    [
+                        "",
+                        "**Action:** Class 0 seed — prefer partial-φ / fragment / HA, "
+                        "or try `--ai-dm-hybrid --low-res-path` / ensemble. "
+                        "Does not prove the structure is unsolvable.",
+                        "",
+                    ]
+                )
+        # Lane B partial-seed size metrics
+        if "frac_strong_seeded" in sq or "size_meets_bar" in sq:
+            lines.extend(
+                [
+                    "",
+                    "## Partial seed quality (truth-free size bar)",
+                    "",
+                    f"- **Source / kind:** {d.get('seed_kind', d.get('seed_source', '—'))}",
+                    f"- **Seeded reflections:** {sq.get('n_seed')} "
+                    f"({100 * float(sq.get('fraction_all') or 0):.1f}% of all)",
+                    f"- **Strong-|E| coverage:** {sq.get('n_strong_seeded')}/"
+                    f"{sq.get('n_strong')} "
+                    f"({100 * float(sq.get('frac_strong_seeded') or 0):.0f}%)",
+                    f"- **Size vs 30% oracle bar:** "
+                    f"{'OK' if sq.get('size_meets_bar') else 'BELOW BAR'}",
+                    f"- **Seed free-FOM composite:** {sq.get('seed_free_fom_composite')}",
+                    f"- **Final free-FOM composite:** {d.get('free_fom_composite')}",
+                    "",
+                ]
+            )
+            for h in sq.get("hints") or []:
+                lines.append(f"- 💡 {h}")
+        if sq.get("size_meets_bar") is False:
             lines.extend(
                 [
                     "",

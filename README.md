@@ -1,7 +1,7 @@
 # grok_phase_solver
 
 **Open physics / AI phasing assistant for X-ray crystallography**  
-Version **0.3.0** · Python ≥ 3.10 · MIT
+Version **0.4.0** · Python ≥ 3.10 · MIT
 
 Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and a SHELXL-ready trial model, then refine elsewhere (Olex2 / SHELXL).
 
@@ -53,7 +53,7 @@ gps-solve --help
 ```
 
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
-Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.3.0 notes](docs/RELEASE_NOTES_v0.3.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.4.0 notes](docs/RELEASE_NOTES_v0.4.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 
 ### Phase your data
 
@@ -66,6 +66,10 @@ gps-solve --hkl mycrystal.hkl \
   --cell 9.75,8.89,7.57,90,112.7,90 \
   --sg "P 1 21/c 1" \
   --out ./solve_out
+
+# AI-PhaSeed hybrid (Carrozzini 2025-aligned DM+AI tangent + seed-quality diagnostics)
+gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
+  --method phai_phaseed --ai-dm-hybrid --seed-quality-filter --out ./solve_out
 ```
 
 ### What you get

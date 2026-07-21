@@ -77,6 +77,12 @@ class SolveConfig:
     seed_min_peak_sigma: float = 2.5
     seed_b_iso: float = 8.0
     seed_fraction: float = 0.30
+    # AI-PhaSeed hybrid options (Carrozzini 2025 alignment; defaults = pre-0.4.0)
+    dm_ai_weight: float = 0.0  # >0 enables modified-tangent AI hybrid
+    low_res_path: bool = False  # EDM-friendly anneal/solvent schedule
+    prior_weight: float = 0.30  # soft full AI prior during extension
+    seed_quality_filter: bool = False  # warn / note Class 0 seeds
+    assess_seed_quality: bool = True
     # Isomorphous HA pair (amplitudes loaded in solve_structure)
     native_hkl: Optional[str] = None
     derivative_hkl: Optional[str] = None
@@ -471,6 +477,11 @@ def _run_phasing(
             n_extend=cfg.n_extend,
             polish="charge_flipping",
             n_polish=cfg.n_iter,
+            prior_weight=cfg.prior_weight,
+            dm_ai_weight=cfg.dm_ai_weight,
+            low_res_path=cfg.low_res_path,
+            assess_seed_quality=cfg.assess_seed_quality,
+            seed_quality_filter=cfg.seed_quality_filter,
             n_starts=cfg.n_starts,
             seed=cfg.seed,
             d_min=d_use,
@@ -479,7 +490,27 @@ def _run_phasing(
         )
         history = dict(history or {})
         history["seed_meta"] = meta
-        history["seed_quality"] = qual
+        # Merge Lane-B size metrics with any Carrozzini Class predictor from solve
+        pred = (history.get("seed_quality") if isinstance(history.get("seed_quality"), dict) else None) or {}
+        if isinstance(qual, dict):
+            merged = {**qual}
+            if "predicted_class" in pred:
+                for k in (
+                    "predicted_class",
+                    "success_probability",
+                    "predicted_mpe_deg",
+                    "predicted_corr",
+                    "features",
+                    "warning",
+                    "recommend_fallback",
+                    "method",
+                    "notes",
+                ):
+                    if k in pred:
+                        merged[k] = pred[k]
+            history["seed_quality"] = merged
+        else:
+            history["seed_quality"] = pred or qual
         history["seed_source"] = meta.get("source", meta.get("kind", "partial"))
         return method, phases, density, history
 
@@ -497,10 +528,18 @@ def _run_phasing(
                 seed=cfg.seed,
                 d_min=d_use,
                 discrete="centro" if centro else "none",
+                prior_weight=cfg.prior_weight,
+                dm_ai_weight=cfg.dm_ai_weight,
+                low_res_path=cfg.low_res_path,
+                assess_seed_quality=cfg.assess_seed_quality,
+                seed_quality_filter=cfg.seed_quality_filter,
                 verbose=cfg.verbose,
             )
             if history.get("seed_source") == "cf_fallback":
                 warnings.append("PhAI unavailable inside phai_phaseed; used CF fallback")
+            sq = (history or {}).get("seed_quality") or {}
+            if sq.get("warning"):
+                warnings.append(str(sq["warning"]))
             return method, phases, density, history
         except Exception as e:
             warnings.append(f"phai_phaseed failed ({e}); falling back to charge_flipping")
@@ -708,11 +747,21 @@ def solve_structure(
         diagnostics["seed_source"] = history.get("seed_source")
     if history.get("seed_quality"):
         sq = history["seed_quality"]
-        diagnostics["seed_n"] = sq.get("n_seed")
+        diagnostics["seed_n"] = sq.get("n_seed") or (sq.get("features") or {}).get("n_seed")
         diagnostics["seed_frac_strong"] = sq.get("frac_strong_seeded")
         diagnostics["seed_size_meets_bar"] = sq.get("size_meets_bar")
-        diagnostics["seed_free_fom"] = sq.get("seed_free_fom_composite")
+        diagnostics["seed_free_fom"] = sq.get("seed_free_fom_composite") or (
+            (sq.get("features") or {}).get("free_fom_composite")
+        )
+        if "predicted_class" in sq:
+            diagnostics["seed_predicted_class"] = sq.get("predicted_class")
+            diagnostics["seed_success_probability"] = sq.get("success_probability")
+            diagnostics["seed_predicted_mpe_deg"] = sq.get("predicted_mpe_deg")
         diagnostics["seed_quality"] = sq
+    if history.get("dm_ai_weight") is not None:
+        diagnostics["dm_ai_weight"] = history.get("dm_ai_weight")
+    if history.get("low_res_path") is not None:
+        diagnostics["low_res_path"] = history.get("low_res_path")
     if history.get("seed_meta"):
         sm = history["seed_meta"]
         diagnostics["seed_kind"] = sm.get("kind") or sm.get("source")

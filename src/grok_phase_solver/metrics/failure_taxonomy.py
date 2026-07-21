@@ -24,11 +24,18 @@ When a structure is **not** solved under strict SuccessThresholds, classify
 A case may be multi-label (e.g. A+B). Primary label uses priority
 A > B > C when multiple flags fire (selection is actionable first).
 
+**Seed quality (AI-PhaSeed / Carrozzini 2025)**
+  Separately, ``metrics.seed_quality.predict_seed_quality`` predicts Class 0/1
+  style success probability for a *given* AI seed. Class 0 seeds often map to
+  taxonomy **B** (never enter basin) even when information (C) looks OK.
+  See ``docs/math/ai_phaseed.md``.
+
 References
 ----------
 - Direct-methods reliability: Cochran κ, number of observations vs parameters
 - Phase retrieval: non-convex landscape, multistart, FOMs as selection
-- Project docs: free_fom.md, solvability_and_phai.md
+- Carrozzini et al. (2025). J. Appl. Cryst. 58, 1859–1869 (seed Class 0/1)
+- Project docs: free_fom.md, solvability_and_phai.md, ai_phaseed.md
 """
 
 from __future__ import annotations

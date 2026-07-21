@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.4.0 — 2026-07
+
+### What’s new in v0.4.0
+
+**Carrozzini 2025 AI-PhaSeed alignment** — hybrid tooling and diagnostics without
+breaking pre-0.4 APIs (defaults keep `dm_ai_weight=0`).
+
+- **DM+AI modified tangent** (`dm_ai_weight` / CLI `--ai-dm-hybrid`): AI phases
+  enter κ-weighted tangent as a priori info with reliability weights
+  (`direct_methods.dm_ai_hybrid_refine`, `phase_extend` schedule).
+- **Seed-quality Class 0/1 predictor** (`metrics/seed_quality.py`): features
+  max W, N_asym, Vol, seed fraction, free-FOM proxies; heuristic P(success) +
+  optional sklearn RF extra (`pip install grok-phase-solver[seed-quality]`).
+- **Low-res / large-Vol EDM path** (`low_res_path` / `--low-res-path`): longer
+  seed anneal, solvent flatten, more frequent hybrid steps.
+- **CLI / GUI**: `--ai-dm-hybrid`, `--dm-ai-weight`, `--low-res-path`,
+  `--prior-weight`, `--seed-quality-filter`; GUI seed-quality panel.
+- **Docs**: expanded `docs/math/ai_phaseed.md` (eqs, statistical toolkit,
+  P2₁/c + generalization notes); citations in FOR_REVIEWERS / arxiv draft /
+  `references.bib`.
+- **Benchmark**: `scripts/run_ai_phaseed_extended_benchmark.py` +
+  `data/processed/ai_phaseed_extended_benchmark.*` (stratified subset harness;
+  not a 1505-structure claim).
+- **Honest limits unchanged:** hard ab initio seed bar still ~21–22% ≤20°;
+  partial-φ remains the hard-data path; Class predictor is operational, not
+  the published RF on 1505 COD entries.
+
+### Science
+- Carrozzini et al. (2025) J. Appl. Cryst. 58, 1859–1869 DOI 10.1107/S1600576725008271
+- PhAI foundation: Larsen et al. Science 2024
+
 ## 0.3.0 — 2026-07
 
 ### Synthetic data (Melgalvis & Rekis 2026)
