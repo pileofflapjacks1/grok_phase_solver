@@ -1,6 +1,6 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft · software package v0.4.0 (MIT)**  
+**Working draft · software package v0.5.0 (MIT)**  
 **Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
@@ -214,7 +214,8 @@ BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patte
 11. Melgalvis & Rekis (2026) — artificial crystal generation for DL phasing.  
 12. COD — crystallography.net.  
 13. gemmi — crystallography toolkit.  
-14. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.4.0 (this work).  
+14. Grok (xAI) and Joe (2026) — *grok_phase_solver* v0.5.0 (this work).  
+15. PXRDnet / XRDSol (2025–2026) — diffusion-for-diffraction literature (conceptual context only).
 
 Extended notes and derivations: `docs/math/`, `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.
 

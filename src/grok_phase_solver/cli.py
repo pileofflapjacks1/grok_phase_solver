@@ -153,6 +153,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "partial_phaseed",
             "fragment_phaseed",
             "ha_phaseed",
+            "diffusion_hybrid",
+            "diffusion_phaseed",
             "recycle",
             "direct_methods",
             "hio",
@@ -164,7 +166,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         ],
         help=(
             "Phasing method (default: auto = ensemble on easy, priors/CF on hard; "
-            "if a seed source is given, auto → partial_phaseed)"
+            "if a seed source is given, auto → partial_phaseed; "
+            "diffusion_* = experimental Langevin hybrid)"
         ),
     )
     p.add_argument("--dmin", type=float, default=None, help="High-resolution cutoff Å (optional)")
@@ -287,6 +290,48 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         help="Skip seed-quality prediction diagnostics",
     )
     p.add_argument(
+        "--predicted-model",
+        "--predicted-model-seed",
+        dest="predicted_model",
+        default=None,
+        help=(
+            "Predicted/experimental model CIF (AF, OpenFold3, Boltz, RF) → "
+            "Fcalc fragment seed (partial_phaseed / diffusion_phaseed)"
+        ),
+    )
+    p.add_argument(
+        "--no-expand-model-symmetry",
+        action="store_true",
+        help="Do not expand predicted-model ASU by space-group ops",
+    )
+    p.add_argument(
+        "--diffusion",
+        action="store_true",
+        help="Use experimental diffusion_hybrid method (Langevin phase completion)",
+    )
+    p.add_argument(
+        "--n-diffusion-steps",
+        type=int,
+        default=20,
+        help="Diffusion reverse steps (default 20)",
+    )
+    p.add_argument(
+        "--device",
+        default="cpu",
+        choices=["cpu", "cuda", "mps", "auto"],
+        help="FFT/device backend (default cpu; auto prefers cuda→mps→cpu)",
+    )
+    p.add_argument(
+        "--gpu",
+        action="store_true",
+        help="Shortcut for --device auto (uses GPU if available)",
+    )
+    p.add_argument(
+        "--no-uncertainty",
+        action="store_true",
+        help="Skip multistart / bootstrap phase uncertainty diagnostics",
+    )
+    p.add_argument(
         "--shelxe-polish",
         action="store_true",
         help="After shelxs, run SHELXE density mod (or use method shelxs+shelxe)",
@@ -337,6 +382,11 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         prior_weight=float(args.prior_weight),
         seed_quality_filter=bool(args.seed_quality_filter),
         assess_seed_quality=not bool(args.no_seed_quality),
+        predicted_model_cif=args.predicted_model,
+        expand_model_symmetry=not bool(args.no_expand_model_symmetry),
+        n_diffusion_steps=int(args.n_diffusion_steps),
+        device=("auto" if args.gpu else args.device),
+        compute_uncertainty=not bool(args.no_uncertainty),
         export_seed_csv=args.export_seed_csv,
         native_hkl=args.native_hkl,
         derivative_hkl=args.derivative_hkl,
@@ -347,6 +397,12 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         shelxe_cycles=args.shelxe_cycles,
         shelxe_solvent=args.shelxe_solvent,
     )
+    # --diffusion forces method unless user already set a diffusion method
+    if args.diffusion and args.method in ("auto", "charge_flipping", "ensemble"):
+        if args.predicted_model or args.phase_seed_csv or args.phase_seed_res:
+            cfg.method = "diffusion_phaseed"
+        else:
+            cfg.method = "diffusion_hybrid"
 
     try:
         result = solve_structure(
@@ -409,9 +465,20 @@ def make_seed_main(argv: list[str] | None = None) -> None:
         "--from-cif",
         default=None,
         help=(
-            "Partial model CIF (e.g. AlphaFold/RoseTTAFold fragment or experimental "
-            "model) → Fcalc seed phases via fragment path"
+            "Partial model CIF (AF / OpenFold3 / Boltz / RF / experimental) → "
+            "Fcalc seed with occupancy filter + optional SG expansion"
         ),
+    )
+    p.add_argument(
+        "--expand-symmetry",
+        action="store_true",
+        default=True,
+        help="Expand model ASU by space-group ops (default on for --from-cif)",
+    )
+    p.add_argument(
+        "--no-expand-symmetry",
+        action="store_true",
+        help="Keep ASU only when loading --from-cif",
     )
     p.add_argument("--native-hkl", default=None)
     p.add_argument("--derivative-hkl", default=None)
@@ -444,32 +511,39 @@ def make_seed_main(argv: list[str] | None = None) -> None:
             [key_d.get((int(r[0]), int(r[1]), int(r[2])), 0.0) for r in hkl]
         )
 
-    # Structure-prediction / model CIF → temporary atoms CSV or direct fragment
+    # Structure-prediction / model CIF (AF, OpenFold3, Boltz, experimental)
     seed_atoms = args.from_atoms
     if args.from_cif:
         try:
-            from grok_phase_solver.io.cif import load_cif
+            from grok_phase_solver.solvers.seed_import import seed_from_predicted_model
 
-            st = load_cif(args.from_cif)
-            fracs = np.array([a.fract for a in st.atoms], dtype=np.float64)
-            els = [a.element for a in st.atoms]
-            if args.seed_n_atoms is not None:
-                fracs, els = fracs[: args.seed_n_atoms], els[: args.seed_n_atoms]
-            seed_ph, mask, meta = seed_from_fragment_atoms(
-                hkl, amp, cell, fracs, els, b_iso=args.seed_b_iso, seed=args.seed
+            expand = not bool(getattr(args, "no_expand_symmetry", False))
+            seed_ph, mask, meta = seed_from_predicted_model(
+                hkl,
+                amp,
+                cell,
+                args.from_cif,
+                max_atoms=args.seed_n_atoms,
+                b_iso=args.seed_b_iso,
+                expand_symmetry=expand,
+                space_group=args.sg or table.space_group_hm,
+                seed=args.seed,
             )
             meta["source"] = "from_cif"
-            meta["path"] = args.from_cif
             out = Path(args.out)
             export_seed_csv(out, hkl, seed_ph, mask)
             qual = assess_seed_quality(hkl, amp, cell, seed_ph, mask)
             print(f"Wrote {out.resolve()}  ({int(mask.sum())} reflections)")
             print(
-                f"  source=from_cif  frac_strong_seeded={qual['frac_strong_seeded']:.0%}  "
+                f"  source=from_cif  n_atoms={meta.get('n_atoms')}  "
+                f"expanded={meta.get('expand', {}).get('expanded')}  "
+                f"frac_strong_seeded={qual['frac_strong_seeded']:.0%}  "
                 f"size_meets_bar={qual['size_meets_bar']}"
             )
             for h in qual.get("hints") or []:
                 print(f"  note: {h}")
+            if meta.get("note"):
+                print(f"  note: {meta['note']}")
             return
         except Exception as e:
             print(f"ERROR loading --from-cif: {e}", file=sys.stderr)

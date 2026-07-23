@@ -107,6 +107,8 @@ gps-solve \
 | `shelxs` / `shelxs+shelxe` | External academic SHELXS (± SHELXE density mod); needs `ShelX/` binaries |
 | `strong_prior_phaseed` / `hard_p1_phaseed` | Learned priors + AI-PhaSeed (hard synthetic domain) |
 | `phai_phaseed` / `phai+cf_cond` | PhAI seed hybrids (needs weights) |
+| `diffusion_hybrid` / `diffusion_phaseed` | **Experimental** Langevin phase completion (v0.5) |
+| Predicted model seed | `--predicted-model model.cif` → partial_phaseed (AF/OpenFold3/Boltz) |
 | `raar` / `recycle` / `hio` / `direct_methods` | Projection / educational DM |
 
 Examples:
@@ -149,7 +151,7 @@ Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → 
 | SHELXS / fragment model | `--phase-seed-res model.res` | Q-peaks or partial atoms → Fcalc |
 | Density peaks | `--seed-peaks-csv peaks.csv` | Prior gps-solve peaks as light atoms |
 | Explicit fragment | `--seed-atoms-csv atoms.csv` | `x,y,z,element` fractional |
-| Structure-prediction model | `gps-make-seed --from-cif model.cif` | AF/RoseTTAFold/experimental CIF → seed CSV |
+| Structure-prediction model | `gps-make-seed --from-cif model.cif` **or** `--predicted-model model.cif` | AF/OpenFold3/Boltz/RF CIF → Fcalc seed (+ SG expand) |
 | Isomorphous HA | `--native-hkl` + `--derivative-hkl` | Difference Patterson → HA sites |
 | Single-dataset HA | `--patterson-ha` | Weak Patterson heuristic (HA present) |
 
@@ -235,7 +237,7 @@ This tool **phases** data and suggests **density peaks**. It does **not** replac
 3. Assign C/N/O/… from chemistry and residual maps.  
 4. Refine against your intensities with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
 
-If the map is uninterpretable: check cell/SG, try `--method ensemble` or `phai_phaseed`, improve resolution/completeness, or use classical SHELXD / experimental phasing.
+If the map is uninterpretable: check cell/SG, try `--method ensemble` or `phai_phaseed`, improve resolution/completeness, add a predicted-model or fragment seed (`--predicted-model`), or use classical SHELXD / experimental phasing. Report.md includes free-FOM bootstrap and optional multistart phase uncertainty (v0.5).
 
 ---
 

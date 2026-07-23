@@ -149,9 +149,20 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Docs + CHANGELOG 0.4.0 + CLI/GUI flags
 - [ ] Optional: train/persist sklearn RF on COD/synthetic oracle labels
 - [ ] Optional: download larger COD Vol 1000–3500 Å³ subset for stratified bench
-- [ ] Phase binning + gemmi full SG expansion for non-centro generalization
-- [ ] Profile/vectorize `phase_extend` hot loops
-- [ ] Experimental `models/diffusion_phase.py` density-completion research stub
+
+### v0.5.0 hybrid / SG / UQ track
+- [x] Physics Langevin **diffusion hybrid** (`models/diffusion_phase.py`, methods + CLI)
+- [x] Fuller gemmi **SG helpers** (`physics/symmetry.py`) + report diagnostics
+- [x] **Predicted-model** seeding (AF/OpenFold3/Boltz CIF) + `combine_phase_seeds`
+- [x] Optional **device** backend (`--device` / `--gpu`, torch FFT)
+- [x] **Uncertainty** multistart circular + free-FOM bootstrap
+- [ ] Train equivariant diffusion score net (weights external; curriculum)
+- [ ] Full reciprocal-space symmetry averaging of Fobs (MERGE-class)
+- [ ] Profile/vectorize `phase_extend` + multiprocess ensemble n_starts
+- [ ] Optional cctbx backend hooks (extras)
+- [ ] Interactive density volume viewer (plotly) in GUI
+- [ ] OMC25 / larger-scale prior training
+- [ ] Docker image + PyPI 0.5.0 upload
 
 1. [x] PhAI weights runner + scoreboard  
 2. [x] Scientist-facing `gps-solve` pipeline  

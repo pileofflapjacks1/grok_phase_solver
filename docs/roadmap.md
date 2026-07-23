@@ -33,8 +33,16 @@
 - [x] CLI / GUI flags + report diagnostics
 - [x] Extended subset benchmark harness
 - [ ] Full COD 1505-style stratified panel (optional download)
-- [ ] gemmi SG expansion + non-centro phase binning productization
-- [ ] Conditional diffusion density completion (stub only)
+
+## Phase 3.6 — Diffusion / SG / predicted seeds / UQ (v0.5.0) ✅ / 🚧
+
+- [x] Physics Langevin diffusion hybrid (experimental)
+- [x] gemmi SG helpers (expand, centro, absences diagnostics)
+- [x] Predicted-model CIF seeding + multi-seed combine
+- [x] Optional device FFT + phase uncertainty diagnostics
+- [ ] Trained equivariant diffusion weights (external)
+- [ ] Full Fobs symmetry averaging / twinning product path
+- [ ] GUI 3D density viewer
 
 ## Phase 2 — Enhanced synthetic data & training 🚧
 

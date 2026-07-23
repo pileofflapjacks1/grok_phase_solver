@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.5.0 — 2026-07
+
+### What’s new in v0.5.0
+
+Research-aligned hybrid tools, fuller SG support, predicted-model seeding, optional
+device backend, and phase uncertainty — without overclaiming hard ab initio.
+
+#### Diffusion hybrid (experimental)
+- Functional physics Langevin reverse process in `models/diffusion_phase.py`
+  (positivity + modulus + annealed noise; optional future NN score hook)
+- Methods: `diffusion_hybrid`, `diffusion_phaseed`; CLI `--diffusion`,
+  `--n-diffusion-steps`
+- Math note: `docs/math/diffusion_phase.md`
+- Inspired by score-based inverse problems / PXRDnet & XRDSol *concepts* —
+  **not** a reimplementation or performance claim
+
+#### Space-group symmetry
+- `physics/symmetry.py`: parse SG, expand ASU, centro phase constraint, absence
+  diagnostics via gemmi
+- Pipeline report.md space-group section; predicted-model expansion
+
+#### Predicted-model / MR-lite seeding
+- `seed_from_predicted_model` / `load_predicted_model_atoms` (AF, OpenFold3,
+  Boltz, RF-style CIF; occupancy filter; SG expand)
+- `combine_phase_seeds` for multi-source circular combination
+- CLI: `--predicted-model`, improved `gps-make-seed --from-cif`
+
+#### Device / performance
+- `physics/device.py` + optional torch FFT in density (`--device cpu|cuda|mps|auto`,
+  `--gpu`); extras `[gpu]`
+- Graceful NumPy fallback
+
+#### Uncertainty quantification
+- `metrics/uncertainty.py`: multistart circular resultant / phase probability,
+  free-FOM bootstrap; report.md + diagnostics
+
+#### Honest limits (unchanged in spirit)
+- Hard ab initio seed bar still ~21–22% ≤20°; partial-φ remains the hard path
+- Diffusion path is experimental; no trained equivariant weights shipped
+- Not a general protein ab initio solver
+
 ## 0.4.0 — 2026-07
 
 ### What’s new in v0.4.0

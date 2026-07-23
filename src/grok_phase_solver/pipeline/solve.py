@@ -49,6 +49,8 @@ KNOWN_METHODS = (
     "partial_phaseed",
     "fragment_phaseed",
     "ha_phaseed",
+    "diffusion_hybrid",
+    "diffusion_phaseed",
 )
 
 
@@ -83,6 +85,15 @@ class SolveConfig:
     prior_weight: float = 0.30  # soft full AI prior during extension
     seed_quality_filter: bool = False  # warn / note Class 0 seeds
     assess_seed_quality: bool = True
+    # Predicted model / MR-lite (AF, OpenFold3, Boltz-style CIF)
+    predicted_model_cif: Optional[str] = None
+    expand_model_symmetry: bool = True
+    # Diffusion hybrid (experimental Langevin phase completion)
+    n_diffusion_steps: int = 20
+    # Device / performance
+    device: str = "cpu"  # cpu | cuda | mps | auto
+    # Uncertainty quantification
+    compute_uncertainty: bool = True
     # Isomorphous HA pair (amplitudes loaded in solve_structure)
     native_hkl: Optional[str] = None
     derivative_hkl: Optional[str] = None
@@ -406,36 +417,50 @@ def _run_phasing(
                 "charge_flipping", hkl, amp, cell_arr, d_use, cfg, centro, warnings
             )
 
-    if method == "partial_phaseed":
+    if method in ("partial_phaseed", "diffusion_phaseed"):
         from grok_phase_solver.solvers.partial_seed import partial_phaseed_solve
         from grok_phase_solver.solvers.seed_import import (
             assess_seed_quality,
             export_seed_csv,
             resolve_phase_seed,
+            seed_from_predicted_model,
         )
 
         native_amp = getattr(cfg, "_native_amp", None)
         deriv_amp = getattr(cfg, "_derivative_amp", None)
         try:
-            seed_ph, mask, meta = resolve_phase_seed(
-                hkl,
-                amp,
-                cell_arr,
-                phase_seed_csv=cfg.phase_seed_csv,
-                phase_seed_res=cfg.phase_seed_res,
-                seed_atoms_csv=cfg.seed_atoms_csv,
-                seed_peaks_csv=cfg.seed_peaks_csv,
-                seed_element=cfg.seed_element,
-                seed_n_atoms=cfg.seed_n_atoms,
-                seed_min_peak_sigma=cfg.seed_min_peak_sigma,
-                seed_b_iso=cfg.seed_b_iso,
-                native_amp=native_amp,
-                derivative_amp=deriv_amp,
-                n_ha=cfg.n_ha,
-                ha_element=cfg.ha_element,
-                use_patterson_ha=cfg.patterson_ha,
-                seed=cfg.seed,
-            )
+            if cfg.predicted_model_cif:
+                seed_ph, mask, meta = seed_from_predicted_model(
+                    hkl,
+                    amp,
+                    cell_arr,
+                    cfg.predicted_model_cif,
+                    max_atoms=cfg.seed_n_atoms,
+                    b_iso=cfg.seed_b_iso,
+                    expand_symmetry=cfg.expand_model_symmetry,
+                    space_group=getattr(cfg, "_space_group", None),
+                    seed=cfg.seed,
+                )
+            else:
+                seed_ph, mask, meta = resolve_phase_seed(
+                    hkl,
+                    amp,
+                    cell_arr,
+                    phase_seed_csv=cfg.phase_seed_csv,
+                    phase_seed_res=cfg.phase_seed_res,
+                    seed_atoms_csv=cfg.seed_atoms_csv,
+                    seed_peaks_csv=cfg.seed_peaks_csv,
+                    seed_element=cfg.seed_element,
+                    seed_n_atoms=cfg.seed_n_atoms,
+                    seed_min_peak_sigma=cfg.seed_min_peak_sigma,
+                    seed_b_iso=cfg.seed_b_iso,
+                    native_amp=native_amp,
+                    derivative_amp=deriv_amp,
+                    n_ha=cfg.n_ha,
+                    ha_element=cfg.ha_element,
+                    use_patterson_ha=cfg.patterson_ha,
+                    seed=cfg.seed,
+                )
         except ValueError as e:
             raise ValueError(str(e)) from e
 
@@ -469,6 +494,30 @@ def _run_phasing(
                 f"frac_strong={qual.get('frac_strong_seeded', float('nan')):.0%} "
                 f"size_ok={qual.get('size_meets_bar')}"
             )
+
+        if method == "diffusion_phaseed":
+            from grok_phase_solver.models.diffusion_phase import diffusion_hybrid_solve
+
+            phases, density, history = diffusion_hybrid_solve(
+                hkl,
+                amp,
+                cell_arr,
+                seed_phases=seed_ph,
+                seed_mask=mask if mask.sum() >= 5 else None,
+                n_steps=cfg.n_diffusion_steps,
+                n_starts=cfg.n_starts,
+                seed=cfg.seed,
+                d_min=d_use,
+                polish="charge_flipping",
+                n_polish=cfg.n_iter,
+                solvent_fraction=cfg.solvent_fraction,
+                verbose=cfg.verbose,
+            )
+            history = dict(history or {})
+            history["seed_meta"] = meta
+            history["seed_quality"] = qual
+            history["seed_source"] = meta.get("source", meta.get("kind", "partial"))
+            return method, phases, density, history
 
         phases, density, history = partial_phaseed_solve(
             hkl, amp, cell_arr, seed_ph,
@@ -512,6 +561,62 @@ def _run_phasing(
         else:
             history["seed_quality"] = pred or qual
         history["seed_source"] = meta.get("source", meta.get("kind", "partial"))
+        return method, phases, density, history
+
+    if method == "diffusion_hybrid":
+        from grok_phase_solver.models.diffusion_phase import diffusion_hybrid_solve
+
+        # Optional seed if provided
+        seed_ph = None
+        seed_mask = None
+        if cfg.phase_seed_csv or cfg.predicted_model_cif or cfg.phase_seed_res:
+            try:
+                from grok_phase_solver.solvers.seed_import import (
+                    resolve_phase_seed,
+                    seed_from_predicted_model,
+                )
+
+                if cfg.predicted_model_cif:
+                    seed_ph, seed_mask, smeta = seed_from_predicted_model(
+                        hkl, amp, cell_arr, cfg.predicted_model_cif,
+                        max_atoms=cfg.seed_n_atoms, b_iso=cfg.seed_b_iso,
+                        expand_symmetry=cfg.expand_model_symmetry,
+                        space_group=getattr(cfg, "_space_group", None),
+                        seed=cfg.seed,
+                    )
+                else:
+                    seed_ph, seed_mask, smeta = resolve_phase_seed(
+                        hkl, amp, cell_arr,
+                        phase_seed_csv=cfg.phase_seed_csv,
+                        phase_seed_res=cfg.phase_seed_res,
+                        seed_atoms_csv=cfg.seed_atoms_csv,
+                        seed_peaks_csv=cfg.seed_peaks_csv,
+                        seed_element=cfg.seed_element,
+                        seed_n_atoms=cfg.seed_n_atoms,
+                        seed_b_iso=cfg.seed_b_iso,
+                        seed=cfg.seed,
+                    )
+            except Exception as e:
+                warnings.append(f"diffusion seed load failed ({e}); pure diffusion init")
+                smeta = {}
+        else:
+            smeta = {}
+        phases, density, history = diffusion_hybrid_solve(
+            hkl, amp, cell_arr,
+            seed_phases=seed_ph,
+            seed_mask=seed_mask,
+            n_steps=cfg.n_diffusion_steps,
+            n_starts=cfg.n_starts,
+            seed=cfg.seed,
+            d_min=d_use,
+            polish="charge_flipping",
+            n_polish=cfg.n_iter,
+            solvent_fraction=cfg.solvent_fraction,
+            verbose=cfg.verbose,
+        )
+        history = dict(history or {})
+        history["seed_meta"] = smeta
+        history["experimental"] = True
         return method, phases, density, history
 
     if method == "phai_phaseed":
@@ -695,6 +800,7 @@ def solve_structure(
             cfg.phase_seed_res,
             cfg.seed_atoms_csv,
             cfg.seed_peaks_csv,
+            cfg.predicted_model_cif,
             (cfg.native_hkl and cfg.derivative_hkl),
             cfg.patterson_ha,
         ]
@@ -711,6 +817,14 @@ def solve_structure(
         if cfg.method.lower() == "auto" or auto_reason.startswith("user"):
             print(f"    ({auto_reason})")
 
+    # Space-group diagnostics (gemmi when available)
+    try:
+        from grok_phase_solver.physics.symmetry import space_group_diagnostics
+
+        sg_diag = space_group_diagnostics(sg)
+    except Exception:
+        sg_diag = {"hm": sg, "available": False}
+
     diagnostics: Dict[str, Any] = {
         "n_reflections": len(table),
         "data_dmin": data_dmin,
@@ -718,10 +832,12 @@ def solve_structure(
         "method_requested": cfg.method,
         "method_used": method,
         "auto_reason": auto_reason,
+        "space_group": sg_diag,
+        "device": cfg.device,
     }
 
-    centro = False
-    if sg:
+    centro = bool(sg_diag.get("is_centrosymmetric"))
+    if not centro and sg:
         try:
             import gemmi
 
@@ -730,10 +846,67 @@ def solve_structure(
             sgu = sg.replace(" ", "").upper()
             centro = "P21/C" in sgu or "P-1" in sgu or "P21/C" in sgu
 
+    # Stash SG for predicted-model expansion inside _run_phasing
+    cfg._space_group = sg  # type: ignore[attr-defined]
+
+    # Report systematic absences (do not mutate working hkl — keeps export index aligned)
+    try:
+        from grok_phase_solver.physics.symmetry import filter_systematic_absences
+
+        _, _, abs_meta = filter_systematic_absences(hkl, amp, sg)
+        if abs_meta.get("filtered"):
+            diagnostics["systematic_absences"] = abs_meta
+            if abs_meta.get("n_removed", 0) > 0 and cfg.verbose:
+                print(
+                    f"  note: {abs_meta['n_removed']} reflections match systematic "
+                    f"absences for {sg} (not removed from solve set)"
+                )
+    except Exception:
+        pass
+
     method, phases, density, history = _run_phasing(
         method, hkl, amp, cell_arr, d_use, cfg, centro, warnings
     )
     diagnostics["method_used"] = method
+
+    # Optional multistart UQ when history carries multiple trials
+    if cfg.compute_uncertainty and history:
+        try:
+            from grok_phase_solver.metrics.uncertainty import (
+                bootstrap_free_fom_spread,
+                multistart_phase_uncertainty,
+            )
+
+            trials = history.get("all_trials") or history.get("trials") or []
+            phase_sets = []
+            foms = []
+            for t in trials:
+                if isinstance(t, dict) and "phases" in t:
+                    phase_sets.append(t["phases"])
+                if isinstance(t, dict) and "composite" in t:
+                    foms.append(t["composite"])
+            # bootstrap free FOM on final phases
+            boot = bootstrap_free_fom_spread(
+                hkl, amp, phases, cell_arr, n_boot=8, seed=cfg.seed
+            )
+            diagnostics["free_fom_bootstrap"] = {
+                k: boot[k] for k in ("n_boot", "mean", "std", "min", "max") if k in boot
+            }
+            if len(phase_sets) >= 2:
+                uq = multistart_phase_uncertainty(
+                    phase_sets, amplitudes=amp, free_fom_composites=foms or None
+                )
+                diagnostics["phase_uncertainty"] = {
+                    "mean_resultant_length": uq["mean_resultant_length"],
+                    "mean_phase_probability": uq["mean_phase_probability"],
+                    "mean_circular_std_deg": uq["mean_circular_std_deg"],
+                    "frac_high_confidence": uq["frac_high_confidence"],
+                    "strong_frac_confident": uq.get("strong_frac_confident"),
+                    "n_starts": uq["n_starts"],
+                    "note": uq["note"],
+                }
+        except Exception as e:
+            diagnostics["uncertainty_error"] = str(e)
 
     if history.get("R"):
         diagnostics["final_R"] = history["R"][-1]

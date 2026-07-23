@@ -20,6 +20,12 @@ from .seed_quality import (
     SeedQualityReport,
 )
 from .strong_seed import strong_seed_metrics, select_strong_indices
+from .uncertainty import (
+    multistart_phase_uncertainty,
+    circular_mean_resultant,
+    bootstrap_free_fom_spread,
+    density_uncertainty,
+)
 
 __all__ = [
     "mean_phase_error",
@@ -46,4 +52,8 @@ __all__ = [
     "SeedQualityReport",
     "strong_seed_metrics",
     "select_strong_indices",
+    "multistart_phase_uncertainty",
+    "circular_mean_resultant",
+    "bootstrap_free_fom_spread",
+    "density_uncertainty",
 ]

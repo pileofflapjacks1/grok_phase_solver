@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.4.0 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.5.0 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 
@@ -35,6 +35,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C9 | Experimental COD **Fobs** scoreboard (2016452, 2100301, 2017775) + Fcalc controls + oracle partial-φ rows; pipeline methods ranked by mapCC/free FOM | [`experimental_scoreboard.md`](../data/processed/experimental_scoreboard.md) |
 | C10 | Melgalvis & Rekis (2026) style synthetic generator trains GraphPhaseNet at scale (N=**1200** XL): seed frac≤20° ≈**22%**, seedOK rate **12.5%**, hard strict still **0%** (comparable to legacy XL ~21%; **not yet** ≥30% bar) | [`strong_prior_melg_xl.md`](../data/processed/strong_prior_melg_xl.md), [math](math/synthetic_melgalvis.md) |
 | C11 | v0.4 implements **Carrozzini 2025-aligned** DM+AI modified tangent (`dm_ai_weight`), seed Class 0/1 **heuristic** predictor, and low-res EDM path — **without** claiming reproduction of their 1505-COD RF or >90% Class-1 efficiency | [math/ai_phaseed.md](math/ai_phaseed.md), [`ai_phaseed_extended_benchmark.md`](../data/processed/ai_phaseed_extended_benchmark.md) |
+| C12 | v0.5 adds an **experimental physics Langevin diffusion hybrid**, fuller gemmi SG helpers, predicted-model CIF seeding, optional device FFT, and multistart phase UQ — **without** claiming PXRDnet/XRDSol parity or clearing the hard ab initio seed bar | [math/diffusion_phase.md](math/diffusion_phase.md), [math/symmetry.md](math/symmetry.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 

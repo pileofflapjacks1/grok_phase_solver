@@ -79,6 +79,7 @@ def density_from_structure_factors(
     d_min: Optional[float] = None,
     sampling: float = 3.0,
     real_part_only: bool = True,
+    device: str = "cpu",
 ) -> np.ndarray:
     """
     Compute ρ(r) on a real-space grid via inverse FFT.
@@ -113,7 +114,16 @@ def density_from_structure_factors(
     V = a * b * c * np.sqrt(max(v2, 0.0))
 
     F_grid = place_reflections_on_grid(hkl, F, shape, friedel_complete=True)
-    rho = np.fft.ifftn(F_grid) * (np.prod(shape) / V)
+    # Optional torch FFT on cuda/mps (same formula; falls back to NumPy)
+    if device and device not in ("cpu", "numpy", ""):
+        try:
+            from grok_phase_solver.physics.device import ifftn as _ifftn, resolve_device
+
+            rho = _ifftn(F_grid, device=resolve_device(device)) * (np.prod(shape) / V)
+        except Exception:
+            rho = np.fft.ifftn(F_grid) * (np.prod(shape) / V)
+    else:
+        rho = np.fft.ifftn(F_grid) * (np.prod(shape) / V)
     if real_part_only:
         return np.real(rho)
     return rho

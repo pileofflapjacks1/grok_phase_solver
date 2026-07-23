@@ -27,6 +27,8 @@ METHODS = [
     "partial_phaseed",
     "fragment_phaseed",
     "ha_phaseed",
+    "diffusion_hybrid",
+    "diffusion_phaseed",
     "strong_prior_phaseed",
     "hard_p1_phaseed",
     "phai_phaseed",
@@ -72,8 +74,15 @@ WIZARD_SCENARIOS = {
     "have_fragment": {
         "label": "Have fragment / SHELXS .res / model CIF",
         "method": "partial_phaseed",
-        "help": "Upload .res atoms or use gps-make-seed --from-cif (AF/RF model) → Fcalc seed.",
+        "help": "Upload .res atoms or use gps-make-seed --from-cif (AF/OpenFold3/Boltz) → Fcalc seed.",
         "n_iter": 80,
+        "n_starts": 2,
+    },
+    "diffusion": {
+        "label": "Experimental diffusion hybrid",
+        "method": "diffusion_hybrid",
+        "help": "Langevin phase completion (experimental). Prefer seeds when available.",
+        "n_iter": 60,
         "n_starts": 2,
     },
     "have_ha": {
@@ -361,6 +370,9 @@ def run_solve_job(
     seed_quality_filter: bool = False,
     assess_seed_quality: bool = True,
     prior_weight: float = 0.30,
+    predicted_model_cif_bytes: Optional[bytes] = None,
+    device: str = "cpu",
+    n_diffusion_steps: int = 20,
     verbose: bool = False,
     progress: Optional[Callable[[str], None]] = None,
     capture_log: bool = True,
@@ -427,7 +439,14 @@ def run_solve_job(
         seed_quality_filter=bool(seed_quality_filter),
         assess_seed_quality=bool(assess_seed_quality),
         prior_weight=float(prior_weight),
+        device=str(device or "cpu"),
+        n_diffusion_steps=int(n_diffusion_steps),
     )
+    if predicted_model_cif_bytes:
+        p = write_upload(predicted_model_cif_bytes, work / "predicted_model.cif")
+        cfg.predicted_model_cif = str(p)
+        if cfg.method == "auto":
+            cfg.method = "partial_phaseed"
     if phase_seed_csv_bytes:
         p = write_upload(phase_seed_csv_bytes, work / "phase_seed.csv")
         cfg.phase_seed_csv = str(p)

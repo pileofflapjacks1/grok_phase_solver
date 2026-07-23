@@ -1,7 +1,7 @@
 # grok_phase_solver
 
 **Open physics / AI phasing assistant for X-ray crystallography**  
-Version **0.4.0** · Python ≥ 3.10 · MIT
+Version **0.5.0** · Python ≥ 3.10 · MIT
 
 Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and a SHELXL-ready trial model, then refine elsewhere (Olex2 / SHELXL).
 
@@ -53,7 +53,7 @@ gps-solve --help
 ```
 
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
-Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.4.0 notes](docs/RELEASE_NOTES_v0.4.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.5.0 notes](docs/RELEASE_NOTES_v0.5.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 
 ### Phase your data
 
@@ -70,6 +70,14 @@ gps-solve --hkl mycrystal.hkl \
 # AI-PhaSeed hybrid (Carrozzini 2025-aligned DM+AI tangent + seed-quality diagnostics)
 gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
   --method phai_phaseed --ai-dm-hybrid --seed-quality-filter --out ./solve_out
+
+# Predicted model fragment seed (AF / OpenFold3 / Boltz CIF) → partial-φ path
+gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
+  --predicted-model model.cif --method partial_phaseed --out ./solve_out
+
+# Experimental diffusion hybrid (Langevin; not production default)
+gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
+  --method diffusion_hybrid --n-diffusion-steps 20 --out ./solve_out
 ```
 
 ### What you get

@@ -10,6 +10,9 @@ Convert common lab artifacts into phase seeds for ``partial_phaseed_solve``:
 5. **Isomorphous pair** — difference Patterson → heavy-atom sites (HA seed)
 
 Also: seed-quality diagnostics for report.md (truth-free).
+
+v0.5: predicted-model / MR-lite helpers (OpenFold3 / Boltz / AF-style CIF),
+space-group expansion of fragments, multi-seed phase combination.
 """
 
 from __future__ import annotations
@@ -436,6 +439,192 @@ def resolve_phase_seed(
         "  --native-hkl + --derivative-hkl  (isomorphous HA)\n"
         "  --patterson-ha    (single-dataset HA heuristic)"
     )
+
+
+def load_predicted_model_atoms(
+    path: PathLike,
+    *,
+    max_atoms: Optional[int] = None,
+    min_occupancy: float = 0.3,
+    expand_symmetry: bool = True,
+    skip_hydrogen: bool = True,
+    space_group: Optional[str] = None,
+) -> Tuple[np.ndarray, List[str], Dict]:
+    """
+    Load a predicted / experimental model (CIF) as a fragment for Fcalc seeding.
+
+    Designed for AF / OpenFold3 / Boltz-2 / RF / experimental partial models.
+    Filters low occupancy, optional H skip, optional SG expansion of ASU.
+
+    Returns fracs (N,3), elements, meta.
+    """
+    from grok_phase_solver.io.cif import load_cif
+
+    path = Path(path)
+    st = load_cif(str(path))
+    fracs: List[np.ndarray] = []
+    els: List[str] = []
+    occs: List[float] = []
+    for a in st.atoms:
+        el = (a.element or "C").strip()
+        if skip_hydrogen and el.upper() in ("H", "D"):
+            continue
+        occ = float(getattr(a, "occupancy", 1.0) or 1.0)
+        if occ < min_occupancy:
+            continue
+        fracs.append(np.asarray(a.fract, dtype=np.float64))
+        els.append(el)
+        occs.append(occ)
+        if max_atoms is not None and len(fracs) >= max_atoms:
+            break
+    if not fracs:
+        raise ValueError(f"No usable atoms from predicted model {path}")
+
+    fr = np.vstack(fracs)
+    el_list = list(els)
+    expand_meta: Dict = {"expanded": False}
+    sg = space_group or getattr(st, "space_group_hm", None)
+    if expand_symmetry and sg:
+        try:
+            from grok_phase_solver.physics.symmetry import expand_fractional_coords
+
+            fr2, el2, expand_meta = expand_fractional_coords(
+                fr, sg, elements=el_list
+            )
+            # Cap expansion explosion for huge Z
+            if max_atoms is not None and len(fr2) > max_atoms * 4:
+                # keep heaviest elements first
+                order = np.argsort([-_element_weight(e) for e in el2])
+                fr2 = fr2[order[: max_atoms * 4]]
+                el2 = [el2[i] for i in order[: max_atoms * 4]]
+            fr, el_list = fr2, el2
+        except Exception as e:
+            expand_meta = {"expanded": False, "error": str(e)}
+
+    meta = {
+        "kind": "predicted_model",
+        "path": str(path),
+        "n_atoms": len(fr),
+        "n_asu_kept": len(fracs),
+        "space_group": sg,
+        "mean_occupancy": float(np.mean(occs)) if occs else 1.0,
+        "elements": el_list[:40],
+        "expand": expand_meta,
+        "source_formats": "cif (AF/OpenFold3/Boltz/experimental style)",
+        "note": (
+            "MR-lite fragment seed via Fcalc phases — not full molecular replacement. "
+            "Physics fallback: same partial_phaseed path as SHELXS fragments."
+        ),
+    }
+    return fr, el_list, meta
+
+
+def _element_weight(el: str) -> float:
+    """Rough atomic number proxy for fragment prioritization."""
+    table = {
+        "H": 1, "C": 6, "N": 7, "O": 8, "F": 9, "P": 15, "S": 16,
+        "CL": 17, "Cl": 17, "BR": 35, "Br": 35, "I": 53, "FE": 26, "Fe": 26,
+        "ZN": 30, "Zn": 30, "MG": 12, "Mg": 12, "CA": 20, "Ca": 20,
+    }
+    return float(table.get(el, table.get(el.upper(), 6)))
+
+
+def seed_from_predicted_model(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    model_path: PathLike,
+    *,
+    max_atoms: Optional[int] = None,
+    b_iso: float = 12.0,
+    expand_symmetry: bool = True,
+    space_group: Optional[str] = None,
+    seed: int = 0,
+    fcalc_min_rel: float = 0.15,
+) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    """Predicted model CIF → Fcalc phase seed (+ mask)."""
+    fracs, els, mmeta = load_predicted_model_atoms(
+        model_path,
+        max_atoms=max_atoms,
+        expand_symmetry=expand_symmetry,
+        space_group=space_group,
+    )
+    seed_ph, mask, meta = seed_from_fragment_atoms(
+        hkl,
+        amplitudes,
+        cell,
+        fracs,
+        els,
+        b_iso=b_iso,
+        seed=seed,
+        fcalc_min_rel=fcalc_min_rel,
+    )
+    meta.update(mmeta)
+    meta["source"] = "predicted_model"
+    return seed_ph, mask, meta
+
+
+def combine_phase_seeds(
+    phase_sets: Sequence[np.ndarray],
+    masks: Sequence[np.ndarray],
+    *,
+    weights: Optional[Sequence[float]] = None,
+    amplitudes: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    """
+    Combine multiple partial phase seeds (circular weighted mean).
+
+    Physics MR-lite style: when several fragments / HA / phase CSVs exist,
+    average on the unit circle where masks overlap; union of masks elsewhere.
+
+    Returns combined_phases, combined_mask, meta.
+    """
+    if not phase_sets:
+        raise ValueError("no phase sets")
+    arr = [np.asarray(p, dtype=np.float64) for p in phase_sets]
+    msk = [np.asarray(m, dtype=bool) for m in masks]
+    n = len(arr[0])
+    for a, m in zip(arr, msk):
+        if len(a) != n or len(m) != n:
+            raise ValueError("phase/mask length mismatch")
+    if weights is None:
+        w = np.ones(len(arr), dtype=np.float64)
+    else:
+        w = np.asarray(weights, dtype=np.float64)
+    w = w / (np.sum(w) + 1e-16)
+
+    out = np.zeros(n, dtype=np.float64)
+    comb_mask = np.zeros(n, dtype=bool)
+    n_sources = np.zeros(n, dtype=np.int32)
+    for i in range(n):
+        zs = []
+        ws = []
+        for s, (ph, m) in enumerate(zip(arr, msk)):
+            if m[i]:
+                zs.append(np.exp(1j * ph[i]))
+                ws.append(w[s])
+                n_sources[i] += 1
+        if zs:
+            ww = np.asarray(ws, dtype=np.float64)
+            ww = ww / (np.sum(ww) + 1e-16)
+            z = np.sum(ww * np.asarray(zs))
+            out[i] = float(np.angle(z))
+            comb_mask[i] = True
+    meta = {
+        "kind": "combined_seeds",
+        "n_sets": len(arr),
+        "n_seed_refl": int(comb_mask.sum()),
+        "mean_sources_per_seeded": float(n_sources[comb_mask].mean())
+        if comb_mask.any()
+        else 0.0,
+        "weights": w.tolist(),
+    }
+    if amplitudes is not None:
+        meta["amp_weighted_coverage"] = float(
+            np.sum(np.asarray(amplitudes)[comb_mask])
+            / (np.sum(amplitudes) + 1e-16)
+        )
+    return out, comb_mask, meta
 
 
 def assess_seed_quality(

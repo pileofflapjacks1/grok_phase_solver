@@ -235,6 +235,68 @@ def _render_report(result: "SolveResult") -> str:
                 ]
             )
 
+    # Space group + device + uncertainty (v0.5)
+    sg = d.get("space_group")
+    if isinstance(sg, dict):
+        lines.extend(
+            [
+                "",
+                "## Space group",
+                "",
+                f"- **HM:** {sg.get('hm')}",
+                f"- **Number:** {sg.get('number')}",
+                f"- **Centrosymmetric:** {sg.get('is_centrosymmetric')}",
+                f"- **N sym ops:** {sg.get('n_sym_ops')}",
+                f"- **Crystal system:** {sg.get('crystal_system')}",
+                "",
+            ]
+        )
+    if d.get("device"):
+        lines.append(f"- **Device:** {d.get('device')}")
+    uq = d.get("phase_uncertainty")
+    if isinstance(uq, dict):
+        lines.extend(
+            [
+                "",
+                "## Phase uncertainty (multistart circular)",
+                "",
+                f"- **Mean resultant length R̄:** {uq.get('mean_resultant_length')}",
+                f"- **Mean phase probability:** {uq.get('mean_phase_probability')}",
+                f"- **Mean circular std (°):** {uq.get('mean_circular_std_deg')}",
+                f"- **Frac high confidence (R̄≥0.7):** {uq.get('frac_high_confidence')}",
+                f"- **Strong-set confident frac:** {uq.get('strong_frac_confident')}",
+                f"- **Note:** {uq.get('note')}",
+                "",
+            ]
+        )
+    boot = d.get("free_fom_bootstrap")
+    if isinstance(boot, dict) and boot.get("n_boot"):
+        lines.extend(
+            [
+                "",
+                "## Free-FOM bootstrap stability",
+                "",
+                f"- **Mean ± std:** {boot.get('mean')} ± {boot.get('std')} "
+                f"(n={boot.get('n_boot')})",
+                f"- **Range:** [{boot.get('min')}, {boot.get('max')}]",
+                "",
+            ]
+        )
+    if d.get("method_used") in ("diffusion_hybrid", "diffusion_phaseed") or (
+        isinstance(d.get("method_used"), str) and "diffusion" in str(d.get("method_used"))
+    ):
+        lines.extend(
+            [
+                "",
+                "## Diffusion hybrid (experimental)",
+                "",
+                "Physics Langevin reverse process with positivity + modulus projection. "
+                "**Not** a claim of PXRDnet/XRDSol parity. Prefer partial-φ when seeds "
+                "meet the strong-|E| bar.",
+                "",
+            ]
+        )
+
     if result.warnings:
         lines.extend(["", "## Warnings", ""])
         for w in result.warnings:
