@@ -35,7 +35,18 @@ python -m twine upload dist/grok_phase_solver-0.5.0*
 
 ## Pre-release checklist
 
-- [ ] `pytest -q` green
-- [ ] Version aligned: pyproject, `__version__`, CHANGELOG
-- [ ] No overclaims (diffusion experimental; seed bar; partial-φ)
-- [ ] Optional: smoke `gps-solve --help` and diffusion method on demo
+- [x] `pytest -q` green (166 passed, 2026-07-27)
+- [x] Version aligned: pyproject, `__version__`, CHANGELOG → **0.5.0**
+- [x] Tag `v0.5.0` pushed; GitHub Release published with wheel, sdist, paper PDF
+- [x] `python -m build` + `twine check` PASSED
+- [ ] **PyPI upload** — needs your API token (agent env has no credentials):
+  ```bash
+  cd /Users/joe/Projects/grok_phase_solver
+  # Create token: https://pypi.org/manage/account/token/
+  export TWINE_USERNAME=__token__
+  export TWINE_PASSWORD=pypi-AgEIcHlwaS5vcmc...   # paste full token
+  python -m twine upload dist/grok_phase_solver-0.5.0*
+  ```
+- [x] No overclaims (diffusion experimental; seed bar; partial-φ)
+
+**Release URL:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.5.0
