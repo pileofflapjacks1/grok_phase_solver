@@ -1,0 +1,8 @@
+{
+  "n_structures": 30,
+  "epochs_per": 6,
+  "hidden": 64,
+  "final_loss": 0.16525919684344967,
+  "algorithm": "phase_score_dsm",
+  "train_seconds": 0.5069980621337891
+}

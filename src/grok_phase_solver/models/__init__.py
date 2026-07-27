@@ -16,6 +16,12 @@ from .diffusion_phase import (
     conditional_diffusion_complete,
     diffusion_phase_available,
 )
+from .diffusion_score import (
+    PhaseScoreNet,
+    train_score_on_structures,
+    load_score_net,
+    score_weights_available,
+)
 # hard_p1_prior imported lazily (avoids cycle: models → data → solvers → models)
 
 __all__ = [
@@ -37,4 +43,8 @@ __all__ = [
     "reverse_diffusion_phases",
     "conditional_diffusion_complete",
     "diffusion_phase_available",
+    "PhaseScoreNet",
+    "train_score_on_structures",
+    "load_score_net",
+    "score_weights_available",
 ]

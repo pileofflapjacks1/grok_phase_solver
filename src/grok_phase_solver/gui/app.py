@@ -492,10 +492,25 @@ def _render_results(summary: dict, params: dict) -> None:
 
     with tabs[0]:
         png = out / "density_slice.png"
-        if png.exists():
+        slices = out / "density_slices.png"
+        if slices.exists():
+            st.image(str(slices), caption="Density mid-planes (xy / xz / yz)", use_container_width=True)
+        elif png.exists():
             st.image(str(png), caption="Central density slice", use_container_width=True)
         else:
             st.write("No density_slice.png (matplotlib may be unavailable).")
+        vol_html = out / "density_volume.html"
+        if vol_html.exists():
+            st.markdown("**Interactive volume** (plotly) — open HTML download or:")
+            try:
+                st.components.v1.html(vol_html.read_text(encoding="utf-8"), height=420, scrolling=True)
+            except Exception:
+                st.info(f"Download `{vol_html.name}` from Downloads for interactive 3D view.")
+        else:
+            st.caption(
+                "Install `plotly` for interactive volume view "
+                "(`pip install plotly` or `grok-phase-solver[gui]` extras)."
+            )
 
     with tabs[1]:
         peaks = summary.get("peaks") or []

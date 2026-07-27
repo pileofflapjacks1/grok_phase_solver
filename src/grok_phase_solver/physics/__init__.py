@@ -12,6 +12,7 @@ from .symmetry import (
     filter_systematic_absences,
     space_group_diagnostics,
     is_centrosymmetric,
+    merge_symmetry_equivalents,
 )
 from .device import resolve_device, list_devices, get_device_info
 
@@ -34,6 +35,7 @@ __all__ = [
     "filter_systematic_absences",
     "space_group_diagnostics",
     "is_centrosymmetric",
+    "merge_symmetry_equivalents",
     "resolve_device",
     "list_devices",
     "get_device_info",

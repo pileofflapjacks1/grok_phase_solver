@@ -107,7 +107,8 @@ gps-solve \
 | `shelxs` / `shelxs+shelxe` | External academic SHELXS (± SHELXE density mod); needs `ShelX/` binaries |
 | `strong_prior_phaseed` / `hard_p1_phaseed` | Learned priors + AI-PhaSeed (hard synthetic domain) |
 | `phai_phaseed` / `phai+cf_cond` | PhAI seed hybrids (needs weights) |
-| `diffusion_hybrid` / `diffusion_phaseed` | **Experimental** Langevin phase completion (v0.5) |
+| `diffusion_hybrid` / `diffusion_hybrid_v2` | **Experimental** Langevin (+ optional score net, v0.6) |
+| `strong_prior_phaseed` | GraphPhaseNet prior + PhaSeed (v5 features when trained) |
 | Predicted model seed | `--predicted-model model.cif` → partial_phaseed (AF/OpenFold3/Boltz) |
 | `raar` / `recycle` / `hio` / `direct_methods` | Projection / educational DM |
 

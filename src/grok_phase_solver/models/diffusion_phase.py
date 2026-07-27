@@ -148,12 +148,18 @@ def reverse_diffusion_phases(
     sigma_max: float = 0.75,
     sigma_min: float = 0.03,
     solvent_fraction: Optional[float] = None,
+    use_learned_score: bool = True,
+    score_net=None,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
     Annealed Langevin-style reverse process on the phase torus.
 
     φ ← (1−α) φ + α φ_data + √(2η) ξ   with ξ ~ N(0,I) on R, then wrap.
+
+    If a trained ``PhaseScoreNet`` is available (or passed), apply a learned
+    denoising step after the physics projection (v0.6 hybrid score path).
+    Pure physics Langevin remains the fallback when no weights exist.
 
     Returns phases, density, history.
     """
@@ -163,6 +169,18 @@ def reverse_diffusion_phases(
     n = len(amp)
     if d_min is None:
         d_min = float(np.min(d_spacing(hkl, cell)))
+
+    learned = None
+    if use_learned_score:
+        if score_net is not None:
+            learned = score_net
+        else:
+            try:
+                from grok_phase_solver.models.diffusion_score import load_score_net
+
+                learned = load_score_net()
+            except Exception:
+                learned = None
 
     if seed_phases is not None:
         ph = np.asarray(seed_phases, dtype=np.float64).copy()
@@ -179,13 +197,17 @@ def reverse_diffusion_phases(
         "R": [],
         "sigma": [],
         "seed_weight": [],
-        "algorithm": "diffusion_phase_langevin",
+        "algorithm": (
+            "diffusion_phase_score_v2" if learned is not None else "diffusion_phase_langevin"
+        ),
+        "learned_score": learned is not None,
     }
     rho = None
     for t, sigma in enumerate(sigmas):
         # anneal seed weight high → low
         if n_steps <= 1:
             sw = seed_weight_end
+            u = 1.0
         else:
             u = t / (n_steps - 1)
             sw = (1 - u) * seed_weight_start + u * seed_weight_end
@@ -207,6 +229,19 @@ def reverse_diffusion_phases(
         # complex average for circular blend
         z = (1.0 - dw) * np.exp(1j * ph) + dw * np.exp(1j * ph_data)
         ph = np.angle(z)
+
+        # Learned score step (optional)
+        if learned is not None:
+            try:
+                from grok_phase_solver.models.diffusion_score import apply_score_step
+
+                t_emb = float(sigma / max(sigma_max, 1e-6))
+                ph = apply_score_step(
+                    hkl, amp, cell, ph, learned, t=t_emb, step_size=0.25 * (1.0 - 0.5 * u)
+                )
+            except Exception:
+                pass
+
         if sigma > 1e-8:
             ph = _wrap(ph + rng.normal(0.0, sigma, size=n))
         # hard lock seeds at early steps
@@ -257,6 +292,7 @@ def diffusion_hybrid_solve(
     n_polish: int = 40,
     use_free_fom_gate: bool = True,
     solvent_fraction: Optional[float] = None,
+    use_learned_score: bool = True,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
@@ -264,6 +300,8 @@ def diffusion_hybrid_solve(
 
     If no seed is given, random phases are used (weak ab initio baseline).
     With partial seeds, behaves as a **diffusion hybrid** extension path.
+
+    v0.6: optional trained PhaseScoreNet when weights present; physics fallback always.
     """
     from grok_phase_solver.solvers.free_fom import free_fom
     from grok_phase_solver.solvers.conditional_hybrid import conditional_polish
@@ -284,6 +322,7 @@ def diffusion_hybrid_solve(
             seed=seed + s,
             d_min=d_min,
             solvent_fraction=solvent_fraction,
+            use_learned_score=use_learned_score,
             verbose=verbose and s == 0,
         )
         fom = free_fom(hkl, amp, ph, cell, density=rho)
@@ -316,21 +355,34 @@ def diffusion_hybrid_solve(
 
     assert best is not None
     _, ph, rho, trial = best
+    learned = False
+    try:
+        from grok_phase_solver.models.diffusion_score import score_weights_available
+
+        learned = bool(use_learned_score and score_weights_available())
+    except Exception:
+        learned = False
     info = {
-        "algorithm": "diffusion_hybrid",
+        "algorithm": "diffusion_hybrid_v2" if learned else "diffusion_hybrid",
         "status": "experimental",
-        "trained_score_net": diffusion_phase_available(),
+        "trained_score_net": learned or diffusion_phase_available(),
         "n_starts": n_starts,
         "n_steps": n_steps,
         "best_trial": trial,
         "all_trials": trials,
         "fom_final": trial["fom"],
         "note": (
-            "Physics Langevin diffusion hybrid; no claim of PXRDnet/XRDSol "
-            "parity. Prefer partial-φ / AI-PhaSeed when seeds are strong."
+            "Physics Langevin (+ optional learned score) diffusion hybrid; "
+            "no claim of PXRDnet/XRDSol parity. Prefer partial-φ / AI-PhaSeed "
+            "when seeds are strong."
         ),
     }
     return ph, rho, info
+
+
+# Aliases for pipeline / CLI v2 method names
+diffusion_hybrid_v2_solve = diffusion_hybrid_solve
+diffusion_phaseed_v2_solve = diffusion_hybrid_solve
 
 
 # Back-compat alias used by the v0.4 stub API

@@ -155,6 +155,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "ha_phaseed",
             "diffusion_hybrid",
             "diffusion_phaseed",
+            "diffusion_hybrid_v2",
+            "diffusion_phaseed_v2",
             "recycle",
             "direct_methods",
             "hio",

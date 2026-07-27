@@ -189,6 +189,7 @@ def _prebuild_packed(
     e_power: float = 2.0,
     top_frac: float = 0.50,
     top_boost: float = 3.0,
+    feature_version: int = 5,
 ) -> Optional[Dict]:
     """Precompute graph, standardized features, origin candidate targets."""
     batch = prepare_graph_batch(
@@ -197,6 +198,7 @@ def _prebuild_packed(
         sample["cell"],
         max_reflections=max_reflections,
         e_min=0.9,
+        feature_version=feature_version,
     )
     # Raw E before standardize (column 0 of node features)
     E = batch["X"][:, 0].copy()
@@ -324,13 +326,21 @@ def train_graph_on_sample(
     )
 
 
-def accumulate_feature_stats(samples: List[Dict], max_reflections: int = 100) -> Tuple[np.ndarray, np.ndarray]:
+def accumulate_feature_stats(
+    samples: List[Dict],
+    max_reflections: int = 100,
+    feature_version: int = 5,
+) -> Tuple[np.ndarray, np.ndarray]:
     feat_sum = None
     feat_sq = None
     n = 0
     for s in samples:
         batch = prepare_graph_batch(
-            s["hkl"], s["amplitudes"], s["cell"], max_reflections=max_reflections
+            s["hkl"],
+            s["amplitudes"],
+            s["cell"],
+            max_reflections=max_reflections,
+            feature_version=feature_version,
         )
         X = batch["X"]
         if len(X) == 0:
@@ -362,8 +372,20 @@ def predict_strong_phases(
 
     Returns (node_idx, phases_strong).
     """
+    fver = int(getattr(model, "_feature_version", 5))
+    # Infer feature version from d_in if needed (v4=10, v5=14)
+    if hasattr(model, "d_in"):
+        if model.d_in <= 10:
+            fver = 4
+        elif model.d_in >= 14:
+            fver = 5
     batch = prepare_graph_batch(
-        hkl, amplitudes, cell, max_reflections=max_reflections, e_min=0.9
+        hkl,
+        amplitudes,
+        cell,
+        max_reflections=max_reflections,
+        e_min=0.9,
+        feature_version=fver,
     )
     X = batch["X"]
     if hasattr(model, "_feat_mu"):
@@ -448,14 +470,15 @@ def train_strong_prior(
     within_deg: float = 20.0,
     residual: bool = True,
     optimizer: str = "adam",
-    d_in: int = 10,
+    d_in: int = 14,
     hard_oversample: float = 1.0,
-    scale_tag: str = "v4_scale_seed",
+    scale_tag: str = "v5_scale_seed",
     init_model: Optional[GraphPhaseNet] = None,
     bridge_frac: float = 0.30,
     use_melgalvis_gen: bool = False,
     melgalvis_mode: str = "hybrid",
     melgalvis_large_vol: bool = False,
+    feature_version: int = 5,
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
@@ -466,6 +489,9 @@ def train_strong_prior(
 
     v4 adds residual MP layers, Adam, richer node features (d_in=10), and
     optional hard-region oversampling for 10³-scale runs.
+
+    v5 (default): d_in=14 Melgalvis-inspired diffraction-graph features
+    (shell rank, E·deg, local neighbor E, shell-normalized |F|) + κ-gated edges.
 
     ``melgalvis_large_vol``: when using Melgalvis generator, bias toward larger
     volumes / lower-res shards (AI-PhaSeed curriculum).
@@ -494,8 +520,13 @@ def train_strong_prior(
     if init_model is not None and hasattr(init_model, "_feat_mu"):
         mu = np.asarray(init_model._feat_mu, dtype=np.float64)  # type: ignore[attr-defined]
         sig = np.asarray(init_model._feat_sig, dtype=np.float64)  # type: ignore[attr-defined]
+        # Prefer init model's feature dim / version
+        if hasattr(init_model, "d_in") and init_model.d_in <= 10:
+            feature_version = 4
     else:
-        mu, sig = accumulate_feature_stats(samples, max_reflections=max_reflections)
+        mu, sig = accumulate_feature_stats(
+            samples, max_reflections=max_reflections, feature_version=feature_version
+        )
     # Infer d_in from feature stats if caller left default
     feat_dim = int(mu.shape[0]) if mu is not None else d_in
     if init_model is not None:
@@ -503,6 +534,7 @@ def train_strong_prior(
         # keep architecture of init_model; re-attach feature stats
         model._feat_mu = mu  # type: ignore[attr-defined]
         model._feat_sig = sig  # type: ignore[attr-defined]
+        model._feature_version = feature_version  # type: ignore[attr-defined]
         # reset Adam state for fine-tune
         model._adam_m = None
         model._adam_v = None
@@ -518,6 +550,7 @@ def train_strong_prior(
         )
         model._feat_mu = mu  # type: ignore[attr-defined]
         model._feat_sig = sig  # type: ignore[attr-defined]
+        model._feature_version = feature_version  # type: ignore[attr-defined]
 
     if verbose:
         n_bridge = sum(1 for s in samples if s["region"] == "bridge")
@@ -532,7 +565,8 @@ def train_strong_prior(
             f"wilson_match={wilson_match} (matched={n_wm}), "
             f"E^{e_power} top_boost={top_boost} within={within_deg}° "
             f"hard_os={hard_oversample} melgalvis={use_melgalvis_gen}"
-            f"({melgalvis_mode if use_melgalvis_gen else '-'})"
+            f"({melgalvis_mode if use_melgalvis_gen else '-'}) "
+            f"feat_v={feature_version}"
         )
 
     packs: List[Dict] = []
@@ -540,6 +574,7 @@ def train_strong_prior(
         p = _prebuild_packed(
             s, mu, sig, max_reflections, n_origin_grid=3, seed=seed + i,
             e_power=e_power, top_frac=top_frac, top_boost=top_boost,
+            feature_version=feature_version,
         )
         if p is not None:
             packs.append(p)
@@ -692,6 +727,7 @@ def train_strong_prior(
         "hard_oversample": hard_oversample,
         "use_melgalvis_gen": use_melgalvis_gen,
         "melgalvis_mode": melgalvis_mode,
+        "feature_version": feature_version,
         "seed": seed,
         "train_losses": all_losses,
         "train_mpe_oi": all_mpe,

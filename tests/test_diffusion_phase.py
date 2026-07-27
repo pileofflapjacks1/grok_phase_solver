@@ -38,7 +38,10 @@ def test_reverse_diffusion_oracle_seed_keeps_mapcc():
         hkl, amp * np.exp(1j * ph_t), st.cell, shape=rho.shape
     )
     cc, _ = map_correlation_origin_invariant(rho, rho_t)
-    assert hist["algorithm"] == "diffusion_phase_langevin"
+    assert hist["algorithm"] in (
+        "diffusion_phase_langevin",
+        "diffusion_phase_score_v2",
+    )
     assert len(hist["R"]) >= 8
     assert cc > 0.6
 
@@ -61,7 +64,7 @@ def test_diffusion_hybrid_runs():
         d_min=1.0,
         polish="none",
     )
-    assert info["algorithm"] == "diffusion_hybrid"
+    assert info["algorithm"] in ("diffusion_hybrid", "diffusion_hybrid_v2")
     assert info["status"] == "experimental"
     assert len(ph) == len(amp)
     assert rho.ndim == 3

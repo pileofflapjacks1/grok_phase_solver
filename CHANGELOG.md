@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.6.0 — 2026-07
+
+### What’s new in v0.6.0
+
+#### A. GraphPhaseNet v5 strong prior
+- d_in=14 Melgalvis-inspired diffraction-graph features (shell rank, E·deg,
+  local neighbor E, shell-normalized |F|) + κ-gated triplet edges
+- `scripts/run_strong_prior_v5.py` with `--quick` / `--pilot` / `--scale` / `--scale-xl`
+  (Melgalvis gen + Wilson match + hard oversample defaults)
+- Scoreboard: `data/processed/strong_prior_v5.{npz,md,json}`
+- Math: `docs/math/graph_phase_net_v5.md`
+- **Honest:** hold-out frac≤20° still near the ~21–22% plateau on quick/medium
+  runs; 30% oracle bar not cleared. Scale-xl (5k+) left for cluster runs.
+
+#### B. Diffusion score path (trainable)
+- `models/diffusion_score.py` — PhaseScoreNet (denoising score matching)
+- Wired into Langevin reverse process when checkpoint present
+- `scripts/train_diffusion_score.py`; weights `data/processed/diffusion_score.npz`
+- Methods: `diffusion_hybrid_v2` / `diffusion_phaseed_v2` (aliases)
+- Physics Langevin fallback always available
+
+#### C. Scientist path / performance
+- GUI multi-plane density slices + optional plotly volume HTML
+- MERGE-class `merge_symmetry_equivalents` (gemmi ASU averaging)
+- Ensemble `n_jobs` threaded multistart
+- Dockerfile for containerized `gps-solve`
+- Predicted-model seeding retained/strengthened from v0.5
+
+#### Honest limits (unchanged in spirit)
+- Hard ab initio seed bar ~21–22% ≤20° on current v5 pilots
+- Partial-φ remains the practical hard-data path
+- Diffusion / score nets experimental; no PXRDnet parity claim
+
 ## 0.5.0 — 2026-07
 
 ### What’s new in v0.5.0

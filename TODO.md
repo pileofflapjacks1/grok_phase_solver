@@ -156,13 +156,21 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] **Predicted-model** seeding (AF/OpenFold3/Boltz CIF) + `combine_phase_seeds`
 - [x] Optional **device** backend (`--device` / `--gpu`, torch FFT)
 - [x] **Uncertainty** multistart circular + free-FOM bootstrap
-- [ ] Train equivariant diffusion score net (weights external; curriculum)
-- [ ] Full reciprocal-space symmetry averaging of Fobs (MERGE-class)
-- [ ] Profile/vectorize `phase_extend` + multiprocess ensemble n_starts
-- [ ] Optional cctbx backend hooks (extras)
-- [ ] Interactive density volume viewer (plotly) in GUI
-- [ ] OMC25 / larger-scale prior training
-- [ ] Docker image + PyPI 0.5.0 upload
+
+### v0.6.0 GraphPhaseNet v5 + score diffusion + UX
+- [x] GraphPhaseNet **v5** features (d_in=14) + κ-gated edges
+- [x] `run_strong_prior_v5.py` (quick/pilot/scale/scale-xl); pilot scoreboard
+- [x] Trainable **PhaseScoreNet** + diffusion_hybrid_v2 path
+- [x] GUI multi-plane slices + plotly volume HTML
+- [x] MERGE-class `merge_symmetry_equivalents`
+- [x] Ensemble threaded `n_jobs`
+- [x] Dockerfile
+- [ ] Cluster **scale-xl** retrain (5k–10k) to re-measure seed bar
+- [ ] True SE(3) equivariant atomic diffusion (external research)
+- [ ] Optional cctbx backend hooks
+- [ ] OMC25-scale data mirror
+- [ ] PyPI 0.6.0 upload (maintainer token)
+
 
 1. [x] PhAI weights runner + scoreboard  
 2. [x] Scientist-facing `gps-solve` pipeline  

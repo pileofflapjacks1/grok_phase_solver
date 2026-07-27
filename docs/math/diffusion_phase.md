@@ -2,11 +2,13 @@
 
 ## Status
 
-**Research / experimental (v0.5).** Physics-first Langevin reverse process on the
-phase circle with positivity + modulus projection. Optional neural score network
-is **not** shipped. Inspired by score-based inverse problems and recent
-diffusion-for-diffraction work (PXRDnet, XRDSol concepts) — **not** a reimplementation
-and **not** claimed to match their metrics.
+**Research / experimental (v0.5–v0.6).** Physics-first Langevin reverse process on the
+phase circle with positivity + modulus projection. **v0.6** adds a trainable
+lightweight `PhaseScoreNet` (denoising score matching on synthetic |F|→φ) used when
+`data/processed/diffusion_score.npz` is present; pure physics Langevin remains the
+fallback. Inspired by score-based inverse problems and diffraction-diffusion
+concepts (PXRDnet, XRDSol) — **not** a reimplementation and **not** claimed to match
+their metrics.
 
 Prefer production paths:
 
@@ -30,9 +32,11 @@ Implementation: `models/diffusion_phase.py`
 
 | API | Role |
 |-----|------|
-| `reverse_diffusion_phases` | core annealed reverse process |
-| `diffusion_hybrid_solve` | multistart + free-FOM polish |
+| `reverse_diffusion_phases` | core annealed reverse process (+ optional score) |
+| `diffusion_hybrid_solve` | multistart + free-FOM polish (`diffusion_hybrid_v2` alias) |
 | `conditional_diffusion_complete` | seed-conditioned wrapper (v0.4 compat) |
+| `models/diffusion_score.PhaseScoreNet` | trainable score MLP |
+| `scripts/train_diffusion_score.py` | train small checkpoint |
 
 ## Physics checks
 
@@ -44,14 +48,17 @@ Implementation: `models/diffusion_phase.py`
 ## CLI
 
 ```bash
-gps-solve --hkl data.hkl --ins data.ins --method diffusion_hybrid --n-diffusion-steps 20
+# Train lightweight score net
+python scripts/train_diffusion_score.py --quick
+
+gps-solve --hkl data.hkl --ins data.ins --method diffusion_hybrid_v2 --n-diffusion-steps 20
 gps-solve --hkl data.hkl --ins data.ins --diffusion --predicted-model model.cif
 # or: --method diffusion_phaseed with a seed source
 ```
 
 ## Honest limits
 
-- No trained equivariant diffusion weights (XRDSol-style) in this package.
+- Score net is a small reflection MLP — **not** SE(3) equivariant atomic denoising.
 - Hard ab initio seed bar (~30% strong ≤20°) is **unchanged**.
 - Multistart agreement can be jointly wrong — see `metrics/uncertainty.py`.
 

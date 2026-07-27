@@ -515,6 +515,16 @@ def run_solve_job(
 
     _prog("Exporting density, peaks, trial.res…")
     written = export_solution(result, out_dir)
+    try:
+        from grok_phase_solver.gui.density_view import density_view_bundle
+
+        view = density_view_bundle(result.density, out_dir, prefix="density")
+        if view.get("slices_png"):
+            written.append(Path(view["slices_png"]))
+        if view.get("volume_html"):
+            written.append(Path(view["volume_html"]))
+    except Exception:
+        pass
     paths = {p.name: str(p) for p in written}
 
     # Snapshot peaks for retry-as-seed

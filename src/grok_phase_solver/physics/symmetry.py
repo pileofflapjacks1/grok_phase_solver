@@ -267,3 +267,82 @@ def space_group_diagnostics(space_group: Optional[str]) -> Dict[str, Any]:
     d = info.to_dict()
     d["gemmi"] = gemmi_available()
     return d
+
+
+def merge_symmetry_equivalents(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    space_group: Optional[str],
+    *,
+    sigmas: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    """
+    MERGE-class averaging of symmetry-equivalent reflections (gemmi).
+
+    Groups Miller indices related by the point-group / reciprocal operators
+    and averages |F| (optionally inverse-variance weighted if sigmas given).
+
+    Returns (hkl_merged, amp_merged, meta). On failure, returns inputs.
+    """
+    hkl = np.asarray(hkl, dtype=int).reshape(-1, 3)
+    amp = np.asarray(amplitudes, dtype=np.float64).reshape(-1)
+    if len(hkl) != len(amp):
+        raise ValueError("hkl/amp length mismatch")
+    if not space_group or not gemmi_available():
+        return hkl, amp, {"merged": False, "reason": "no_sg_or_gemmi", "n_in": len(hkl), "n_out": len(hkl)}
+
+    try:
+        import gemmi
+
+        sg = gemmi.SpaceGroup(space_group)
+        # Use ASU map: gemmi ReciprocalAsu
+        asu = gemmi.ReciprocalAsu(sg)
+        buckets: Dict[Tuple[int, int, int], List[Tuple[float, float]]] = {}
+        for i, (h, k, l) in enumerate(hkl):
+            miller = gemmi.Miller(int(h), int(k), int(l))
+            # to_asu returns (hkl, isym)
+            hkl_asu = asu.to_asu(miller) if hasattr(asu, "to_asu") else miller
+            if hasattr(hkl_asu, "h"):
+                key = (int(hkl_asu.h), int(hkl_asu.k), int(hkl_asu.l))
+            elif isinstance(hkl_asu, (tuple, list)):
+                key = (int(hkl_asu[0]), int(hkl_asu[1]), int(hkl_asu[2]))
+            else:
+                # fallback: gemmi may return Op-applied tuple
+                try:
+                    key = (int(hkl_asu[0]), int(hkl_asu[1]), int(hkl_asu[2]))
+                except Exception:
+                    key = (int(h), int(k), int(l))
+            # normalize Friedel: prefer h>=0 lex
+            if key[0] < 0 or (key[0] == 0 and key[1] < 0) or (
+                key[0] == 0 and key[1] == 0 and key[2] < 0
+            ):
+                key = (-key[0], -key[1], -key[2])
+            w = 1.0
+            if sigmas is not None:
+                sig = float(sigmas[i])
+                w = 1.0 / max(sig * sig, 1e-12)
+            buckets.setdefault(key, []).append((float(amp[i]), w))
+
+        keys = sorted(buckets.keys())
+        hkl_m = np.array(keys, dtype=int)
+        amp_m = np.zeros(len(keys), dtype=np.float64)
+        for j, key in enumerate(keys):
+            vals = buckets[key]
+            num = sum(a * w for a, w in vals)
+            den = sum(w for _, w in vals) + 1e-16
+            amp_m[j] = num / den
+        return hkl_m, amp_m, {
+            "merged": True,
+            "n_in": len(hkl),
+            "n_out": len(hkl_m),
+            "n_groups": len(keys),
+            "compression": float(len(hkl_m) / max(len(hkl), 1)),
+            "space_group": space_group,
+        }
+    except Exception as e:
+        return hkl, amp, {
+            "merged": False,
+            "error": str(e),
+            "n_in": len(hkl),
+            "n_out": len(hkl),
+        }

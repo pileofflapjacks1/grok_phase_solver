@@ -30,7 +30,7 @@ def test_graph_forward_backward():
     )
     model = GraphPhaseNet(d_in=batch["X"].shape[1], hidden=32, n_layers=2, seed=0)
     X = batch["X"]
-    assert X.shape[1] == 10
+    assert X.shape[1] in (10, 14)  # v4 or v5 feature packs
     assert batch["adj"].shape == (X.shape[0], X.shape[0])
     ph_s = data["phases"][batch["node_idx"]]
     loss, grads = model.loss_and_backward(

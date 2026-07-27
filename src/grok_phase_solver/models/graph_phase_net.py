@@ -88,10 +88,27 @@ def build_normalized_adj(
     return A
 
 
-def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell: np.ndarray) -> np.ndarray:
+def node_features_from_graph(
+    graph: Dict,
+    hkl: np.ndarray,
+    amp: np.ndarray,
+    cell: np.ndarray,
+    *,
+    feature_version: int = 5,
+) -> np.ndarray:
     """
-    Node features (d_in=10):
-    [E, s_norm, s², |h|_norm, amp_norm, h/hmax, k/kmax, l/lmax, deg_norm, E²_norm]
+    Node features for GraphPhaseNet.
+
+    **v4 (d_in=10):**
+    ``[E, s_norm, s², |h|_norm, amp_norm, h/hmax, k/kmax, l/lmax, deg_norm, E²_norm]``
+
+    **v5 (d_in=14)** — Melgalvis/Rekis-inspired diffraction-graph enrichment:
+    v4 + ``[shell_rank, log1p(E·deg), local_E_mean, |F|/⟨|F|⟩_shell]``
+
+    - shell_rank: resolution-shell percentile of |E| (Wilson-aware ranking)
+    - log1p(E·deg): couples strong reflections with triplet connectivity
+    - local_E_mean: mean |E| of graph neighbors (message-ready structural cue)
+    - shell-normalized |F|: amplitude vs local Wilson shell mean
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -118,7 +135,7 @@ def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell
     deg_n = deg / (deg.max() + 1e-16)
     e2 = E ** 2
     e2_n = e2 / (e2.max() + 1e-16)
-    return np.column_stack(
+    base = np.column_stack(
         [
             E,
             s_n,
@@ -130,6 +147,63 @@ def node_features_from_graph(graph: Dict, hkl: np.ndarray, amp: np.ndarray, cell
             hkl_s[:, 2] / hmax[2],
             deg_n,
             e2_n,
+        ]
+    ).astype(np.float64)
+    if int(feature_version) < 5:
+        return base
+
+    # --- v5 extras ---
+    # Resolution-shell rank of |E| (0–1 within equal-count shells)
+    order = np.argsort(s)
+    shell_rank = np.zeros(n, dtype=np.float64)
+    n_shells = max(4, min(12, n // 8 + 1))
+    edges_s = np.linspace(0, n, n_shells + 1, dtype=int)
+    for si in range(n_shells):
+        sl = order[edges_s[si] : edges_s[si + 1]]
+        if len(sl) == 0:
+            continue
+        # rank within shell
+        r = np.argsort(np.argsort(E[sl])).astype(np.float64)
+        shell_rank[sl] = r / max(len(sl) - 1, 1)
+
+    # Neighbor-mean |E| via adjacency lists
+    local_E = np.zeros(n, dtype=np.float64)
+    if edges is not None and len(edges) > 0:
+        nbr_sum = np.zeros(n, dtype=np.float64)
+        nbr_cnt = np.zeros(n, dtype=np.float64)
+        for e in np.asarray(edges):
+            i, j, k = int(e[0]), int(e[1]), int(e[2])
+            for a, b in ((i, j), (i, k), (j, k)):
+                if a == b or a < 0 or b < 0 or a >= n or b >= n:
+                    continue
+                nbr_sum[a] += E[b]
+                nbr_cnt[a] += 1.0
+                nbr_sum[b] += E[a]
+                nbr_cnt[b] += 1.0
+        local_E = nbr_sum / np.maximum(nbr_cnt, 1.0)
+    else:
+        local_E = E.copy()
+    local_E_n = local_E / (local_E.max() + 1e-16)
+
+    # |F| / shell mean |F|
+    shell_amp = np.zeros(n, dtype=np.float64)
+    for si in range(n_shells):
+        sl = order[edges_s[si] : edges_s[si + 1]]
+        if len(sl) == 0:
+            continue
+        m = float(np.mean(amp_s[sl]) + 1e-16)
+        shell_amp[sl] = amp_s[sl] / m
+
+    e_deg = np.log1p(np.maximum(E, 0.0) * np.maximum(deg, 0.0))
+    e_deg = e_deg / (e_deg.max() + 1e-16)
+
+    return np.column_stack(
+        [
+            base,
+            shell_rank,
+            e_deg,
+            local_E_n,
+            shell_amp,
         ]
     ).astype(np.float64)
 
@@ -576,17 +650,26 @@ def prepare_graph_batch(
     cell: np.ndarray,
     max_reflections: int = 120,
     e_min: float = 0.9,
+    feature_version: int = 5,
 ) -> Dict:
     """Build graph + features + dense adj for one structure."""
     graph = reflection_graph(
         hkl, amplitudes, cell, e_min=e_min, max_reflections=max_reflections
     )
-    X = node_features_from_graph(graph, hkl, amplitudes, cell)
+    X = node_features_from_graph(
+        graph, hkl, amplitudes, cell, feature_version=feature_version
+    )
     n = X.shape[0]
     edges = graph["edges"]
     ewt = graph["edge_weight"]
     nbrs, wts = build_undirected_adj(n, edges, ewt)
     adj = build_normalized_adj(n, edges, ewt)
+    # Soft κ-gated reweight: boost high-κ edges (Melgalvis-style physics edges)
+    if len(edges) > 0 and ewt is not None and len(ewt) == len(edges):
+        w = np.asarray(ewt, dtype=np.float64)
+        w = w / (np.median(w) + 1e-16)
+        w = np.clip(w, 0.25, 4.0)
+        adj = build_normalized_adj(n, edges, w)
     idx = graph["node_idx"]
     return {
         "X": X,
@@ -600,4 +683,6 @@ def prepare_graph_batch(
         "amp_strong": amplitudes[idx],
         "hkl_strong": hkl[idx],
         "n_edges": len(edges),
+        "feature_version": int(feature_version),
+        "d_in": int(X.shape[1]),
     }

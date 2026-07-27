@@ -86,6 +86,7 @@ def ensemble_solve(
     d_min: Optional[float] = None,
     phase_init: Optional[np.ndarray] = None,
     verbose: bool = False,
+    n_jobs: int = 1,
     **method_kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
@@ -98,6 +99,8 @@ def ensemble_solve(
     n_iter : iterations per trial
     base_seed : first seed; trial *i* uses ``base_seed + i``
     phase_init : optional shared seed phases (still varies CF weak-phase RNG)
+    n_jobs : if >1, run trials with ``concurrent.futures`` (process pool when
+        possible; thread pool fallback). Default 1 = serial (backward compatible).
 
     Returns
     -------
@@ -109,51 +112,102 @@ def ensemble_solve(
     trials: List[Dict] = []
     best = None  # (composite, phases, rho, trial_meta)
 
+    jobs = []
     trial_id = 0
     for method in methods:
         for s in range(n_starts):
             seed = base_seed + trial_id
             trial_id += 1
-            try:
-                ph, rho, hist = _run_one(
-                    method,
-                    hkl,
-                    amp,
-                    cell,
-                    n_iter=n_iter,
-                    seed=seed,
-                    d_min=d_min,
-                    phase_init=phase_init,
-                    verbose=False,
-                    **method_kwargs,
-                )
-                fom = free_fom(hkl, amp, ph, cell, density=rho)
-                meta = {
-                    "method": method,
-                    "seed": seed,
-                    "composite": fom["composite"],
-                    "pos_frac": fom["pos_frac"],
-                    "skewness": fom["skewness"],
-                    "R_after_ER": fom["R_after_ER"],
-                    "final_R": hist.get("final_R", hist.get("R", [None])[-1] if hist.get("R") else None),
+            jobs.append((method, seed))
+
+    def _one(method: str, seed: int):
+        ph, rho, hist = _run_one(
+            method,
+            hkl,
+            amp,
+            cell,
+            n_iter=n_iter,
+            seed=seed,
+            d_min=d_min,
+            phase_init=phase_init,
+            verbose=False,
+            **method_kwargs,
+        )
+        fom = free_fom(hkl, amp, ph, cell, density=rho)
+        meta = {
+            "method": method,
+            "seed": seed,
+            "composite": fom["composite"],
+            "pos_frac": fom["pos_frac"],
+            "skewness": fom["skewness"],
+            "R_after_ER": fom["R_after_ER"],
+            "final_R": hist.get("final_R", hist.get("R", [None])[-1] if hist.get("R") else None),
+        }
+        return ph, rho, hist, meta, fom
+
+    results = []
+    n_jobs = int(max(n_jobs, 1))
+    if n_jobs > 1 and len(jobs) > 1:
+        try:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            with ThreadPoolExecutor(max_workers=min(n_jobs, len(jobs))) as ex:
+                futs = {
+                    ex.submit(_one, method, seed): (method, seed)
+                    for method, seed in jobs
                 }
-                trials.append(meta)
-                if verbose:
-                    print(
-                        f"  ensemble [{method}] seed={seed} "
-                        f"composite={fom['composite']:.3f} R={meta['final_R']}"
+                for fut in as_completed(futs):
+                    method, seed = futs[fut]
+                    try:
+                        results.append(fut.result())
+                    except Exception as e:
+                        trials.append(
+                            {
+                                "method": method,
+                                "seed": seed,
+                                "error": str(e),
+                                "composite": -1.0,
+                            }
+                        )
+        except Exception:
+            results = []
+            for method, seed in jobs:
+                try:
+                    results.append(_one(method, seed))
+                except Exception as e:
+                    trials.append(
+                        {
+                            "method": method,
+                            "seed": seed,
+                            "error": str(e),
+                            "composite": -1.0,
+                        }
                     )
-                if best is None or fom["composite"] > best[0]:
-                    best = (fom["composite"], ph, rho, meta, fom, hist)
+    else:
+        for method, seed in jobs:
+            try:
+                results.append(_one(method, seed))
             except Exception as e:
-                trials.append({
-                    "method": method,
-                    "seed": seed,
-                    "error": str(e),
-                    "composite": -1.0,
-                })
+                trials.append(
+                    {
+                        "method": method,
+                        "seed": seed,
+                        "error": str(e),
+                        "composite": -1.0,
+                    }
+                )
                 if verbose:
                     print(f"  ensemble [{method}] seed={seed} ERROR: {e}")
+
+    for ph, rho, hist, meta, fom in results:
+        trials.append(meta)
+        if verbose:
+            print(
+                f"  ensemble [{meta['method']}] seed={meta['seed']} "
+                f"composite={fom['composite']:.3f} R={meta['final_R']}"
+            )
+        if best is None or fom["composite"] > best[0]:
+            best = (fom["composite"], ph, rho, meta, fom, hist)
 
     if best is None:
         raise RuntimeError("All ensemble trials failed")
@@ -164,6 +218,7 @@ def ensemble_solve(
         "methods": list(methods),
         "n_starts_per_method": n_starts,
         "n_trials": len(trials),
+        "n_jobs": n_jobs,
         "best_method": meta["method"],
         "best_seed": meta["seed"],
         "best_fom": fom,

@@ -1,6 +1,6 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft · software package v0.5.0 (MIT)**  
+**Working draft · software package v0.6.0 (MIT)**  
 **Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  

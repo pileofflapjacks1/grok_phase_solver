@@ -51,6 +51,8 @@ KNOWN_METHODS = (
     "ha_phaseed",
     "diffusion_hybrid",
     "diffusion_phaseed",
+    "diffusion_hybrid_v2",
+    "diffusion_phaseed_v2",
 )
 
 
@@ -563,7 +565,7 @@ def _run_phasing(
         history["seed_source"] = meta.get("source", meta.get("kind", "partial"))
         return method, phases, density, history
 
-    if method == "diffusion_hybrid":
+    if method in ("diffusion_hybrid", "diffusion_hybrid_v2", "diffusion_phaseed_v2"):
         from grok_phase_solver.models.diffusion_phase import diffusion_hybrid_solve
 
         # Optional seed if provided
