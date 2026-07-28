@@ -1,0 +1,59 @@
+{
+  "rows": [
+    {
+      "run": "auto",
+      "method": "strong_prior_phaseed",
+      "free_fom": 0.7144346458976313,
+      "mapcc_oi": 0.2145790303994877,
+      "n_peaks": 13,
+      "seed_size_meets_bar": null,
+      "seed_frac_strong": null,
+      "seed_source": "strong_graph_prior",
+      "warnings_n": 1
+    },
+    {
+      "run": "partial_15",
+      "method": "partial_phaseed",
+      "free_fom": 0.8131290098822245,
+      "mapcc_oi": 0.37438996650241224,
+      "n_peaks": 13,
+      "seed_size_meets_bar": true,
+      "seed_frac_strong": 0.5,
+      "seed_source": "phase_seed_csv",
+      "warnings_n": 1
+    },
+    {
+      "run": "partial_30",
+      "method": "partial_phaseed",
+      "free_fom": 0.8328441170769542,
+      "mapcc_oi": 0.8298090825061829,
+      "n_peaks": 13,
+      "seed_size_meets_bar": true,
+      "seed_frac_strong": 0.9833333333333333,
+      "seed_source": "phase_seed_csv",
+      "warnings_n": 1
+    },
+    {
+      "run": "fragment_res",
+      "method": "partial_phaseed",
+      "free_fom": 0.8087288546126529,
+      "mapcc_oi": 0.5828308267136495,
+      "n_peaks": 10,
+      "seed_size_meets_bar": true,
+      "seed_frac_strong": 0.5333333333333333,
+      "seed_source": "phase_seed_res",
+      "warnings_n": 1
+    },
+    {
+      "run": "peaks_from_auto",
+      "method": "partial_phaseed",
+      "free_fom": 0.7965326788212088,
+      "mapcc_oi": 0.28630758006931856,
+      "n_peaks": 14,
+      "seed_size_meets_bar": true,
+      "seed_source": "seed_peaks_csv"
+    }
+  ],
+  "version": "0.7.0",
+  "note": "Hard-path validation after v0.7.0 tag"
+}

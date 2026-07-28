@@ -42,14 +42,20 @@ def find_model_path() -> Optional[Path]:
 
 
 def phai_available() -> bool:
-    """True if PhAI weights exist and torch/einops import cleanly enough to load."""
+    """
+    True if PhAI weights exist and torch/einops appear importable.
+
+    Uses ``importlib.util.find_spec`` so auto-routing does not pay the cost of
+    (or print NumPy ABI noise from) a full ``import torch`` on every solve.
+    Actual load still happens only when a PhAI method is selected.
+    """
+    import importlib.util
+
     try:
-        import torch  # noqa: F401
-        import einops  # noqa: F401
-    except Exception:
-        # ImportError, or broken torch/numpy ABI (e.g. NumPy 2.x vs torch wheel)
-        return False
-    try:
+        if importlib.util.find_spec("torch") is None:
+            return False
+        if importlib.util.find_spec("einops") is None:
+            return False
         return find_model_path() is not None
     except Exception:
         return False

@@ -71,3 +71,22 @@ gps-solve --hkl examples/partial_seed_demo/demo_hard.hkl \
 Check **`report.md` → Partial seed quality**: strong-|E| coverage vs the ~30% bar.
 
 See `docs/USER_GUIDE.md` § decision tree.
+
+## Validated results (v0.7.0)
+
+Re-run on this package (truth mapCC_OI vs Fcalc phases):
+
+| Run | free FOM | mapCC_OI |
+|-----|----------|----------|
+| `auto` (strong prior / ab initio path) | 0.71 | **0.21** |
+| `partial_15` oracle seed | 0.81 | **0.37** |
+| `partial_30` oracle seed | 0.83 | **0.83** |
+| `fragment.res` Fcalc seed | 0.81 | **0.58** |
+| peaks recycled from auto | 0.80 | **0.29** |
+
+**Takeaway:** on this hard-ish cell, ab initio fails; **~30% strong phases** recovers a high mapCC map; fragment seed helps; 15% seed is insufficient. Full table: [`HARD_PATH_VALIDATION.md`](HARD_PATH_VALIDATION.md).
+
+```bash
+# Reproduce validation summary
+python scripts/run_partial_seed_demo.py
+```
