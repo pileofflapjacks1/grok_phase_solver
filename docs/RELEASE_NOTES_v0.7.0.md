@@ -2,6 +2,18 @@
 
 **Melgalvis curriculum, GraPhAI-style edges, AI-PhaSeed seed heuristics, protein-aware DM.** MIT.
 
+## Install
+
+```bash
+pip install -U grok-phase-solver==0.7.0
+# Anaconda / no bare pip:
+#   /path/to/python -m pip install -U grok-phase-solver==0.7.0
+```
+
+- **PyPI:** https://pypi.org/project/grok-phase-solver/0.7.0/
+- **Tag:** `v0.7.0` (package release commit)
+- **Source:** https://github.com/pileofflapjacks1/grok_phase_solver
+
 ## Scientific / engineering gains
 
 | Area | Change |
@@ -42,3 +54,13 @@ pytest -q
 ```bash
 python scripts/run_strong_prior_v5.py --scale-xl --melgalvis-preset cod
 ```
+
+## After this tag (on `main`, not in the 0.7.0 sdist)
+
+Post-release work landed on `main` after the tag (will ship in a future 0.7.1+):
+
+- Experimental COD hard-path validation (`scripts/run_cod_hard_path_validation.py`)
+- Fragment / predicted-model seeding: full Fcalc soft prior + SG expand so
+  `fragment_half` approaches oracle `partial_30` mapCC on COD Fobs
+
+Use `main` or wait for a patch release for those improvements.
