@@ -18,3 +18,11 @@ Packaged `examples/partial_seed_demo` with truth metrics (mapCC_OI vs deposited 
 - **peaks_from_auto** is a weak recovery path when ab initio peaks look atomic.
 
 Oracle bar remains: ≥~30% strong |E| phases within ~20° of truth for reliable hard solves.
+
+## Experimental COD (Fobs)
+
+See [`cod_hard_path_validation.md`](../../data/processed/cod_hard_path_validation.md)
+and `python scripts/run_cod_hard_path_validation.py`.
+
+On COD **2016452** / **2100301** experimental Fobs @ 1.0 Å (mapCC vs deposited Fcalc):
+auto ~0.20 mapCC; oracle **partial_30** ~0.72–0.74 mapCC (strict multi-criterion still often fails on R1 under short budget — honesty about residual polish).

@@ -1,0 +1,22 @@
+[
+  {
+    "run": "auto",
+    "method": "strong_prior_phaseed",
+    "seconds": 7.076158046722412,
+    "free_fom": 0.7137789026937742,
+    "n_peaks": 12,
+    "auto_reason": "auto: hard-res \u2192 GraphPhaseNet prior + AI-PhaSeed (if unsolved, use partial_phaseed + phase-seed CSV)",
+    "seed_source": "strong_graph_prior",
+    "out": "examples/partial_seed_demo/out_auto"
+  },
+  {
+    "run": "partial_30",
+    "method": "partial_phaseed",
+    "seconds": 1.0153088569641113,
+    "free_fom": 0.8328441170769542,
+    "n_peaks": 13,
+    "auto_reason": "user-selected",
+    "seed_source": "phase_seed_csv",
+    "out": "examples/partial_seed_demo/out_partial_30"
+  }
+]
