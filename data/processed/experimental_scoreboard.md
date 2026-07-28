@@ -11,6 +11,10 @@ Strict / mapCC success uses Fcalc truth phases matched by Miller index when CIF 
 [`ai_phaseed_extended_benchmark.md`](ai_phaseed_extended_benchmark.md)
 (Carrozzini 2025 alignment; not a full 1505-COD replication).
 
+**v0.7.0 companion:** experimental Fobs hard-path (auto vs oracle 15%/30%/fragment) →
+[`cod_hard_path_validation.md`](cod_hard_path_validation.md)
+(`python scripts/run_cod_hard_path_validation.py`).
+
 ## Results
 
 | Dataset | Method | mapCC | free FOM | peaks | solved | s |
