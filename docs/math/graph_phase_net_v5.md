@@ -18,16 +18,17 @@ Edges: undirected triplet pairs with **κ-gated** reweight (clip 0.25–4× medi
 ## Training
 
 ```bash
-# Pilot / laptop
-python scripts/run_strong_prior_v5.py --pilot
+# Pilot / laptop (v0.7 hard curriculum)
+python scripts/run_strong_prior_v5.py --n-structures 200 \
+  --melgalvis-preset hard --low-res-frac 0.2
 
 # Larger (cluster)
-python scripts/run_strong_prior_v5.py --scale      # ~2k
-python scripts/run_strong_prior_v5.py --scale-xl   # ~5k
+python scripts/run_strong_prior_v5.py --scale --melgalvis-preset cod
+python scripts/run_strong_prior_v5.py --scale-xl --melgalvis-preset hard
 ```
 
-Defaults: Melgalvis generator, large-vol bias, Wilson match, strong-|E| loss,
-Adam residual GNN.
+Defaults: Melgalvis generator, hard/COD presets, Wilson match, strong-|E| loss,
+Adam residual GNN, v5.1 κ power-law edges.
 
 ## Scoreboard
 

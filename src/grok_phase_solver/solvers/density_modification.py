@@ -75,20 +75,57 @@ def solvent_mask(
     return local <= thresh
 
 
+def estimate_solvent_fraction(
+    rho: np.ndarray,
+    *,
+    default: float = 0.45,
+    protein_mode: bool = False,
+) -> float:
+    """
+    Heuristic solvent fraction from density histogram.
+
+    ``protein_mode``: bias toward higher solvent (0.45–0.65) typical of
+    macromolecular crystals. Small-molecule default stays ~0.3–0.5.
+    """
+    r = np.asarray(rho, dtype=np.float64).ravel()
+    if r.size < 8:
+        return float(default)
+    # fraction of voxels below mean as crude solvent proxy
+    below = float(np.mean(r < np.mean(r)))
+    if protein_mode:
+        frac = float(np.clip(0.35 + 0.4 * below, 0.40, 0.70))
+    else:
+        frac = float(np.clip(0.15 + 0.45 * below, 0.20, 0.55))
+    return frac
+
+
 def solvent_flatten(
     rho: np.ndarray,
     solvent_fraction: float = 0.5,
     solvent_level: Optional[float] = None,
+    *,
+    auto_fraction: bool = False,
+    protein_mode: bool = False,
 ) -> np.ndarray:
-    """Set solvent voxels to constant level (default: mean of solvent)."""
-    mask = solvent_mask(rho, solvent_fraction=solvent_fraction)
+    """
+    Set solvent voxels to constant level (default: mean of solvent).
+
+    ``auto_fraction``: estimate solvent fraction from the map (optional).
+    ``protein_mode``: prefer higher solvent fractions and softer protein floor.
+    """
+    if auto_fraction or solvent_fraction is None:
+        solvent_fraction = estimate_solvent_fraction(
+            rho, default=0.50 if protein_mode else 0.45, protein_mode=protein_mode
+        )
+    mask = solvent_mask(rho, solvent_fraction=float(solvent_fraction))
     out = rho.copy()
     if solvent_level is None:
         solvent_level = float(rho[mask].mean()) if np.any(mask) else 0.0
     out[mask] = solvent_level
-    # mild positivity in protein
+    # mild positivity in protein / ordered region
     protein = ~mask
-    out[protein] = np.maximum(out[protein], 0.0)
+    floor = 0.0 if not protein_mode else float(np.percentile(out[protein], 5)) if np.any(protein) else 0.0
+    out[protein] = np.maximum(out[protein], floor if protein_mode else 0.0)
     return out
 
 
@@ -101,9 +138,14 @@ def density_modification_cycle(
     solvent_fraction: float = 0.45,
     d_min: Optional[float] = None,
     verbose: bool = False,
+    protein_mode: bool = False,
+    auto_solvent: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
     Iterate: map → solvent flatten → FFT → impose |F_obs|.
+
+    ``protein_mode`` / ``auto_solvent``: higher-solvent envelope heuristics
+    for macromolecular-like maps (still useful for small-molecule wet cells).
 
     Returns final phases, final ρ, history.
     """
@@ -115,12 +157,21 @@ def density_modification_cycle(
     shape = grid_shape_from_resolution(cell, d_min, sampling=3.0)
     V = _volume(cell)
     N = np.prod(shape)
-    history = {"R": []}
+    history: Dict = {"R": [], "solvent_fraction": [], "protein_mode": protein_mode}
 
     for it in range(n_iter):
         F = amp * np.exp(1j * phases)
         rho = density_from_structure_factors(hkl, F, cell, shape=shape)
-        rho_mod = solvent_flatten(rho, solvent_fraction=solvent_fraction)
+        sf = solvent_fraction
+        if auto_solvent or protein_mode:
+            sf = estimate_solvent_fraction(
+                rho, default=solvent_fraction, protein_mode=protein_mode
+            )
+        rho_mod = solvent_flatten(
+            rho,
+            solvent_fraction=sf,
+            protein_mode=protein_mode,
+        )
         F_grid = np.fft.fftn(rho_mod) * (V / N)
         F_new = _extract_F(F_grid, hkl)
         phases = np.angle(F_new)
@@ -129,8 +180,9 @@ def density_modification_cycle(
         k = np.sum(amp * Fc) / (np.sum(Fc * Fc) + 1e-16)
         R = float(np.sum(np.abs(amp - k * Fc)) / (np.sum(amp) + 1e-16))
         history["R"].append(R)
+        history["solvent_fraction"].append(float(sf))
         if verbose and it % 2 == 0:
-            print(f"  DM iter {it}: R={R:.4f}")
+            print(f"  DM iter {it}: R={R:.4f} solvent_f={sf:.2f}")
 
     F_final = amp * np.exp(1j * phases)
     rho_final = density_from_structure_factors(hkl, F_final, cell, shape=shape)

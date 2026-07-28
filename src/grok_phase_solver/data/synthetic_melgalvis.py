@@ -78,7 +78,7 @@ _DEFAULT_LOG_V_SIGMA = 0.55
 
 @dataclass
 class MelgalvisGenConfig:
-    """Controls Melgalvis-style synthetic realism."""
+    """Controls Melgalvis-style synthetic realism (v0.7 curriculum extensions)."""
 
     # Volume / lattice
     log_v_mu: float = _DEFAULT_LOG_V_MU
@@ -108,6 +108,17 @@ class MelgalvisGenConfig:
     hybrid_cluster_frac: float = 0.7
     wavelength: float = 0.71073
     name_prefix: str = "melg"
+    # v0.7 curriculum: heavy atoms, partial occupancy, protein-like volumes
+    p_heavy_atom: float = 0.18  # inject Br/Cl/S/P as HA-like
+    heavy_elements: Tuple[str, ...] = ("BR", "CL", "S", "P", "I")
+    p_partial_occupancy: float = 0.12  # random atoms get occ ∈ [0.4, 0.9]
+    partial_occ_lo: float = 0.40
+    partial_occ_hi: float = 0.90
+    # Match experimental COD volume distribution more tightly (optional preset)
+    cod_like_volumes: bool = False
+    # Larger ASU for hard curriculum (GraPhAI / low-res panels)
+    p_large_molecule: float = 0.15  # chance to sample n_nonh toward hi end ×1.5
+    n_nonh_hard_cap: int = 48
 
 
 def _sample_weighted(rng: np.random.Generator, freq: Dict[str, float]) -> str:
@@ -115,6 +126,54 @@ def _sample_weighted(rng: np.random.Generator, freq: Dict[str, float]) -> str:
     p = np.array([freq[k] for k in keys], dtype=np.float64)
     p = p / p.sum()
     return str(rng.choice(keys, p=p))
+
+
+def cod_like_config(**overrides) -> MelgalvisGenConfig:
+    """
+    Preset fitted more tightly to COD-like organic small-molecule volumes.
+
+    Melgalvis & Rekis (2026) emphasize matching experimental volume distributions
+    to reduce domain gap for DL phasing. Median ~600 Å³, tail to ~4000 Å³.
+    """
+    base = dict(
+        log_v_mu=float(np.log(600.0)),
+        log_v_sigma=0.65,
+        v_min=150.0,
+        v_max=4500.0,
+        vol_per_nonh_lo=8.0,
+        vol_per_nonh_hi=20.0,
+        n_nonh_lo=8,
+        n_nonh_hi=32,
+        p_special_seed=0.15,
+        p_heavy_atom=0.22,
+        p_partial_occupancy=0.10,
+        cod_like_volumes=True,
+        name_prefix="melg_cod",
+        mode="hybrid",
+        hybrid_cluster_frac=0.75,
+    )
+    base.update(overrides)
+    return MelgalvisGenConfig(**base)
+
+
+def hard_curriculum_config(**overrides) -> MelgalvisGenConfig:
+    """Hard-region / larger-Z curriculum (low-res friendly volumes)."""
+    base = dict(
+        log_v_mu=float(np.log(1200.0)),
+        log_v_sigma=0.50,
+        v_min=500.0,
+        v_max=5000.0,
+        n_nonh_lo=14,
+        n_nonh_hi=40,
+        p_heavy_atom=0.28,
+        p_partial_occupancy=0.15,
+        p_large_molecule=0.35,
+        p_special_seed=0.18,
+        name_prefix="melg_hard",
+        mode="hybrid",
+    )
+    base.update(overrides)
+    return MelgalvisGenConfig(**base)
 
 
 def sample_volume(rng: np.random.Generator, cfg: MelgalvisGenConfig) -> float:
@@ -440,17 +499,33 @@ def generate_melgalvis_structure(
 
     # Cluster mode
     n_nonh = int(n_nonh or rng.integers(cfg.n_nonh_lo, cfg.n_nonh_hi + 1))
+    if rng.random() < float(getattr(cfg, "p_large_molecule", 0.0)):
+        n_nonh = int(min(cfg.n_nonh_hard_cap, int(n_nonh * 1.5) + 2))
     special = bool(rng.random() < cfg.p_special_seed)
     # Volume from density constraint
     vpa = float(rng.uniform(cfg.vol_per_nonh_lo, cfg.vol_per_nonh_hi))
     V = vpa * n_nonh
-    # blend with log-normal prior
+    # blend with log-normal prior (stronger log-normal when cod_like)
     V_ln = sample_volume(rng, cfg)
-    V = 0.5 * V + 0.5 * V_ln
+    w_ln = 0.65 if getattr(cfg, "cod_like_volumes", False) else 0.5
+    V = (1.0 - w_ln) * V + w_ln * V_ln
     V = float(np.clip(V, cfg.v_min, cfg.v_max))
 
     cell = sample_lattice_from_volume(rng, V, cfg)
     elements, cart = build_artificial_molecule(rng, n_nonh, cfg, special_seed=special)
+    # Optional heavy-atom injection (HA-like for partial-seed curriculum)
+    if rng.random() < float(getattr(cfg, "p_heavy_atom", 0.0)) and elements:
+        heavies = list(getattr(cfg, "heavy_elements", ("BR", "CL", "S")))
+        ha = str(rng.choice(heavies))
+        # replace a peripheral non-H or append
+        j = int(rng.integers(0, len(elements)))
+        if elements[j].upper() in ("H", "D"):
+            j = 0
+        elements[j] = ha if ha != "BR" else "Br"
+        if ha == "CL":
+            elements[j] = "Cl"
+        elif ha == "BR":
+            elements[j] = "Br"
     atoms = pack_molecule_in_cell(rng, elements, cart, cell, cfg, special_seed=special)
     if atoms is None:
         # fallback rejection
@@ -464,6 +539,20 @@ def generate_melgalvis_structure(
         )
         st.name = f"{cfg.name_prefix}_fb_n{n_nonh}_s{seed}"
         return st
+
+    # Partial occupancy injection (domain-gap realism)
+    p_occ = float(getattr(cfg, "p_partial_occupancy", 0.0))
+    if p_occ > 0 and atoms:
+        for a in atoms:
+            if a.element.upper() in ("H", "D"):
+                continue
+            if rng.random() < p_occ:
+                a.occupancy = float(
+                    rng.uniform(
+                        getattr(cfg, "partial_occ_lo", 0.4),
+                        getattr(cfg, "partial_occ_hi", 0.9),
+                    )
+                )
 
     return CrystalStructure(
         name=f"{cfg.name_prefix}_cl_n{n_nonh}_s{seed}",
@@ -483,20 +572,36 @@ def iter_melgalvis_samples(
     n_nonh_range: Optional[Tuple[int, int]] = None,
     d_min_range: Optional[Tuple[float, float]] = None,
     include_p_minus1: float = 0.25,
+    include_low_res: float = 0.0,
+    low_res_range: Tuple[float, float] = (1.8, 2.5),
+    preset: Optional[str] = None,
 ) -> List[Dict]:
     """
     On-the-fly training samples: structures → Fcalc.
 
     Returns list of dicts compatible with strong_prior / training loops.
+
+    Parameters
+    ----------
+    include_p_minus1 : fraction expanded to centrosymmetric P−1
+    include_low_res : fraction forced into low-resolution shells (GraPhAI-like)
+    preset : ``"cod"`` | ``"hard"`` | None — apply curriculum config
     """
     from grok_phase_solver.data.synthetic_v2 import make_centrosymmetric_copy
     from grok_phase_solver.solvers.baseline import structure_to_fcalc
 
-    cfg = cfg or MelgalvisGenConfig()
+    if cfg is None:
+        if preset == "cod":
+            cfg = cod_like_config()
+        elif preset == "hard":
+            cfg = hard_curriculum_config()
+        else:
+            cfg = MelgalvisGenConfig()
     if n_nonh_range:
         cfg = MelgalvisGenConfig(**{**cfg.__dict__, "n_nonh_lo": n_nonh_range[0], "n_nonh_hi": n_nonh_range[1]})
     rng = np.random.default_rng(seed)
     out: List[Dict] = []
+    n_ha = 0
     for i in range(n_samples):
         s = int(rng.integers(0, 2**31 - 1))
         st = generate_melgalvis_structure(seed=s, cfg=cfg, space_group="P1")
@@ -510,7 +615,13 @@ def iter_melgalvis_samples(
         d = float(d_min)
         if d_min_range is not None:
             d = float(rng.uniform(*d_min_range))
+        if include_low_res > 0 and rng.random() < include_low_res:
+            d = float(rng.uniform(*low_res_range))
         data = structure_to_fcalc(st, d_min=d)
+        els = list(data["elements"])
+        has_ha = any(e.upper() in ("BR", "CL", "I", "S", "P") for e in els)
+        if has_ha:
+            n_ha += 1
         out.append(
             {
                 "name": st.name,
@@ -528,6 +639,16 @@ def iter_melgalvis_samples(
                 "difficulty": float(data["n_atoms_cell"]) * d,
                 "generator": "melgalvis2026",
                 "cell_volume": _cell_volume(st.cell),
+                "has_heavy": has_ha,
+                "centrosymmetric": sg in ("P-1", "P−1"),
             }
         )
+    # attach batch meta on last element for callers that inspect out[0]
+    if out:
+        out[0]["_batch_meta"] = {
+            "n_samples": n_samples,
+            "frac_heavy": n_ha / max(n_samples, 1),
+            "preset": preset,
+            "include_p_minus1": include_p_minus1,
+        }
     return out

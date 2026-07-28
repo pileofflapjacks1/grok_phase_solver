@@ -55,7 +55,14 @@ def test_vectorized_matches_list_adj():
     )
     model = GraphPhaseNet(d_in=batch["X"].shape[1], hidden=24, n_layers=2, seed=2)
     X = batch["X"]
-    out_a, _ = model.forward(X, adj=batch["adj"])
+    # Compare pure adj-list vs dense adj built the same way (v5.1 κ-gated adj
+    # in batch["adj"] includes self-loops; rebuild raw for this check)
+    from grok_phase_solver.models.graph_phase_net import build_normalized_adj
+
+    adj_raw = build_normalized_adj(
+        X.shape[0], batch["edges"], batch["edge_weight"]
+    )
+    out_a, _ = model.forward(X, adj=adj_raw)
     out_b, _ = model.forward(X, nbrs=batch["nbrs"], wts=batch["wts"])
     assert np.allclose(out_a, out_b, atol=1e-8)
 

@@ -43,6 +43,8 @@ def iter_hard_multsg_samples(
     use_melgalvis_gen: bool = False,
     melgalvis_mode: str = "hybrid",
     melgalvis_large_vol: bool = False,
+    melgalvis_preset: Optional[str] = None,
+    include_low_res_frac: float = 0.0,
 ) -> Iterator[Dict]:
     """Yield hard-region samples in P1 and P-1 (optional bridge easy cells).
 
@@ -55,6 +57,9 @@ def iter_hard_multsg_samples(
 
     ``melgalvis_large_vol``: bias Melgalvis volumes toward ~1000–3500 Å³ and
     slightly lower resolution — useful for AI-PhaSeed / Carrozzini-like regimes.
+
+    ``melgalvis_preset``: ``"cod"`` | ``"hard"`` | None — v0.7 curriculum presets.
+    ``include_low_res_frac``: fraction of samples forced to d_min ∈ [1.8, 2.5] Å.
     """
     from grok_phase_solver.data.synthetic import generate_random_organic
     from grok_phase_solver.data.synthetic_v2 import make_centrosymmetric_copy
@@ -73,22 +78,35 @@ def iter_hard_multsg_samples(
             template = None
     melg_cfg = None
     if use_melgalvis_gen:
-        from grok_phase_solver.data.synthetic_melgalvis import MelgalvisGenConfig
+        from grok_phase_solver.data.synthetic_melgalvis import (
+            MelgalvisGenConfig,
+            cod_like_config,
+            hard_curriculum_config,
+        )
 
-        if melgalvis_large_vol:
-            # Carrozzini-friendly volume band + lower-res diversity
-            melg_cfg = MelgalvisGenConfig(
-                mode=melgalvis_mode,
-                log_v_mu=float(np.log(1800.0)),
-                log_v_sigma=0.45,
-                v_min=900.0,
-                v_max=4000.0,
-                n_nonh_lo=max(n_lo, 12),
-                n_nonh_hi=max(n_hi, 40),
-            )
+        if melgalvis_preset == "cod":
+            melg_cfg = cod_like_config(mode=melgalvis_mode)
+        elif melgalvis_preset == "hard" or melgalvis_large_vol:
+            melg_cfg = hard_curriculum_config(mode=melgalvis_mode)
+            if melgalvis_large_vol and melgalvis_preset != "hard":
+                melg_cfg = MelgalvisGenConfig(
+                    mode=melgalvis_mode,
+                    log_v_mu=float(np.log(1800.0)),
+                    log_v_sigma=0.45,
+                    v_min=900.0,
+                    v_max=4000.0,
+                    n_nonh_lo=max(n_lo, 12),
+                    n_nonh_hi=max(n_hi, 40),
+                    p_heavy_atom=0.25,
+                    p_partial_occupancy=0.12,
+                )
             d_lo, d_hi = min(d_lo, 1.2), max(d_hi, 1.6)
         else:
-            melg_cfg = MelgalvisGenConfig(mode=melgalvis_mode)
+            melg_cfg = MelgalvisGenConfig(
+                mode=melgalvis_mode,
+                p_heavy_atom=0.18,
+                p_partial_occupancy=0.10,
+            )
     for i in range(n_samples):
         s = int(rng.integers(0, 2**31 - 1))
         if include_bridge and (rng.random() < bridge_frac):
@@ -98,6 +116,9 @@ def iter_hard_multsg_samples(
         else:
             n_atoms = int(rng.integers(n_lo, n_hi + 1))
             d_min = float(rng.uniform(d_lo, d_hi))
+            region = "hard"
+        if include_low_res_frac > 0 and rng.random() < include_low_res_frac:
+            d_min = float(rng.uniform(1.8, 2.5))
             region = "hard"
         if use_melgalvis_gen and melg_cfg is not None:
             from grok_phase_solver.data.synthetic_melgalvis import generate_melgalvis_structure
@@ -478,6 +499,8 @@ def train_strong_prior(
     use_melgalvis_gen: bool = False,
     melgalvis_mode: str = "hybrid",
     melgalvis_large_vol: bool = False,
+    melgalvis_preset: Optional[str] = None,
+    include_low_res_frac: float = 0.12,
     feature_version: int = 5,
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
@@ -511,6 +534,8 @@ def train_strong_prior(
             use_melgalvis_gen=use_melgalvis_gen,
             melgalvis_mode=melgalvis_mode,
             melgalvis_large_vol=melgalvis_large_vol,
+            melgalvis_preset=melgalvis_preset,
+            include_low_res_frac=include_low_res_frac,
         )
     )
     if curriculum:

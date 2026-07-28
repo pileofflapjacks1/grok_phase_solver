@@ -56,6 +56,52 @@ from grok_phase_solver.solvers.projectors import (
 )
 
 
+def recommend_seed_fraction(
+    n_refl: int,
+    cell: Optional[np.ndarray] = None,
+    d_min: Optional[float] = None,
+    *,
+    default: float = 0.25,
+) -> Dict:
+    """
+    Heuristic seed-set fraction inspired by Carrozzini AI-PhaSeed statistics.
+
+    Larger cells / lower resolution → slightly larger seed fraction (more prior
+    needed); small high-res cells → modest seeds. Operational UX only — not a
+    reimplementation of the 2025 RF classifier.
+    """
+    frac = float(default)
+    notes = []
+    if cell is not None:
+        try:
+            vol = float(unit_cell_volume(np.asarray(cell, dtype=np.float64)))
+            if vol >= 2500:
+                frac = min(0.40, frac + 0.08)
+                notes.append("large Vol → larger seed fraction")
+            elif vol <= 600:
+                frac = max(0.15, frac - 0.05)
+                notes.append("small Vol → modest seed fraction")
+        except Exception:
+            pass
+    if d_min is not None:
+        if d_min >= 1.5:
+            frac = min(0.45, frac + 0.07)
+            notes.append("low resolution → more seed prior")
+        elif d_min <= 1.0:
+            frac = max(0.15, frac - 0.03)
+            notes.append("high resolution → leaner seed set")
+    if n_refl < 80:
+        frac = min(0.50, frac + 0.05)
+        notes.append("few reflections")
+    frac = float(np.clip(frac, 0.10, 0.50))
+    return {
+        "seed_fraction": frac,
+        "n_seed_est": int(np.clip(frac * n_refl, 15, min(250, n_refl))),
+        "notes": notes,
+        "method": "carrozzini_heuristic_v07",
+    }
+
+
 def select_seed_indices(
     hkl: np.ndarray,
     amplitudes: np.ndarray,
@@ -65,6 +111,8 @@ def select_seed_indices(
     min_seed: int = 20,
     max_seed: int = 200,
     by: str = "E",
+    auto_fraction: bool = False,
+    d_min: Optional[float] = None,
 ) -> np.ndarray:
     """
     Indices of strongest reflections for the seed set.
@@ -72,10 +120,15 @@ def select_seed_indices(
     by:
       - ``"E"``: Wilson-normalized |E| (default, classical DM style)
       - ``"F"``: raw |F|
+
+    ``auto_fraction=True``: override seed_fraction via ``recommend_seed_fraction``.
     """
     amp = np.asarray(amplitudes, dtype=np.float64)
     hkl = np.asarray(hkl, dtype=int)
     n = len(amp)
+    if auto_fraction and n_seed is None:
+        rec = recommend_seed_fraction(n, cell, d_min=d_min, default=seed_fraction)
+        seed_fraction = float(rec["seed_fraction"])
     if n_seed is None:
         n_seed = int(np.clip(seed_fraction * n, min_seed, max_seed))
     n_seed = int(min(max(n_seed, 1), n))
@@ -404,6 +457,12 @@ def ai_phaseed_solve(
     if len(seed_phases) != len(amp):
         raise ValueError("seed_phases length must match amplitudes")
 
+    seed_rec = recommend_seed_fraction(
+        len(amp), cell, d_min=d_min, default=seed_fraction
+    )
+    if n_seed is None:
+        # Soft blend: 70% user fraction + 30% heuristic (backward compatible bias)
+        seed_fraction = 0.7 * float(seed_fraction) + 0.3 * float(seed_rec["seed_fraction"])
     seed_idx = select_seed_indices(
         hkl, amp, cell, n_seed=n_seed, seed_fraction=seed_fraction, by=select_by
     )
@@ -574,6 +633,8 @@ def ai_phaseed_solve(
         "dm_ai_weight": float(dm_ai_weight),
         "low_res_path": bool(low_res),
         "seed_quality": seed_quality,
+        "seed_fraction_used": float(seed_fraction),
+        "seed_fraction_recommend": seed_rec,
     }
     return ph, rho, info
 

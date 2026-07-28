@@ -129,6 +129,19 @@ def main():
     p.add_argument("--n-eval", type=int, default=None)
     p.add_argument("--no-melgalvis", action="store_true")
     p.add_argument("--no-wilson-match", action="store_true")
+    p.add_argument(
+        "--melgalvis-preset",
+        type=str,
+        default="hard",
+        choices=["none", "cod", "hard"],
+        help="Melgalvis curriculum preset (v0.7): cod-like volumes or hard/large-Z",
+    )
+    p.add_argument(
+        "--low-res-frac",
+        type=float,
+        default=0.15,
+        help="Fraction of hard samples forced to d_min 1.8–2.5 Å (GraPhAI-like)",
+    )
     p.add_argument("--continue-from", type=str, default=None)
     args = p.parse_args()
 
@@ -202,6 +215,8 @@ def main():
         use_melgalvis_gen=not args.no_melgalvis,
         melgalvis_mode="hybrid",
         melgalvis_large_vol=True,
+        melgalvis_preset=None if args.melgalvis_preset == "none" else args.melgalvis_preset,
+        include_low_res_frac=float(args.low_res_frac),
         feature_version=5,
         seed=args.seed,
         verbose=True,

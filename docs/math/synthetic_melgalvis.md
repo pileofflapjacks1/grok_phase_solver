@@ -6,6 +6,17 @@ Melgalvis, D.M. & Rekis, T. (2026). *On artificial crystal structure generation
 for solving the phase problem with deep learning.* **Acta Cryst. A** **82**, 32–40
 (open access).
 
+## v0.7 curriculum extensions
+
+| Preset / flag | Role |
+|---------------|------|
+| `cod_like_config()` | Log-normal volumes closer to COD organics; HA + partial occ |
+| `hard_curriculum_config()` | Larger Z / volumes for hard / low-res panels |
+| `p_heavy_atom` | Inject Br/Cl/S/P/I for HA-like partial-seed training |
+| `p_partial_occupancy` | Random non-H occ ∈ [0.4, 0.9] |
+| `include_low_res` / train `--low-res-frac` | Force d_min ∈ [1.8, 2.5] Å fraction |
+| CLI | `run_strong_prior_v5.py --melgalvis-preset cod\|hard` |
+
 ## Motivation
 
 Uniform random cells and uncorrelated atom placement create a **domain gap**

@@ -144,6 +144,10 @@ Finish → trial.res → SHELXL / Olex2
 
 Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → hard cells can strict-solve via AI-PhaSeed. Full ab initio priors still sit ~**21%** within 20° (even after scale-up).
 
+**Hard-path oracle bar:** AI-PhaSeed extension reliably strict-solves hard cells when
+≥ **~30% of strong \|E\|** phases are correct within **~20°** (origin-invariant).
+Size alone is not enough — correctness still requires truth or a good fragment/HA.
+
 **Any seed source works** — if you pass one of these with `--method auto`, gps-solve switches to `partial_phaseed`:
 
 | Seed source | Flag | Typical origin |

@@ -570,12 +570,16 @@ def combine_phase_seeds(
     *,
     weights: Optional[Sequence[float]] = None,
     amplitudes: Optional[np.ndarray] = None,
+    agreement_boost: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
     Combine multiple partial phase seeds (circular weighted mean).
 
     Physics MR-lite style: when several fragments / HA / phase CSVs exist,
     average on the unit circle where masks overlap; union of masks elsewhere.
+
+    ``agreement_boost`` (v0.7): when ≥2 sources agree within ~40°, boost the
+    combined weight (simple multi-template robustness).
 
     Returns combined_phases, combined_mask, meta.
     """
@@ -596,16 +600,30 @@ def combine_phase_seeds(
     out = np.zeros(n, dtype=np.float64)
     comb_mask = np.zeros(n, dtype=bool)
     n_sources = np.zeros(n, dtype=np.int32)
+    agreement = np.zeros(n, dtype=np.float64)
     for i in range(n):
         zs = []
         ws = []
+        phs = []
         for s, (ph, m) in enumerate(zip(arr, msk)):
             if m[i]:
                 zs.append(np.exp(1j * ph[i]))
                 ws.append(w[s])
+                phs.append(float(ph[i]))
                 n_sources[i] += 1
         if zs:
             ww = np.asarray(ws, dtype=np.float64)
+            if agreement_boost and len(phs) >= 2:
+                # mean pairwise |cos Δφ|
+                agree = 0.0
+                c = 0
+                for a in range(len(phs)):
+                    for b in range(a + 1, len(phs)):
+                        agree += abs(np.cos(phs[a] - phs[b]))
+                        c += 1
+                agree = agree / max(c, 1)
+                agreement[i] = agree
+                ww = ww * (0.75 + 0.5 * agree)
             ww = ww / (np.sum(ww) + 1e-16)
             z = np.sum(ww * np.asarray(zs))
             out[i] = float(np.angle(z))
@@ -617,7 +635,9 @@ def combine_phase_seeds(
         "mean_sources_per_seeded": float(n_sources[comb_mask].mean())
         if comb_mask.any()
         else 0.0,
+        "mean_agreement": float(agreement[comb_mask].mean()) if comb_mask.any() else 0.0,
         "weights": w.tolist(),
+        "agreement_boost": agreement_boost,
     }
     if amplitudes is not None:
         meta["amp_weighted_coverage"] = float(
@@ -683,6 +703,10 @@ def assess_seed_quality(
             f"({n_strong_seeded}/{n_strong} strong reflections seeded). "
             "Correctness still unknown (truth-free)."
         )
+    hints.append(
+        "Practical hard-path bar (oracle): ≥~30% of strong |E| phases within ~20° "
+        "of truth for reliable AI-PhaSeed strict solves on hard cells."
+    )
     if fom is not None and fom.get("composite", 0) < 0.35:
         hints.append(
             "Free FOM of the raw seed is low — extension may struggle; "

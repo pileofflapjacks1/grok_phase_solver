@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.7.0 — 2026-07
+
+### What’s new in v0.7.0
+
+#### A. Melgalvis curriculum (Acta Cryst. A 2026 alignment)
+- COD-like volume preset (`cod_like_config`) and hard/large-Z preset
+  (`hard_curriculum_config`)
+- Heavy-atom injection, partial occupancy, large-molecule bias
+- Low-resolution sample fraction for GraPhAI-like panels
+- `iter_melgalvis_samples(..., preset=, include_low_res=)`
+
+#### B. GraphPhaseNet / GraPhAI edges
+- v5.1 κ-gated edges: power-law emphasis + residual self-loops
+- Training: `--melgalvis-preset cod|hard`, `--low-res-frac`
+- Pilot retrain scoreboard → `strong_prior_v5` / v0.7 notes
+
+#### C. AI-PhaSeed / partial-φ
+- `recommend_seed_fraction` (Carrozzini-inspired heuristic, soft-blended)
+- Multi-seed `combine_phase_seeds` agreement boost
+- Clearer ≥~30% strong-φ ≤20° bar hints in seed quality
+
+#### D. Density modification / SG
+- Protein-mode / auto solvent fraction estimation
+- Existing MERGE / symmetry helpers retained
+
+#### E. Diffusion
+- Research-only `diffusion_se3_stub.py` (no default routing)
+
+#### F. Packaging
+- Version **0.7.0**, docs, tests, RELEASE notes
+
+#### Honest limits
+- Hard ab initio seed bar still below 30% on pilots; partial-φ remains the
+  practical hard path. Physics fallbacks preserved for all ML components.
+
 ## 0.6.0 — 2026-07
 
 ### What’s new in v0.6.0

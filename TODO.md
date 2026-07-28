@@ -165,11 +165,19 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] MERGE-class `merge_symmetry_equivalents`
 - [x] Ensemble threaded `n_jobs`
 - [x] Dockerfile
-- [ ] Cluster **scale-xl** retrain (5k–10k) to re-measure seed bar
+
+### v0.7.0 Melgalvis curriculum + GraPhAI edges + hard-path UX
+- [x] COD-like / hard Melgalvis presets; HA + partial occ; low-res fraction
+- [x] GraphPhaseNet v5.1 κ power-law edges + self-loops
+- [x] AI-PhaSeed seed-fraction heuristic; multi-seed agreement boost
+- [x] Protein-mode / auto solvent DM
+- [x] SE(3) diffusion stub (research-only)
+- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset cod`
 - [ ] True SE(3) equivariant atomic diffusion (external research)
 - [ ] Optional cctbx backend hooks
 - [ ] OMC25-scale data mirror
-- [ ] PyPI 0.6.0 upload (maintainer token)
+- [ ] PyPI 0.7.0 upload (maintainer token)
+
 
 
 1. [x] PhAI weights runner + scoreboard  

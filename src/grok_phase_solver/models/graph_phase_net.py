@@ -102,13 +102,16 @@ def node_features_from_graph(
     **v4 (d_in=10):**
     ``[E, s_norm, s², |h|_norm, amp_norm, h/hmax, k/kmax, l/lmax, deg_norm, E²_norm]``
 
-    **v5 (d_in=14)** — Melgalvis/Rekis-inspired diffraction-graph enrichment:
+    **v5 / v5.1 (d_in=14)** — Melgalvis/Rekis GraPhAI-inspired diffraction-graph:
     v4 + ``[shell_rank, log1p(E·deg), local_E_mean, |F|/⟨|F|⟩_shell]``
 
     - shell_rank: resolution-shell percentile of |E| (Wilson-aware ranking)
     - log1p(E·deg): couples strong reflections with triplet connectivity
     - local_E_mean: mean |E| of graph neighbors (message-ready structural cue)
     - shell-normalized |F|: amplitude vs local Wilson shell mean
+
+    v5.1 (same d_in): κ-gated edges + optional higher-κ edge emphasis in
+    ``prepare_graph_batch`` (GraPhAI-style physics edges without expanding d_in).
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -664,12 +667,17 @@ def prepare_graph_batch(
     ewt = graph["edge_weight"]
     nbrs, wts = build_undirected_adj(n, edges, ewt)
     adj = build_normalized_adj(n, edges, ewt)
-    # Soft κ-gated reweight: boost high-κ edges (Melgalvis-style physics edges)
+    # Soft κ-gated reweight: boost high-κ edges (GraPhAI / Melgalvis physics edges)
+    # v5.1: power-law emphasis on strongest triplets (more message from reliable κ)
     if len(edges) > 0 and ewt is not None and len(ewt) == len(edges):
         w = np.asarray(ewt, dtype=np.float64)
-        w = w / (np.median(w) + 1e-16)
-        w = np.clip(w, 0.25, 4.0)
+        med = float(np.median(w) + 1e-16)
+        w = np.power(np.clip(w / med, 0.15, 6.0), 1.25)
         adj = build_normalized_adj(n, edges, w)
+        # Add weak self-loops for numerical stability of residual MP
+        adj = adj + 0.05 * np.eye(n, dtype=np.float64)
+        rs = adj.sum(axis=1, keepdims=True)
+        adj = adj / np.maximum(rs, 1e-16)
     idx = graph["node_idx"]
     return {
         "X": X,

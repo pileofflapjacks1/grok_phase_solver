@@ -21,9 +21,11 @@ from .synthetic_v2 import (
 from .synthetic_melgalvis import (
     MelgalvisGenConfig,
     generate_melgalvis_structure,
+    cod_like_config,
+    hard_curriculum_config,
+    iter_melgalvis_samples,
     sample_volume,
     sample_lattice_from_volume,
-    iter_melgalvis_samples,
 )
 
 __all__ = [
@@ -50,6 +52,8 @@ __all__ = [
     "make_centrosymmetric_copy",
     "MelgalvisGenConfig",
     "generate_melgalvis_structure",
+    "cod_like_config",
+    "hard_curriculum_config",
     "sample_volume",
     "sample_lattice_from_volume",
     "iter_melgalvis_samples",

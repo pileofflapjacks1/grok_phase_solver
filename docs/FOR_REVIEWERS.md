@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.6.0 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.7.0 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 
@@ -38,6 +38,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C12 | v0.5 adds an **experimental physics Langevin diffusion hybrid**, fuller gemmi SG helpers, predicted-model CIF seeding, optional device FFT, and multistart phase UQ — **without** claiming PXRDnet/XRDSol parity or clearing the hard ab initio seed bar | [math/diffusion_phase.md](math/diffusion_phase.md), [math/symmetry.md](math/symmetry.md) |
 | C13 | v0.6 GraphPhaseNet **v5** (d_in=14, Melgalvis curriculum) ships training/scoreboard infrastructure; hold-out frac≤20° remains near the **~21–22% plateau** on pilot runs — **does not claim** ≥30% seed bar | [math/graph_phase_net_v5.md](math/graph_phase_net_v5.md), [`strong_prior_v5.md`](../data/processed/strong_prior_v5.md) |
 | C14 | v0.6 adds a **trainable PhaseScoreNet** optional path inside diffusion hybrid, with physics Langevin fallback and lightweight checkpoint | [math/diffusion_phase.md](math/diffusion_phase.md) |
+| C15 | v0.7 strengthens Melgalvis **COD/hard curricula** (HA injection, partial occ, low-res fraction) and GraPhAI-style κ edges; seed-fraction heuristics aid AI-PhaSeed UX — **still no claim** of ≥30% mean strong-seed bar on pilots | [math/synthetic_melgalvis.md](math/synthetic_melgalvis.md), [`strong_prior_v5.md`](../data/processed/strong_prior_v5.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 
