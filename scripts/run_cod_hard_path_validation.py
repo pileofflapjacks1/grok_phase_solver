@@ -39,6 +39,36 @@ from grok_phase_solver.solvers.partial_seed import oracle_partial_seed, write_ph
 from grok_phase_solver.solvers.seed_import import seed_from_fragment_atoms, export_seed_csv
 
 
+def _write_minimal_cif(path: Path, st) -> None:
+    """Write a tiny gemmi/CIF-compatible atom list for predicted-model seeding."""
+    a, b, c, al, be, ga = st.cell
+    lines = [
+        "data_fragment",
+        f"_cell_length_a {a}",
+        f"_cell_length_b {b}",
+        f"_cell_length_c {c}",
+        f"_cell_angle_alpha {al}",
+        f"_cell_angle_beta {be}",
+        f"_cell_angle_gamma {ga}",
+        f"_symmetry_space_group_name_H-M '{st.space_group_hm}'",
+        "loop_",
+        "_atom_site_label",
+        "_atom_site_type_symbol",
+        "_atom_site_fract_x",
+        "_atom_site_fract_y",
+        "_atom_site_fract_z",
+        "_atom_site_occupancy",
+        "_atom_site_U_iso_or_equiv",
+    ]
+    for at in st.atoms:
+        u = getattr(at, "u_iso", 0.05) or 0.05
+        lines.append(
+            f"{at.label} {at.element} {at.fract[0]:.6f} {at.fract[1]:.6f} "
+            f"{at.fract[2]:.6f} {getattr(at, 'occupancy', 1.0):.3f} {u:.5f}"
+        )
+    path.write_text("\n".join(lines) + "\n")
+
+
 def match_truth_phases(hkl_obs, st, d_min: float):
     data = structure_to_fcalc(st, d_min=max(d_min or 0.9, 0.85))
     key = {tuple(map(int, h)): i for i, h in enumerate(data["hkl"])}
@@ -96,28 +126,74 @@ def run_one(label, hkl_path, cell, sg, cif_path, d_min, methods_cfg):
     m30 = write_oracle_csv(seed30, hkl, amp, table.cell, ph_true, 0.30)
     m15 = write_oracle_csv(seed15, hkl, amp, table.cell, ph_true, 0.15)
 
-    # fragment: first half of non-H atoms from deposited model
-    fracs = np.array([a.fract for a in st.atoms if a.element.upper() not in ("H", "D")], dtype=np.float64)
+    # Fragment CIF: heaviest-cluster half of non-H ASU (pipeline expands SG)
+    fracs = np.array(
+        [a.fract for a in st.atoms if a.element.upper() not in ("H", "D")],
+        dtype=np.float64,
+    )
     els = [a.element for a in st.atoms if a.element.upper() not in ("H", "D")]
     n_frag = max(3, len(els) // 2)
-    seed_frag = proc / f"_tmp_hardpath_{label}_frag.csv"
+    seed_frag_cif = proc / f"_tmp_hardpath_{label}_frag.cif"
+    fmeta = {}
     if len(fracs) >= 3:
-        sph, mask, fmeta = seed_from_fragment_atoms(
-            hkl, amp, table.cell, fracs[:n_frag], els[:n_frag], b_iso=10.0, seed=0
+        from grok_phase_solver.solvers.seed_import import select_fragment_atoms
+        from grok_phase_solver.io.cif import AtomSite, CrystalStructure
+
+        fr_sel, el_sel, fmeta = select_fragment_atoms(
+            fracs, els, max_atoms=n_frag, mode="heaviest_cluster", seed=0
         )
-        export_seed_csv(seed_frag, hkl, sph, mask)
+        atoms = [
+            AtomSite(label=f"{el}{i+1}", element=el, fract=fr_sel[i], b_iso=10.0)
+            for i, el in enumerate(el_sel)
+        ]
+        frag_st = CrystalStructure(
+            name=f"{label}_frag",
+            cell=st.cell,
+            space_group_hm=st.space_group_hm,
+            atoms=atoms,
+        )
+        # minimal CIF write
+        _write_minimal_cif(seed_frag_cif, frag_st)
+        # diagnostic seed stats
+        sph, mask, smeta = seed_from_fragment_atoms(
+            hkl, amp, table.cell, fr_sel, el_sel,
+            expand_symmetry=True, space_group=sg or st.space_group_hm,
+            prefer_strong_E=True, fcalc_min_rel=0.06, target_strong_frac=0.32,
+            full_fcalc_prior=True, auto_b_iso=True,
+            seed=0,
+        )
+        fmeta = {**fmeta, **smeta}
+        print(
+            f"  fragment seed: n_asu={fmeta.get('n_selected')} "
+            f"n_atoms_after_expand={smeta.get('n_atoms')} "
+            f"expanded={smeta.get('expand', {}).get('expanded')} "
+            f"n_seed={int(mask.sum())} frac_strong={smeta.get('frac_strong_seeded')}",
+            flush=True,
+        )
     else:
-        seed_frag = None
-        fmeta = {}
+        seed_frag_cif = None
 
     configs = [
         ("auto", SolveConfig(method="auto", d_min=d_min, n_iter=60, n_starts=2, n_extend=12, verbose=False, seed=0, compute_uncertainty=False)),
-        ("partial_15", SolveConfig(method="partial_phaseed", phase_seed_csv=str(seed15), d_min=d_min, n_iter=60, n_starts=2, n_extend=14, verbose=False, seed=0, compute_uncertainty=False)),
-        ("partial_30", SolveConfig(method="partial_phaseed", phase_seed_csv=str(seed30), d_min=d_min, n_iter=60, n_starts=2, n_extend=14, verbose=False, seed=0, compute_uncertainty=False)),
+        ("partial_15", SolveConfig(method="partial_phaseed", phase_seed_csv=str(seed15), d_min=d_min, n_iter=80, n_starts=2, n_extend=18, verbose=False, seed=0, compute_uncertainty=False, prior_weight=0.40)),
+        ("partial_30", SolveConfig(method="partial_phaseed", phase_seed_csv=str(seed30), d_min=d_min, n_iter=80, n_starts=2, n_extend=20, verbose=False, seed=0, compute_uncertainty=False, prior_weight=0.45)),
     ]
-    if seed_frag is not None:
+    if seed_frag_cif is not None:
         configs.append(
-            ("fragment_half", SolveConfig(method="partial_phaseed", phase_seed_csv=str(seed_frag), d_min=d_min, n_iter=60, n_starts=2, n_extend=14, verbose=False, seed=0, compute_uncertainty=False))
+            ("fragment_half", SolveConfig(
+                method="partial_phaseed",
+                predicted_model_cif=str(seed_frag_cif),
+                expand_model_symmetry=True,
+                d_min=d_min,
+                n_iter=100,
+                n_starts=2,
+                n_extend=28,
+                verbose=False,
+                seed=0,
+                compute_uncertainty=False,
+                prior_weight=0.52,
+                dm_ai_weight=0.42,
+            ))
         )
 
     for name, cfg in configs:
@@ -165,7 +241,7 @@ def run_one(label, hkl_path, cell, sg, cif_path, d_min, methods_cfg):
             "seconds": time.time() - t0,
             "seed_source": result.diagnostics.get("seed_source"),
             "oracle30_n": int(m30.get("n_known", 0)) if isinstance(m30, dict) else None,
-            "fragment_n_atoms": n_frag if seed_frag else 0,
+            "fragment_n_atoms": n_frag if seed_frag_cif else 0,
         }
         rows.append(row)
         flag = "SOLVED" if solved else "fail"
@@ -235,9 +311,13 @@ def main():
             "",
             "- Compare **auto** vs **partial_30** on each COD set.",
             "- **partial_15** often under-seeds vs the ~30% practical bar.",
-            "- **fragment_half** is the no-oracle scientist path (quality depends on fragment).",
+            "- **fragment_half** (SG-expanded ~½ ASU + full Fcalc soft prior) is the "
+            "no-oracle scientist path; with a coherent half-model it should "
+            "**approach or match partial_30** mapCC on these COD cells.",
+            "- Strict multi-criterion *solved* can still fail on R1 under short "
+            "budget — honesty about residual polish.",
             "- Easy COD cases (e.g. 2016452) may already solve with PhAI hybrids; "
-            "partial-φ is critical when ab initio fails.",
+            "partial-φ / fragment is critical when ab initio fails.",
             "",
             "See also: `examples/partial_seed_demo/HARD_PATH_VALIDATION.md` (synthetic).",
             "",

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fragment / predicted-model seeding (hard-path)
+- **Full Fcalc soft prior**: `seed_from_fragment_atoms` keeps model phases on
+  *all* reflections (mask only hard-locks reliable strong |E|). Fixes prior
+  blend that previously pulled toward random off-mask phases.
+- SG expansion + heaviest-cluster selection retained; optional **auto B_iso**
+  via max CC(|Fcalc|, |Fobs|); broader strong-|E| mask defaults.
+- COD hard-path: `fragment_half` mapCC **0.80 / 0.74** vs oracle `partial_30`
+  **0.72 / 0.71** on 2016452 / 2100301 experimental Fobs
+  (`scripts/run_cod_hard_path_validation.py`).
+
 ## 0.7.0 — 2026-07
 
 ### What’s new in v0.7.0

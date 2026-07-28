@@ -394,31 +394,71 @@ def partial_phaseed_solve(
             reimpose_seed,
         )
         from grok_phase_solver.solvers.hybrid import blend_phases
+        # denser seed set → slightly higher prior weight for extension
         from grok_phase_solver.solvers.free_fom import free_fom
         from grok_phase_solver.solvers.conditional_hybrid import conditional_polish
 
         hkl = np.asarray(hkl, dtype=int)
         amp = np.asarray(amplitudes, dtype=np.float64)
         sp = seed_phases[idx]
+        # Quality of seed vs hard-path bar: coverage of strong |E| set
+        E = normalize_E(hkl, amp, cell)
+        n_strong = max(1, int(round(0.30 * len(amp))))
+        strong_idx = np.argsort(-E)[:n_strong]
+        frac_strong = float(np.mean(mask[strong_idx]))
+        seed_cov = float(mask.mean())
+        # Fragment / predicted-model seeds often ship full Fcalc φ as soft prior
+        meta_in = meta or {}
+        is_fragment_prior = bool(
+            meta_in.get("full_fcalc_prior")
+            or meta_in.get("kind") in ("fragment_fcalc",)
+            or meta_in.get("source") in ("predicted_model", "fragment", "res_atoms")
+        )
+        # Fragment / dense strong seeds: more extension + prior (approaches oracle path)
+        pw = float(prior_weight)
+        n_ext = int(n_extend)
+        if frac_strong >= 0.25 or seed_cov >= 0.15:
+            pw = max(pw, 0.45)
+            n_ext = max(n_ext, 22)
+        elif frac_strong >= 0.15:
+            pw = max(pw, 0.40)
+            n_ext = max(n_ext, 18)
+        # Full Fcalc prior is informative off-mask → slightly stronger soft pull + longer extend
+        if is_fragment_prior and (frac_strong >= 0.20 or seed_cov >= 0.10):
+            pw = max(pw, 0.52)
+            n_ext = max(n_ext, 26)
+        sw_final = 0.88 if frac_strong >= 0.28 else (0.82 if frac_strong >= 0.18 else 0.75)
+        # light DM+AI hybrid when seed is strong (Carrozzini-style)
+        dm_w = float(dm_ai_weight)
+        if dm_w <= 0 and frac_strong >= 0.22:
+            dm_w = 0.40
+        if is_fragment_prior and dm_w > 0:
+            dm_w = max(dm_w, 0.42)
+        if verbose:
+            print(
+                f"  partial_phaseed mask: n_seed={int(mask.sum())} "
+                f"frac_strong={frac_strong:.0%} prior_w={pw:.2f} n_ext={n_ext} dm={dm_w:.2f}"
+                f"{' fragment_prior' if is_fragment_prior else ''}"
+            )
         trials = []
         best = None
         for s in range(max(1, n_starts)):
             rng = np.random.default_rng(seed + s)
             ph0 = build_initial_phases(len(amp), idx, sp, rng)
-            if prior_weight > 0:
+            if pw > 0:
                 ph0 = blend_phases(
-                    seed_phases, ph0, np.full(len(amp), 0.5 * prior_weight)
+                    seed_phases, ph0, np.full(len(amp), 0.55 * pw)
                 )
                 ph0 = reimpose_seed(ph0, idx, sp, weight=1.0)
             ph, rho, hist = phase_extend(
                 hkl, amp, cell, ph0, idx, sp,
-                n_cycles=n_extend,
+                n_cycles=n_ext,
                 seed_weight=1.0,
-                seed_weight_final=0.8,
+                seed_weight_final=sw_final,
                 d_min=d_min,
-                full_prior=seed_phases if prior_weight > 0 else None,
-                prior_weight=prior_weight,
-                dm_ai_weight=float(dm_ai_weight),
+                full_prior=seed_phases if pw > 0 else None,
+                prior_weight=pw,
+                dm_ai_weight=dm_w,
                 low_res_path=bool(low_res_path),
                 verbose=verbose and s == 0,
             )
@@ -439,6 +479,10 @@ def partial_phaseed_solve(
             "algorithm": "partial_phaseed",
             "n_seed": int(mask.sum()),
             "seed_fraction_actual": float(mask.mean()),
+            "frac_strong_seeded": frac_strong,
+            "prior_weight_used": pw,
+            "n_extend_used": n_ext,
+            "dm_ai_weight_used": dm_w,
             "seed_source": "partial_mask",
             "trials": trials,
             "best_trial": best[3],

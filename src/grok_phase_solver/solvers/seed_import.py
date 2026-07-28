@@ -179,6 +179,117 @@ def load_atoms_from_atoms_csv(path: PathLike) -> Tuple[np.ndarray, List[str], Di
     return xyz, els, meta
 
 
+def select_fragment_atoms(
+    fracs: np.ndarray,
+    elements: Sequence[str],
+    *,
+    max_atoms: Optional[int] = None,
+    atom_fraction: Optional[float] = None,
+    mode: str = "heaviest_cluster",
+    seed: int = 0,
+) -> Tuple[np.ndarray, List[str], Dict]:
+    """
+    Choose a coherent subset of atoms for MR-lite / fragment seeding.
+
+    modes
+    -----
+    heaviest_cluster : grow a spatial cluster from the heaviest atom (default)
+    heaviest : top-Z atoms only
+    first : first N atoms (legacy; often weak for Z>1 ASU)
+    all : keep all
+    """
+    fracs = np.asarray(fracs, dtype=np.float64).reshape(-1, 3)
+    els = list(elements)
+    n = len(fracs)
+    if n == 0:
+        raise ValueError("no atoms")
+    if mode == "all" or (max_atoms is None and atom_fraction is None):
+        return fracs.copy(), list(els), {"mode": mode or "all", "n_selected": n, "n_in": n}
+
+    if atom_fraction is not None:
+        k = max(1, int(round(float(atom_fraction) * n)))
+    elif max_atoms is not None:
+        k = int(max_atoms)
+    else:
+        k = n
+    k = int(np.clip(k, 1, n))
+
+    w = np.array([_element_weight(e) for e in els], dtype=np.float64)
+    rng = np.random.default_rng(seed)
+
+    if mode == "first":
+        idx = np.arange(k)
+    elif mode == "heaviest":
+        idx = np.argsort(-w)[:k]
+    elif mode == "heaviest_cluster":
+        # seed = heaviest atom; greedily add nearest remaining atoms
+        order_w = np.argsort(-w)
+        start = int(order_w[0])
+        chosen = [start]
+        remaining = set(range(n)) - {start}
+        while len(chosen) < k and remaining:
+            cpos = fracs[chosen]
+            # min fractional distance to cluster (PBC-lite: wrap to [-0.5,0.5])
+            best_j, best_d = None, 1e9
+            for j in remaining:
+                d = fracs[j] - cpos
+                d = d - np.round(d)
+                dj = float(np.min(np.linalg.norm(d, axis=1)))
+                # slight preference for heavier atoms
+                score = dj - 0.02 * w[j]
+                if score < best_d:
+                    best_d, best_j = score, j
+            chosen.append(int(best_j))
+            remaining.remove(int(best_j))
+        idx = np.asarray(chosen, dtype=int)
+    else:
+        raise ValueError(f"unknown fragment atom mode: {mode}")
+
+    fr_o = fracs[idx]
+    el_o = [els[i] for i in idx]
+    return fr_o, el_o, {
+        "mode": mode,
+        "n_selected": len(el_o),
+        "n_in": n,
+        "mean_Z": float(np.mean([_element_weight(e) for e in el_o])),
+    }
+
+
+def _auto_b_iso_for_fragment(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    fracs: np.ndarray,
+    elements: Sequence[str],
+    *,
+    b_candidates: Optional[Sequence[float]] = None,
+) -> Tuple[float, float, np.ndarray, np.ndarray]:
+    """
+    Pick isotropic B that maximises Pearson CC(|Fcalc|, |Fobs|).
+
+    Phases are nearly B-independent for uniform-B fragments; B mainly improves
+    |Fcalc| ranking used for the hard-seed mask. Returns (b_iso, cc, phases, |Fcalc|).
+    """
+    amp = np.asarray(amplitudes, dtype=np.float64)
+    cands = list(b_candidates) if b_candidates is not None else [2.0, 4.0, 6.0, 8.0, 12.0, 16.0, 20.0]
+    best_b, best_cc = float(cands[0]), -2.0
+    best_ph: Optional[np.ndarray] = None
+    best_fc: Optional[np.ndarray] = None
+    for b in cands:
+        ph, fc = fragment_seed_phases(hkl, fracs, elements, cell, b_iso=float(b))
+        if float(np.std(fc)) < 1e-12 or float(np.std(amp)) < 1e-12:
+            cc = 0.0
+        else:
+            cc = float(np.corrcoef(fc, amp)[0, 1])
+            if not np.isfinite(cc):
+                cc = 0.0
+        if cc > best_cc:
+            best_cc, best_b = cc, float(b)
+            best_ph, best_fc = ph, fc
+    assert best_ph is not None and best_fc is not None
+    return best_b, best_cc, best_ph, best_fc
+
+
 def seed_from_fragment_atoms(
     hkl: np.ndarray,
     amplitudes: np.ndarray,
@@ -187,34 +298,166 @@ def seed_from_fragment_atoms(
     elements: Sequence[str],
     *,
     b_iso: float = 8.0,
-    fcalc_min_rel: float = 0.15,
+    fcalc_min_rel: float = 0.06,
     seed: int = 0,
+    expand_symmetry: bool = True,
+    space_group: Optional[str] = None,
+    atom_mode: str = "all",
+    max_atoms: Optional[int] = None,
+    atom_fraction: Optional[float] = None,
+    prefer_strong_E: bool = True,
+    strong_fraction: float = 0.38,
+    min_fobs_ratio: float = 0.10,
+    target_strong_frac: float = 0.32,
+    full_fcalc_prior: bool = True,
+    auto_b_iso: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
-    Partial atoms → Fcalc phases; mask = reflections with strong |Fcalc|.
+    Partial atoms → Fcalc phases; mask = reliable strong reflections.
+
+    Improvements (v0.7.1 / hard-path):
+    - Optional **space-group expansion** of ASU fragment (critical for P2₁/c etc.)
+    - Smart atom selection (``heaviest_cluster`` / ``heaviest``)
+    - Seed mask prefers **strong |E|** reflections where |Fcalc| is significant
+      and not tiny vs |Fobs| (avoids hard-locking weak, wrong phases)
+    - **Full Fcalc soft prior**: ``seed_phases`` carries model φ on *all*
+      reflections (not random outside the mask). ``partial_phaseed`` blends
+      this prior every extend cycle; the mask only hard-reimposes high-confidence
+      strong |E|. This is the main lever that brings fragment_half toward
+      oracle partial_30 mapCC on experimental COD Fobs.
+    - Optional **auto B_iso** maximising CC(|Fcalc|, |Fobs|) for better masks
 
     Returns (seed_phases_full, mask, meta).
     """
-    ph, fcalc = fragment_seed_phases(hkl, fracs, elements, cell, b_iso=b_iso)
-    thr = float(fcalc_min_rel) * float(fcalc.max() + 1e-16)
-    mask = fcalc >= thr
-    # Ensure at least a few seeds
+    fracs = np.asarray(fracs, dtype=np.float64).reshape(-1, 3)
+    els = list(elements)
+    sel_meta: Dict = {"mode": "all", "n_selected": len(els), "n_in": len(els)}
+    if atom_mode != "all" or max_atoms is not None or atom_fraction is not None:
+        fracs, els, sel_meta = select_fragment_atoms(
+            fracs,
+            els,
+            max_atoms=max_atoms,
+            atom_fraction=atom_fraction,
+            mode=atom_mode if atom_mode != "all" else "heaviest_cluster",
+            seed=seed,
+        )
+
+    expand_meta: Dict = {"expanded": False}
+    if expand_symmetry and space_group:
+        try:
+            from grok_phase_solver.physics.symmetry import expand_fractional_coords
+
+            fr2, el2, expand_meta = expand_fractional_coords(
+                fracs, space_group, elements=els
+            )
+            fracs, els = fr2, el2
+        except Exception as e:
+            expand_meta = {"expanded": False, "error": str(e)}
+
+    amp = np.asarray(amplitudes, dtype=np.float64)
+    n = len(amp)
+    b_used = float(b_iso)
+    cc_fc = float("nan")
+    if auto_b_iso:
+        b_used, cc_fc, ph, fcalc = _auto_b_iso_for_fragment(
+            hkl, amp, cell, fracs, els
+        )
+    else:
+        ph, fcalc = fragment_seed_phases(hkl, fracs, els, cell, b_iso=b_used)
+        if float(np.std(fcalc)) > 1e-12 and float(np.std(amp)) > 1e-12:
+            cc_fc = float(np.corrcoef(fcalc, amp)[0, 1])
+            if not np.isfinite(cc_fc):
+                cc_fc = float("nan")
+
+    fmax = float(np.max(fcalc) + 1e-16)
+    thr = float(fcalc_min_rel) * fmax
+
+    # Reliability vs observed amplitudes (fragment should explain some |F|)
+    amp_scale = float(np.max(amp) + 1e-16)
+    ratio = fcalc / (amp + 1e-8 * amp_scale)
+
+    E = normalize_E(hkl, amp, cell)
+    if prefer_strong_E:
+        n_pool = max(10, int(round(float(strong_fraction) * n)))
+        n_pool = min(n_pool, n)
+        strong_idx = np.argsort(-E)[:n_pool]
+        strong_mask = np.zeros(n, dtype=bool)
+        strong_mask[strong_idx] = True
+        # among strong: significant Fcalc (loose ratio so partial models still cover ~30% bar)
+        mask = strong_mask & (fcalc >= thr)
+        # if Fobs ratio is extremely low, still keep top-Fcalc strongs but drop
+        # only the very worst outliers (ratio near 0 vs huge Fobs)
+        very_weak = ratio < (0.5 * float(min_fobs_ratio))
+        mask = mask & ~very_weak
+        # ensure enough strong coverage toward ~30% oracle bar (of true top-30% |E|)
+        n_strong_bar = max(1, int(round(0.30 * n)))
+        bar_idx = np.argsort(-E)[:n_strong_bar]
+        n_need = max(8, int(round(float(target_strong_frac) * n_strong_bar)))
+        if int(mask[bar_idx].sum()) < n_need:
+            cand = bar_idx[np.argsort(-fcalc[bar_idx])]
+            for i in cand:
+                if fcalc[int(i)] < 0.03 * fmax:
+                    continue
+                mask[int(i)] = True
+                if int(mask[bar_idx].sum()) >= n_need:
+                    break
+        # also admit next |E| band when both |Fcalc| and ratio look good
+        extra = np.argsort(-E)[: max(n_pool, int(round(0.42 * n)))]
+        for i in extra:
+            ii = int(i)
+            if mask[ii]:
+                continue
+            if fcalc[ii] >= max(thr, 0.05 * fmax) and ratio[ii] >= float(min_fobs_ratio):
+                mask[ii] = True
+    else:
+        mask = fcalc >= thr
+
     if mask.sum() < 8:
-        k = min(max(8, int(0.15 * len(fcalc))), len(fcalc))
+        k = min(max(8, int(0.15 * n)), n)
         top = np.argsort(-fcalc)[:k]
-        mask = np.zeros(len(fcalc), dtype=bool)
+        mask = np.zeros(n, dtype=bool)
         mask[top] = True
-    rng = np.random.default_rng(seed)
-    seed_ph = rng.uniform(-np.pi, np.pi, size=len(amplitudes))
-    seed_ph[mask] = ph[mask]
+
+    # Full-model soft prior: keep Fcalc φ everywhere when requested.
+    # Random-fill outside the hard mask *poisons* partial_phaseed's full_prior
+    # blend and was the main COD fragment_half gap vs oracle partial_30.
+    if full_fcalc_prior:
+        seed_ph = np.asarray(ph, dtype=np.float64).copy()
+    else:
+        rng = np.random.default_rng(seed)
+        seed_ph = rng.uniform(-np.pi, np.pi, size=n)
+        seed_ph[mask] = ph[mask]
+
+    # Quality proxies for report (top-30% |E| convention)
+    n_strong = max(1, int(round(0.30 * n)))
+    strong_idx = np.argsort(-E)[:n_strong]
+    frac_strong = float(np.mean(mask[strong_idx]))
+
     meta = {
         "kind": "fragment_fcalc",
-        "n_atoms": len(np.asarray(fracs).reshape(-1, 3)),
+        "n_atoms": len(fracs),
         "n_seed_refl": int(mask.sum()),
         "fraction": float(mask.mean()),
+        "frac_strong_seeded": frac_strong,
         "mean_fcalc": float(np.mean(fcalc)),
         "fcalc_min_rel": float(fcalc_min_rel),
-        "elements": list(elements)[:30],
+        "min_fobs_ratio": float(min_fobs_ratio),
+        "prefer_strong_E": bool(prefer_strong_E),
+        "full_fcalc_prior": bool(full_fcalc_prior),
+        "b_iso": float(b_used),
+        "b_iso_requested": float(b_iso),
+        "auto_b_iso": bool(auto_b_iso),
+        "cc_fcalc_fobs": cc_fc,
+        "elements": list(els)[:30],
+        "atom_select": sel_meta,
+        "expand": expand_meta,
+        "space_group": space_group,
+        "note": (
+            "Fcalc fragment seed; SG expansion strongly recommended for Z>1. "
+            "Full Fcalc soft prior on all reflections; hard mask = strong |E| "
+            "with reliable |Fcalc| (approaches oracle partial_30 when fragment "
+            "is ~half ASU + expanded)."
+        ),
     }
     return seed_ph, mask, meta
 
@@ -363,23 +606,43 @@ def resolve_phase_seed(
     ha_element: str = "Br",
     use_patterson_ha: bool = False,
     seed: int = 0,
+    space_group: Optional[str] = None,
+    expand_symmetry: bool = True,
+    fragment_atom_mode: str = "heaviest_cluster",
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     """
     Resolve any supported seed source → (seed_phases, mask, meta).
 
     Priority: phase CSV → res → atoms CSV → peaks CSV → isomorphous HA → Patterson HA.
+
+    Fragment sources use SG expansion + strong-|E| reliable Fcalc mask by default.
     """
+    frag_kw = dict(
+        b_iso=seed_b_iso,
+        seed=seed,
+        expand_symmetry=expand_symmetry,
+        space_group=space_group,
+        prefer_strong_E=True,
+        fcalc_min_rel=0.08,
+    )
+
     if phase_seed_csv:
         seed_ph, mask, meta = load_phase_seed_csv(phase_seed_csv, hkl)
         meta["source"] = "phase_seed_csv"
         return seed_ph, mask, meta
 
     if phase_seed_res:
-        fracs, els, ameta = load_atoms_from_res(
-            phase_seed_res, max_atoms=seed_n_atoms
-        )
+        # load full ASU from res; selection/expansion inside seed_from_fragment
+        fracs, els, ameta = load_atoms_from_res(phase_seed_res, max_atoms=None)
         seed_ph, mask, meta = seed_from_fragment_atoms(
-            hkl, amplitudes, cell, fracs, els, b_iso=seed_b_iso, seed=seed
+            hkl,
+            amplitudes,
+            cell,
+            fracs,
+            els,
+            atom_mode=fragment_atom_mode if seed_n_atoms else "all",
+            max_atoms=seed_n_atoms,
+            **frag_kw,
         )
         meta.update(ameta)
         meta["source"] = "phase_seed_res"
@@ -387,10 +650,15 @@ def resolve_phase_seed(
 
     if seed_atoms_csv:
         fracs, els, ameta = load_atoms_from_atoms_csv(seed_atoms_csv)
-        if seed_n_atoms is not None:
-            fracs, els = fracs[:seed_n_atoms], els[:seed_n_atoms]
         seed_ph, mask, meta = seed_from_fragment_atoms(
-            hkl, amplitudes, cell, fracs, els, b_iso=seed_b_iso, seed=seed
+            hkl,
+            amplitudes,
+            cell,
+            fracs,
+            els,
+            atom_mode=fragment_atom_mode if seed_n_atoms else "all",
+            max_atoms=seed_n_atoms,
+            **frag_kw,
         )
         meta.update(ameta)
         meta["source"] = "seed_atoms_csv"
@@ -403,8 +671,18 @@ def resolve_phase_seed(
             max_atoms=seed_n_atoms or 20,
             min_sigma=seed_min_peak_sigma,
         )
+        # Peaks are already in the cell; expand only if SG known (usually not needed)
         seed_ph, mask, meta = seed_from_fragment_atoms(
-            hkl, amplitudes, cell, fracs, els, b_iso=seed_b_iso, seed=seed
+            hkl,
+            amplitudes,
+            cell,
+            fracs,
+            els,
+            expand_symmetry=False,
+            prefer_strong_E=True,
+            fcalc_min_rel=0.08,
+            b_iso=seed_b_iso,
+            seed=seed,
         )
         meta.update(ameta)
         meta["source"] = "seed_peaks_csv"
@@ -536,17 +814,28 @@ def seed_from_predicted_model(
     model_path: PathLike,
     *,
     max_atoms: Optional[int] = None,
-    b_iso: float = 12.0,
+    b_iso: float = 8.0,
     expand_symmetry: bool = True,
     space_group: Optional[str] = None,
     seed: int = 0,
-    fcalc_min_rel: float = 0.15,
+    fcalc_min_rel: float = 0.06,
+    atom_mode: str = "heaviest_cluster",
+    atom_fraction: Optional[float] = None,
+    full_fcalc_prior: bool = True,
+    auto_b_iso: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
-    """Predicted model CIF → Fcalc phase seed (+ mask)."""
+    """
+    Predicted model CIF → Fcalc phase seed (+ mask).
+
+    By default expands ASU by space-group ops, uses a **full Fcalc soft prior**,
+    and prefers a heaviest spatial cluster when ``max_atoms`` / ``atom_fraction``
+    limit the model.
+    """
+    # Load ASU first; let seed_from_fragment_atoms expand (single expansion path)
     fracs, els, mmeta = load_predicted_model_atoms(
         model_path,
-        max_atoms=max_atoms,
-        expand_symmetry=expand_symmetry,
+        max_atoms=None,  # select after load
+        expand_symmetry=False,
         space_group=space_group,
     )
     seed_ph, mask, meta = seed_from_fragment_atoms(
@@ -558,9 +847,23 @@ def seed_from_predicted_model(
         b_iso=b_iso,
         seed=seed,
         fcalc_min_rel=fcalc_min_rel,
+        expand_symmetry=expand_symmetry,
+        space_group=space_group or mmeta.get("space_group"),
+        atom_mode=atom_mode if (max_atoms or atom_fraction) else "all",
+        max_atoms=max_atoms,
+        atom_fraction=atom_fraction,
+        prefer_strong_E=True,
+        full_fcalc_prior=full_fcalc_prior,
+        auto_b_iso=auto_b_iso,
+        target_strong_frac=0.32,
     )
-    meta.update(mmeta)
+    # Preserve post-expansion atom count / seed stats; keep load meta under asu_*
+    n_atoms_seed = meta.get("n_atoms")
+    meta["asu_load"] = mmeta
+    meta["n_atoms_asu"] = mmeta.get("n_atoms")
     meta["source"] = "predicted_model"
+    if n_atoms_seed is not None:
+        meta["n_atoms"] = n_atoms_seed
     return seed_ph, mask, meta
 
 

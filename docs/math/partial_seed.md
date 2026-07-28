@@ -23,8 +23,14 @@ Code: `solvers/partial_seed.py`
 |----------|------|
 | `oracle_partial_seed` / `oracle_partial_phaseed_solve` | Benchmark: true φ on strong \|E\| mask ± noise |
 | `fragment_seed_phases` / `fragment_phaseed_solve` | Partial atoms → $F_\mathrm{calc}$ phases → PhaSeed |
+| `seed_from_fragment_atoms` / `seed_from_predicted_model` | Scientist path: SG expand + full $F_\mathrm{calc}$ soft prior + strong-\|E\| hard mask |
 | `load_phase_seed_csv` / `write_phase_seed_csv` | File I/O: `h,k,l,phase_deg` |
 | `partial_phaseed_solve` | Generic full-length seed → AI-PhaSeed |
+
+**Fragment soft prior (v0.7.1):** predicted / fragment models set $F_\mathrm{calc}$ phases on
+*all* reflections as the soft prior; the boolean mask only hard-reimposes reliable
+strong $|E|$. Random-fill off-mask phases poison the prior blend and was the main
+COD `fragment_half` gap vs oracle `partial_30`.
 
 ### CLI
 

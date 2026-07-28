@@ -24,5 +24,12 @@ Oracle bar remains: ≥~30% strong |E| phases within ~20° of truth for reliable
 See [`cod_hard_path_validation.md`](../../data/processed/cod_hard_path_validation.md)
 and `python scripts/run_cod_hard_path_validation.py`.
 
-On COD **2016452** / **2100301** experimental Fobs @ 1.0 Å (mapCC vs deposited Fcalc):
-auto ~0.20 mapCC; oracle **partial_30** ~0.72–0.74 mapCC (strict multi-criterion still often fails on R1 under short budget — honesty about residual polish).
+On COD **2016452** / **2100301** experimental Fobs @ ~0.9 Å (mapCC vs deposited Fcalc):
+
+| Run | 2016452 mapCC | 2100301 mapCC |
+|-----|---------------|---------------|
+| `auto` | ~0.20 | ~0.20 |
+| `partial_30` (oracle) | ~0.72 | ~0.71 |
+| `fragment_half` (SG expand + full Fcalc prior) | **~0.80** | **~0.74** |
+
+Fragment path uses ~half non-H ASU atoms, space-group expansion, full Fcalc soft prior, and a strong-|E| hard mask. Strict multi-criterion *solved* can still fail on R1 under short budget — honesty about residual polish.

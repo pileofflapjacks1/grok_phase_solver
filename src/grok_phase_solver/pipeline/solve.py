@@ -462,6 +462,8 @@ def _run_phasing(
                     ha_element=cfg.ha_element,
                     use_patterson_ha=cfg.patterson_ha,
                     seed=cfg.seed,
+                    space_group=getattr(cfg, "_space_group", None),
+                    expand_symmetry=getattr(cfg, "expand_model_symmetry", True),
                 )
         except ValueError as e:
             raise ValueError(str(e)) from e
