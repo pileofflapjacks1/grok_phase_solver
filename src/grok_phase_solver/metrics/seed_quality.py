@@ -275,50 +275,313 @@ def _estimate_mpe_corr(feats: Dict[str, float], p_success: float) -> Tuple[float
     return float(mpe), corr
 
 
-def _try_sklearn_predict(feats: Dict[str, float], model_path: Optional[Path]) -> Optional[Tuple[int, float, str]]:
-    """Optional RF path. Returns (class, proba, method) or None."""
+# Carrozzini-aligned default feature order for sklearn RF (v0.8)
+DEFAULT_RF_FEATURE_NAMES: List[str] = [
+    "max_W",
+    "N_asym",
+    "Vol",
+    "seed_fraction",
+    "free_fom_composite",
+    "mean_E_seed",
+    "median_E_seed",
+    "R_pos",
+    "density_asym",
+    "d_min",
+    "n_seed",
+    "excess_kurtosis",
+]
+
+
+def default_seed_quality_rf_paths() -> List[Path]:
+    """Search paths for a persisted RF classifier (first hit wins)."""
+    here = Path(__file__).resolve()
+    roots = [
+        here.parents[3],  # repo root when installed as src layout
+        here.parents[2],
+        Path.cwd(),
+    ]
+    names = [
+        Path("data") / "processed" / "seed_quality_rf.npz",
+        Path("data") / "processed" / "seed_quality_rf.joblib",
+        Path("models") / "seed_quality_rf.joblib",
+        Path("models") / "seed_quality_rf.npz",
+        Path("seed_quality_rf.npz"),
+        Path("seed_quality_rf.joblib"),
+    ]
+    out: List[Path] = []
+    for r in roots:
+        for n in names:
+            out.append(r / n)
+    return out
+
+
+def save_seed_quality_rf(
+    clf: Any,
+    path: Union[str, Path],
+    *,
+    feature_names: Optional[Sequence[str]] = None,
+    meta: Optional[Dict[str, Any]] = None,
+) -> Path:
+    """
+    Persist classifier bundle.
+
+    Prefers joblib for sklearn models; pure-NumPy logistic is saved as ``.npz``.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    names = list(feature_names or DEFAULT_RF_FEATURE_NAMES)
+    meta = meta or {}
+
+    if isinstance(clf, _LogisticSeedClassifier) or path.suffix == ".npz":
+        if path.suffix != ".npz":
+            path = path.with_suffix(".npz")
+        np.savez_compressed(
+            path,
+            kind=np.array("numpy_logistic"),
+            w=np.asarray(clf.w if hasattr(clf, "w") else clf["w"]),
+            b=np.array(float(clf.b if hasattr(clf, "b") else clf["b"])),
+            mu=np.asarray(clf.mu if hasattr(clf, "mu") else clf["mu"]),
+            sig=np.asarray(clf.sig if hasattr(clf, "sig") else clf["sig"]),
+            feature_names=np.array(names, dtype=object),
+            meta_json=np.array(str(meta)),
+            version=np.array("0.8.0"),
+        )
+        return path
+
     try:
         import joblib  # type: ignore
-    except Exception:
-        joblib = None  # type: ignore
-    try:
-        from sklearn.ensemble import RandomForestClassifier  # noqa: F401
-    except Exception:
-        return None
 
-    path = model_path
-    if path is None:
-        # default location if user trained one
-        cand = Path(__file__).resolve().parents[3] / "models" / "seed_quality_rf.joblib"
-        if not cand.is_file():
-            cand = Path(__file__).resolve().parents[2] / "models" / "seed_quality_rf.joblib"
-        path = cand if cand.is_file() else None
-    if path is None or not Path(path).is_file():
-        return None
-    if joblib is None:
+        bundle = {
+            "model": clf,
+            "feature_names": names,
+            "meta": meta,
+            "version": "0.8.0",
+        }
+        joblib.dump(bundle, path)
+        return path
+    except Exception:
+        # last resort: if clf has logistic attrs, write npz
+        if hasattr(clf, "w") and hasattr(clf, "mu"):
+            return save_seed_quality_rf(
+                clf, path.with_suffix(".npz"), feature_names=names, meta=meta
+            )
+        raise
+
+
+def load_seed_quality_rf(path: Optional[Union[str, Path]] = None) -> Optional[Dict[str, Any]]:
+    """Load RF / logistic bundle or None if unavailable."""
+    candidates: List[Path] = []
+    if path is not None:
+        p = Path(path)
+        candidates.append(p)
+        if p.suffix == ".joblib":
+            candidates.append(p.with_suffix(".npz"))
+    else:
+        candidates.extend(default_seed_quality_rf_paths())
+        # also npz siblings
+        extra = []
+        for c in list(candidates):
+            if c.suffix == ".joblib":
+                extra.append(c.with_suffix(".npz"))
+        candidates.extend(extra)
+
+    for p in candidates:
+        if not p.is_file():
+            continue
+        if p.suffix == ".npz":
+            try:
+                z = np.load(p, allow_pickle=True)
+                clf = _LogisticSeedClassifier(z["w"], float(z["b"]), z["mu"], z["sig"])
+                names = [str(x) for x in z["feature_names"].tolist()]
+                return {
+                    "model": clf,
+                    "feature_names": names,
+                    "meta": {},
+                    "version": "0.8.0",
+                    "backend": "numpy_logistic",
+                    "_path": str(p),
+                }
+            except Exception:
+                continue
+        try:
+            import joblib  # type: ignore
+
+            bundle = joblib.load(p)
+            if not isinstance(bundle, dict):
+                bundle = {"model": bundle, "feature_names": DEFAULT_RF_FEATURE_NAMES}
+            bundle["_path"] = str(p)
+            return bundle
+        except Exception:
+            continue
+    return None
+
+
+class _LogisticSeedClassifier:
+    """Pure-NumPy logistic classifier (sklearn-free fallback)."""
+
+    def __init__(self, w: np.ndarray, b: float, mu: np.ndarray, sig: np.ndarray):
+        self.w = np.asarray(w, dtype=np.float64)
+        self.b = float(b)
+        self.mu = np.asarray(mu, dtype=np.float64)
+        self.sig = np.asarray(sig, dtype=np.float64)
+        # approximate importance for reporting
+        self.feature_importances_ = np.abs(self.w) / (np.abs(self.w).sum() + 1e-16)
+
+    def _z(self, X: np.ndarray) -> np.ndarray:
+        X = np.asarray(X, dtype=np.float64)
+        return (X - self.mu) / np.maximum(self.sig, 1e-8)
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        z = self._z(X) @ self.w + self.b
+        p1 = 1.0 / (1.0 + np.exp(-np.clip(z, -40, 40)))
+        p1 = np.asarray(p1, dtype=np.float64).reshape(-1)
+        return np.column_stack([1.0 - p1, p1])
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
+
+
+def _train_logistic_numpy(
+    X: np.ndarray,
+    y: np.ndarray,
+    *,
+    seed: int = 0,
+    n_iter: int = 400,
+    lr: float = 0.15,
+) -> _LogisticSeedClassifier:
+    rng = np.random.default_rng(seed)
+    X = np.asarray(X, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    mu = X.mean(axis=0)
+    sig = X.std(axis=0) + 1e-8
+    Z = (X - mu) / sig
+    w = rng.normal(0, 0.01, size=X.shape[1])
+    b = 0.0
+    # class-balanced weights
+    n1 = max(float(y.sum()), 1.0)
+    n0 = max(float(len(y) - y.sum()), 1.0)
+    sw = np.where(y > 0.5, 0.5 * len(y) / n1, 0.5 * len(y) / n0)
+    for _ in range(n_iter):
+        z = Z @ w + b
+        p = 1.0 / (1.0 + np.exp(-np.clip(z, -40, 40)))
+        err = (p - y) * sw
+        w -= lr * (Z.T @ err) / len(y)
+        b -= lr * float(err.mean())
+    return _LogisticSeedClassifier(w, b, mu, sig)
+
+
+def train_seed_quality_rf_from_matrix(
+    X: np.ndarray,
+    y: np.ndarray,
+    *,
+    feature_names: Optional[Sequence[str]] = None,
+    n_estimators: int = 80,
+    max_depth: int = 6,
+    seed: int = 0,
+    class_weight: str = "balanced",
+    prefer_sklearn: bool = True,
+) -> Tuple[Any, Dict[str, Any]]:
+    """
+    Fit a Class 0/1 seed-quality classifier.
+
+    Prefers sklearn RandomForest when importable; otherwise pure-NumPy logistic
+    regression (always available). Returns (clf, meta).
+    """
+    X = np.asarray(X, dtype=np.float64)
+    y = np.asarray(y, dtype=int)
+    if len(X) < 20:
+        raise ValueError("need ≥20 labeled seeds to train RF")
+    names = list(feature_names or DEFAULT_RF_FEATURE_NAMES[: X.shape[1]])
+
+    # hold-out split
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(len(X))
+    n_te = max(5, int(0.25 * len(X)))
+    te, tr = idx[:n_te], idx[n_te:]
+    X_tr, X_te, y_tr, y_te = X[tr], X[te], y[tr], y[te]
+
+    backend = "numpy_logistic"
+    clf: Any = None
+    if prefer_sklearn:
+        try:
+            from sklearn.ensemble import RandomForestClassifier
+
+            clf = RandomForestClassifier(
+                n_estimators=int(n_estimators),
+                max_depth=int(max_depth),
+                random_state=int(seed),
+                class_weight=class_weight,
+                n_jobs=1,
+            )
+            clf.fit(X_tr, y_tr)
+            backend = "sklearn_rf"
+        except Exception:
+            clf = None
+
+    if clf is None:
+        clf = _train_logistic_numpy(X_tr, y_tr, seed=seed)
+        backend = "numpy_logistic"
+
+    if hasattr(clf, "predict_proba"):
+        proba = np.asarray(clf.predict_proba(X_te)[:, 1], dtype=np.float64)
+    else:
+        proba = np.asarray(clf.predict(X_te), dtype=np.float64)
+    pred = (proba >= 0.5).astype(int)
+    acc = float(np.mean(pred == y_te))
+
+    imp = getattr(clf, "feature_importances_", None)
+    if imp is None:
+        imp = np.zeros(len(names))
+    meta: Dict[str, Any] = {
+        "n_train": int(len(X_tr)),
+        "n_test": int(len(X_te)),
+        "accuracy": acc,
+        "backend": backend,
+        "feature_names": names,
+        "feature_importance": {names[i]: float(imp[i]) for i in range(len(names))},
+        "class_balance_train": {
+            "class0": int(np.sum(y_tr == 0)),
+            "class1": int(np.sum(y_tr == 1)),
+        },
+        "note": (
+            "Synthetic/oracle-labeled Class 0/1 model aligned with Carrozzini "
+            "feature list. Not the published 1505-COD RF; heuristic fallback always available."
+        ),
+    }
+    # rough AUC
+    try:
+        if len(np.unique(y_te)) > 1:
+            order = np.argsort(-proba)
+            y_ord = y_te[order]
+            tps = np.cumsum(y_ord == 1)
+            fps = np.cumsum(y_ord == 0)
+            tps = tps / max(tps[-1], 1)
+            fps = fps / max(fps[-1], 1)
+            meta["roc_auc"] = float(np.trapz(tps, fps))
+    except Exception:
+        pass
+    return clf, meta
+
+
+def _try_sklearn_predict(feats: Dict[str, float], model_path: Optional[Path]) -> Optional[Tuple[int, float, str]]:
+    """Optional trained Class 0/1 model path. Returns (class, proba, method) or None."""
+    bundle = load_seed_quality_rf(model_path)
+    if bundle is None:
         return None
     try:
-        bundle = joblib.load(path)
-        clf = bundle["model"] if isinstance(bundle, dict) else bundle
-        feature_names = (
-            bundle.get("feature_names")
-            if isinstance(bundle, dict)
-            else [
-                "max_W",
-                "N_asym",
-                "Vol",
-                "seed_fraction",
-                "free_fom_composite",
-                "mean_E_seed",
-            ]
-        )
-        x = np.array([[feats.get(k, 0.0) for k in feature_names]], dtype=np.float64)
+        clf = bundle["model"]
+        feature_names = bundle.get("feature_names") or DEFAULT_RF_FEATURE_NAMES
+        x = np.array([[float(feats.get(k, 0.0)) for k in feature_names]], dtype=np.float64)
         if hasattr(clf, "predict_proba"):
             proba = float(clf.predict_proba(x)[0, 1])
         else:
             proba = float(clf.predict(x)[0])
         cls = 1 if proba >= 0.5 else 0
-        return cls, proba, "sklearn_rf"
+        backend = bundle.get("backend")
+        if backend is None:
+            backend = "numpy_logistic" if isinstance(clf, _LogisticSeedClassifier) else "sklearn_rf"
+        method = "sklearn_rf" if backend == "sklearn_rf" else "numpy_logistic"
+        return cls, proba, method
     except Exception:
         return None
 

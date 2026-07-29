@@ -394,10 +394,12 @@ def predict_strong_phases(
     Returns (node_idx, phases_strong).
     """
     fver = int(getattr(model, "_feature_version", 5))
-    # Infer feature version from d_in if needed (v4=10, v5=14)
+    # Infer feature version from d_in if needed (v4=10, v5=14, v6=18)
     if hasattr(model, "d_in"):
         if model.d_in <= 10:
             fver = 4
+        elif model.d_in >= 18:
+            fver = 6
         elif model.d_in >= 14:
             fver = 5
     batch = prepare_graph_batch(
@@ -515,6 +517,9 @@ def train_strong_prior(
 
     v5 (default): d_in=14 Melgalvis-inspired diffraction-graph features
     (shell rank, E·deg, local neighbor E, shell-normalized |F|) + κ-gated edges.
+
+    v6: d_in=18 GraPhAI HA-aware features (strong-|E| tail, low-res weight,
+    E·low_res, κ-centrality) + slightly stronger κ-gated message passing.
 
     ``melgalvis_large_vol``: when using Melgalvis generator, bias toward larger
     volumes / lower-res shards (AI-PhaSeed curriculum).

@@ -1,16 +1,48 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 2026-07
 
-### Fragment / predicted-model seeding (hard-path)
-- **Full Fcalc soft prior**: `seed_from_fragment_atoms` keeps model phases on
-  *all* reflections (mask only hard-locks reliable strong |E|). Fixes prior
-  blend that previously pulled toward random off-mask phases.
-- SG expansion + heaviest-cluster selection retained; optional **auto B_iso**
-  via max CC(|Fcalc|, |Fobs|); broader strong-|E| mask defaults.
-- COD hard-path: `fragment_half` mapCC **0.80 / 0.74** vs oracle `partial_30`
-  **0.72 / 0.71** on 2016452 / 2100301 experimental Fobs
-  (`scripts/run_cod_hard_path_validation.py`).
+### What’s new in v0.8.0
+
+#### A. GraphPhaseNet v6 (GraPhAI HA-aware)
+- Node features **d_in=18**: v5 + `ha_E_tail`, `low_res_w`, `E·low_res`, `κ_centrality`
+- Stronger κ-gated message passing + residual self-loops
+- `scripts/run_strong_prior_v6.py` with `--quick` / `--pilot` / `--scale` / `--scale-xl`
+  and `--continue-from` resume
+- Scoreboard: `data/processed/strong_prior_v6.{npz,json,md}`
+- Math: `docs/math/graph_phase_net_v6.md`
+- **Honest pilot (N=200, cod preset):** mean frac≤20° ≈**24.1%**, seedOK ≈**20%**,
+  strong MPE ≈58° — **above** legacy ~22% plateau, **does not** clear 30% oracle bar;
+  strict hard solves still 0% without partial-φ
+
+#### B. Carrozzini-style seed quality classifier
+- Feature list aligned with max_W / N_asym / Vol / seed_fraction / free-FOM proxies
+- Trainable pure-NumPy logistic classifier (sklearn RF when importable)
+- `scripts/train_seed_quality_rf.py` → `data/processed/seed_quality_rf.npz`
+- Pilot test accuracy ~78% on synthetic oracle labels (not published 1505-COD RF)
+- Heuristic Class 0/1 predictor remains default fallback
+
+#### C. Partial-φ / hard path
+- Full Fcalc soft prior for fragment / predicted-model seeds (absorbed from 0.7.1)
+- Richer `recommend_seed_fraction` (N_asym, free-FOM, fragment cues)
+- COD hard-path validation retained (`fragment_half` ≈/≥ `partial_30` mapCC)
+
+#### D. Diffusion & trial research modes
+- Extended reciprocal score features; SE(3) research helpers
+  (`diffusion_se3_stub.reciprocal_invariant_features`)
+- Optional research-only trial completion after peak pick
+  (`pipeline/trial_complete.py`) — not auto atom typing
+- Diffusion still **off** default `auto` path; physics Langevin fallback retained
+
+#### E. Space-group / packaging
+- Common SG aliases (P21/c, Pbca, P212121, …) via `normalize_space_group_name`
+- Version **0.8.0**, RELEASE notes, docs, tests
+
+#### Honest limits
+- Hard ab initio seed bar still below 30% on current pilots; partial-φ remains
+  the practical hard path. No general macromolecular ab initio claim.
+- Physics fallbacks preserved for all ML components.
+- No PhAI / SHELX redistribution.
 
 ## 0.7.0 — 2026-07
 
@@ -70,7 +102,7 @@
 
 #### C. Scientist path / performance
 - GUI multi-plane density slices + optional plotly volume HTML
-- MERGE-class `merge_symmetry_equivalents` (gemmi ASU averaging)
+- MERGE-class `merge_symmetry_equivalents`
 - Ensemble `n_jobs` threaded multistart
 - Dockerfile for containerized `gps-solve`
 - Predicted-model seeding retained/strengthened from v0.5
@@ -80,155 +112,6 @@
 - Partial-φ remains the practical hard-data path
 - Diffusion / score nets experimental; no PXRDnet parity claim
 
-## 0.5.0 — 2026-07
+## Earlier
 
-### What’s new in v0.5.0
-
-Research-aligned hybrid tools, fuller SG support, predicted-model seeding, optional
-device backend, and phase uncertainty — without overclaiming hard ab initio.
-
-#### Diffusion hybrid (experimental)
-- Functional physics Langevin reverse process in `models/diffusion_phase.py`
-  (positivity + modulus + annealed noise; optional future NN score hook)
-- Methods: `diffusion_hybrid`, `diffusion_phaseed`; CLI `--diffusion`,
-  `--n-diffusion-steps`
-- Math note: `docs/math/diffusion_phase.md`
-- Inspired by score-based inverse problems / PXRDnet & XRDSol *concepts* —
-  **not** a reimplementation or performance claim
-
-#### Space-group symmetry
-- `physics/symmetry.py`: parse SG, expand ASU, centro phase constraint, absence
-  diagnostics via gemmi
-- Pipeline report.md space-group section; predicted-model expansion
-
-#### Predicted-model / MR-lite seeding
-- `seed_from_predicted_model` / `load_predicted_model_atoms` (AF, OpenFold3,
-  Boltz, RF-style CIF; occupancy filter; SG expand)
-- `combine_phase_seeds` for multi-source circular combination
-- CLI: `--predicted-model`, improved `gps-make-seed --from-cif`
-
-#### Device / performance
-- `physics/device.py` + optional torch FFT in density (`--device cpu|cuda|mps|auto`,
-  `--gpu`); extras `[gpu]`
-- Graceful NumPy fallback
-
-#### Uncertainty quantification
-- `metrics/uncertainty.py`: multistart circular resultant / phase probability,
-  free-FOM bootstrap; report.md + diagnostics
-
-#### Honest limits (unchanged in spirit)
-- Hard ab initio seed bar still ~21–22% ≤20°; partial-φ remains the hard path
-- Diffusion path is experimental; no trained equivariant weights shipped
-- Not a general protein ab initio solver
-
-## 0.4.0 — 2026-07
-
-### What’s new in v0.4.0
-
-**Carrozzini 2025 AI-PhaSeed alignment** — hybrid tooling and diagnostics without
-breaking pre-0.4 APIs (defaults keep `dm_ai_weight=0`).
-
-- **DM+AI modified tangent** (`dm_ai_weight` / CLI `--ai-dm-hybrid`): AI phases
-  enter κ-weighted tangent as a priori info with reliability weights
-  (`direct_methods.dm_ai_hybrid_refine`, `phase_extend` schedule).
-- **Seed-quality Class 0/1 predictor** (`metrics/seed_quality.py`): features
-  max W, N_asym, Vol, seed fraction, free-FOM proxies; heuristic P(success) +
-  optional sklearn RF extra (`pip install grok-phase-solver[seed-quality]`).
-- **Low-res / large-Vol EDM path** (`low_res_path` / `--low-res-path`): longer
-  seed anneal, solvent flatten, more frequent hybrid steps.
-- **CLI / GUI**: `--ai-dm-hybrid`, `--dm-ai-weight`, `--low-res-path`,
-  `--prior-weight`, `--seed-quality-filter`; GUI seed-quality panel.
-- **Docs**: expanded `docs/math/ai_phaseed.md` (eqs, statistical toolkit,
-  P2₁/c + generalization notes); citations in FOR_REVIEWERS / arxiv draft /
-  `references.bib`.
-- **Benchmark**: `scripts/run_ai_phaseed_extended_benchmark.py` +
-  `data/processed/ai_phaseed_extended_benchmark.*` (stratified subset harness;
-  not a 1505-structure claim).
-- **Honest limits unchanged:** hard ab initio seed bar still ~21–22% ≤20°;
-  partial-φ remains the hard-data path; Class predictor is operational, not
-  the published RF on 1505 COD entries.
-
-### Science
-- Carrozzini et al. (2025) J. Appl. Cryst. 58, 1859–1869 DOI 10.1107/S1600576725008271
-- PhAI foundation: Larsen et al. Science 2024
-
-## 0.3.0 — 2026-07
-
-### Synthetic data (Melgalvis & Rekis 2026)
-- New generator `data/synthetic_melgalvis.py`: log-normal unit-cell volume,
-  lattice derivation with realistic ratios/skew, artificial-molecule clusters
-  (covalent bonds, element freqs, optional special-position seeds, H addition)
-- Training: `--use-melgalvis-gen` / `--melgalvis-mode` on `train_strong_prior.py`
-- Shard mode `melgalvis` in `write_training_shard` / `iter_training_samples`
-- Math note: `docs/math/synthetic_melgalvis.md`
-- Pilot retrain: `strong_prior_melg.md` (N=120; frac≤20° ≈22%)
-- **Long Melgalvis XL retrain** (N=1200, H=192, L=4, ~32 min): 
-  `strong_prior_melg_xl.npz` — hold-out frac≤20° ≈**22%**, seedOK rate **12.5%**,
-  mapCC ≈0.49, hard strict **0/12** (still below 30% bar)
-
-### Seeding UX
-- `gps-make-seed --from-cif` for AlphaFold/RoseTTAFold/experimental model fragments
-
-### Honest limits (unchanged in spirit)
-- Hard ab initio seed bar still ~21–22% ≤20°; partial-φ remains the hard-data path
-
-## 0.2.1 — 2026-07
-
-### Ship / packaging
-- Version bump for first public tag **v0.2.1**
-- `__version__` aligned with `pyproject.toml`
-- Release notes: `docs/RELEASE.md` (build, tag, PyPI upload)
-- **Paper pack:** full manuscript draft (`docs/arxiv_draft.md`), Figs. 1–4
-  (`scripts/plot_paper_figures.py` → `docs/figures/paper_fig*`), hub `docs/paper/`
-- **PDF:** `docs/paper/arxiv_draft.pdf` via pandoc + tectonic
-  (`scripts/build_paper_pdf.py`); authors **Grok (xAI)** and **Joe**
-- **BibTeX:** `docs/paper/references.bib`
-- **GitHub Release** v0.2.1 with wheel, sdist, and paper PDF assets
-- README: PyPI-first install path; release notes page
-
-### Included since 0.2.0 (product freeze for tag)
-- Streamlit **gps-gui** + polish (wizard, CELL parse, peaks retry, SHELXL handoff)
-- Lane B partial-φ seed importers + `gps-make-seed`
-- Lane C experimental COD scoreboard + `arxiv_draft`
-- GraphPhaseNet v4 XL prior weights (honest ~21% seed bar)
-
-## 0.2.0 — 2026-07
-
-### Product / pipeline
-- `auto` prefers **ensemble** on easy/high-res; hard uses graph/hard-P1 priors or CF
-- **Partial-φ hard path**: `partial_phaseed` + multiple seed sources; demo in `examples/partial_seed_demo/`
-- **Lane B seed UX:** `--phase-seed-res`, `--seed-peaks-csv`, `--seed-atoms-csv`,
-  isomorphous `--native-hkl`/`--derivative-hkl`, `--patterson-ha`;
-  `gps-make-seed` CLI; seed-quality section in `report.md`
-- **GUI:** Streamlit app (`gps-gui`, extras `.[gui]`) — upload HKL/INS/seeds,
-  run same pipeline, download `trial.res` / zip
-- **GUI polish:** scenario wizard, CELL-line parser, quality hints, peaks-as-seed
-  retry, SHELXL handoff tab, solver log capture, clearer errors
-- **SHELXS / SHELXE** external runners (`ShelX/` gitignored); `shelxs+shelxe` method
-- USER_GUIDE decision tree; SHELXL refinement instructions in `report.md`
-- `trial.res` export for Olex2/SHELXL
-
-### Science
-- Free FOM v2.1, failure taxonomy A/B/C, AI-PhaSeed
-- GraphPhaseNet strong prior (v3): Wilson match + strong-seed metrics/loss
-- **Lane A v4 XL:** residual MP + Adam + d_in=10 + `--scale-xl` (1200 structs);
-  fine-tune `--continue-from` / `--hard-only` / `--seed-focus`
-- Oracle partial-φ curves: ≥30% strong φ within 20° → hard strict solves
-- Wilson domain-gap closing (`wilson_match.py`)
-- SHELXS head-to-head scoreboard vs CF/ensemble/priors
-
-### Review pack (Lane C)
-- Expanded **experimental scoreboard**: COD 2016452/2100301 Fobs + Fcalc,
-  2017775, oracle partial-φ rows, optional SHELXS / strong prior
-- Working draft `docs/arxiv_draft.md`; FOR_REVIEWERS claim **C9**
-- COD download list includes 2016452 + HKL flags for 2100301
-
-### Honest limits
-- Hard ab initio still ~0% strict success under full priors
-- **Seed bar ~21% ≤20° plateaus under 5× scale** (v3 → v4 XL); not cleared to 30%
-- Not a general protein ab initio solver
-- SHELXD binary not available in default `ShelX/` (SHELXS present when installed)
-
-## 0.1.0 — earlier
-
-- Phase-1 baseline: CF/HIO, COD I/O, metrics, gps-solve core
+See git history and `docs/RELEASE_NOTES_v0.*.md` for 0.2–0.5.

@@ -147,7 +147,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] `DM+AI tangent hybrid` (`dm_ai_weight` / modified tangent)
 - [x] Expanded COD AI-PhaSeed subset bench (`run_ai_phaseed_extended_benchmark.py`)
 - [x] Docs + CHANGELOG 0.4.0 + CLI/GUI flags
-- [ ] Optional: train/persist sklearn RF on COD/synthetic oracle labels
+- [x] Optional: train/persist seed Class 0/1 model on synthetic oracle labels (v0.8)
 - [ ] Optional: download larger COD Vol 1000–3500 Å³ subset for stratified bench
 
 ### v0.5.0 hybrid / SG / UQ track
@@ -172,11 +172,22 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] AI-PhaSeed seed-fraction heuristic; multi-seed agreement boost
 - [x] Protein-mode / auto solvent DM
 - [x] SE(3) diffusion stub (research-only)
+- [x] PyPI 0.7.0 upload
+
+### v0.8.0 GraphPhaseNet v6 + seed RF + hard-path polish
+- [x] GraphPhaseNet **v6** d_in=18 HA/low-res features + κ-gated edges
+- [x] `run_strong_prior_v6.py` (quick/pilot/scale/scale-xl); pilot scoreboard
+      (**~24%** frac≤20° on N=200 hold-out; above ~22% plateau; **not** 30% bar)
+- [x] Trainable seed-quality classifier (NumPy logistic / sklearn RF) + scoreboard
+- [x] Full Fcalc soft prior for fragment seeds (from post-0.7 main)
+- [x] SG name aliases; trial_complete research mode; SE(3) research features
+- [x] Version 0.8.0 packaging + tests (187 passed)
 - [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset cod`
 - [ ] True SE(3) equivariant atomic diffusion (external research)
 - [ ] Optional cctbx backend hooks
 - [ ] OMC25-scale data mirror
-- [ ] PyPI 0.7.0 upload (maintainer token)
+- [ ] PyPI 0.8.0 upload (maintainer token)
+- [ ] Optional: larger COD Vol 1000–3500 Å³ stratified AI-PhaSeed bench
 
 
 

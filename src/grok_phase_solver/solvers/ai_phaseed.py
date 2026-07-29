@@ -62,16 +62,20 @@ def recommend_seed_fraction(
     d_min: Optional[float] = None,
     *,
     default: float = 0.25,
+    n_asym: Optional[float] = None,
+    free_fom_composite: Optional[float] = None,
+    has_fragment_seed: bool = False,
 ) -> Dict:
     """
     Heuristic seed-set fraction inspired by Carrozzini AI-PhaSeed statistics.
 
     Larger cells / lower resolution → slightly larger seed fraction (more prior
-    needed); small high-res cells → modest seeds. Operational UX only — not a
-    reimplementation of the 2025 RF classifier.
+    needed); small high-res cells → modest seeds. Optional free-FOM / N_asym /
+    fragment cues (v0.8). Operational UX only — not a reimplementation of the
+    2025 RF classifier.
     """
     frac = float(default)
-    notes = []
+    notes: list = []
     if cell is not None:
         try:
             vol = float(unit_cell_volume(np.asarray(cell, dtype=np.float64)))
@@ -81,6 +85,8 @@ def recommend_seed_fraction(
             elif vol <= 600:
                 frac = max(0.15, frac - 0.05)
                 notes.append("small Vol → modest seed fraction")
+            if 1000.0 <= vol <= 3500.0:
+                notes.append("Vol in hybrid-friendly band")
         except Exception:
             pass
     if d_min is not None:
@@ -93,12 +99,29 @@ def recommend_seed_fraction(
     if n_refl < 80:
         frac = min(0.50, frac + 0.05)
         notes.append("few reflections")
+    if n_asym is not None:
+        if n_asym >= 80:
+            frac = min(0.48, frac + 0.05)
+            notes.append("large N_asym → denser seed")
+        elif n_asym <= 25:
+            frac = max(0.12, frac - 0.03)
+            notes.append("small N_asym → leaner seed")
+    if free_fom_composite is not None:
+        if free_fom_composite < 0.35:
+            frac = min(0.48, frac + 0.06)
+            notes.append("low free-FOM → expand seed fraction")
+        elif free_fom_composite >= 0.55:
+            frac = max(0.12, frac - 0.03)
+            notes.append("good free-FOM → leaner seed ok")
+    if has_fragment_seed:
+        frac = max(0.12, frac - 0.04)
+        notes.append("fragment/predicted-model seed present")
     frac = float(np.clip(frac, 0.10, 0.50))
     return {
         "seed_fraction": frac,
-        "n_seed_est": int(np.clip(frac * n_refl, 15, min(250, n_refl))),
+        "n_seed_est": int(np.clip(round(frac * n_refl), 15, min(250, n_refl))),
         "notes": notes,
-        "method": "carrozzini_heuristic_v07",
+        "method": "carrozzini_heuristic_v08",
     }
 
 

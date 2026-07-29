@@ -47,8 +47,16 @@ def reflection_score_features(
     cell: np.ndarray,
     phases_noisy: np.ndarray,
     t: float,
+    *,
+    extended: bool = False,
 ) -> np.ndarray:
-    """(N, 6) features: E, s_n, amp_n, cos, sin, t."""
+    """
+    Per-reflection score features.
+
+    Base (N, 6): E, s_n, amp_n, cos, sin, t.
+    Extended (N, 8, ``extended=True`` / v0.8): + |h|_n, shell_rank
+    (rotation-invariant reciprocal cues for SE(3)-inspired experiments).
+    """
     hkl = np.asarray(hkl, dtype=float)
     amp = np.asarray(amplitudes, dtype=np.float64)
     ph = np.asarray(phases_noisy, dtype=np.float64)
@@ -58,9 +66,24 @@ def reflection_score_features(
     s_n = s / (s.max() + 1e-16)
     amp_n = amp / (amp.std() + 1e-16)
     t_col = np.full(len(amp), float(t), dtype=np.float64)
-    return np.column_stack(
+    base = np.column_stack(
         [E, s_n, amp_n, np.cos(ph), np.sin(ph), t_col]
     ).astype(np.float64)
+    if not extended:
+        return base
+    hn = np.linalg.norm(hkl, axis=1)
+    hn = hn / (hn.max() + 1e-16)
+    order = np.argsort(s)
+    shell_rank = np.zeros(len(amp), dtype=np.float64)
+    n_shells = max(4, min(10, len(amp) // 10 + 1))
+    edges = np.linspace(0, len(amp), n_shells + 1, dtype=int)
+    for si in range(n_shells):
+        sl = order[edges[si] : edges[si + 1]]
+        if len(sl) == 0:
+            continue
+        r = np.argsort(np.argsort(E[sl])).astype(np.float64)
+        shell_rank[sl] = r / max(len(sl) - 1, 1)
+    return np.column_stack([base, hn, shell_rank]).astype(np.float64)
 
 
 @dataclass

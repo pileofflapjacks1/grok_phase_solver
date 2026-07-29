@@ -112,6 +112,14 @@ def node_features_from_graph(
 
     v5.1 (same d_in): κ-gated edges + optional higher-κ edge emphasis in
     ``prepare_graph_batch`` (GraPhAI-style physics edges without expanding d_in).
+
+    **v6 (d_in=18)** — GraPhAI / HA-aware extensions (v0.8):
+    v5 + ``[ha_E_tail, low_res_w, E·low_res, κ_centrality]``
+
+    - ha_E_tail: soft strong-|E| tail (heavy-atom sensitive outliers)
+    - low_res_w: (1 − s_norm) low-resolution weight (HA dominate low-s)
+    - E·low_res: couples strong |E| with low-s (GraPhAI HA panels)
+    - κ_centrality: incident triplet-κ mass / max (physics edge centrality)
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -200,13 +208,47 @@ def node_features_from_graph(
     e_deg = np.log1p(np.maximum(E, 0.0) * np.maximum(deg, 0.0))
     e_deg = e_deg / (e_deg.max() + 1e-16)
 
-    return np.column_stack(
+    v5 = np.column_stack(
         [
             base,
             shell_rank,
             e_deg,
             local_E_n,
             shell_amp,
+        ]
+    ).astype(np.float64)
+    if int(feature_version) < 6:
+        return v5
+
+    # --- v6 extras (GraPhAI HA / centrosymmetric-friendly cues) ---
+    # Soft strong-|E| tail: reflections that often carry HA information
+    ha_E_tail = np.maximum(E - 1.8, 0.0)
+    ha_E_tail = ha_E_tail / (ha_E_tail.max() + 1e-16)
+
+    low_res_w = 1.0 - s_n  # larger at low resolution
+    e_low = E * low_res_w
+    e_low = e_low / (e_low.max() + 1e-16)
+
+    # Incident κ (edge_weight) mass as centrality in the triplet graph
+    kappa_c = np.zeros(n, dtype=np.float64)
+    ewt = graph.get("edge_weight")
+    if edges is not None and ewt is not None and len(edges) > 0:
+        ew = np.asarray(ewt, dtype=np.float64)
+        for e, w in zip(np.asarray(edges), ew):
+            i, j, k = int(e[0]), int(e[1]), int(e[2])
+            ww = float(max(w, 0.0))
+            for a in (i, j, k):
+                if 0 <= a < n:
+                    kappa_c[a] += ww
+    kappa_c = kappa_c / (kappa_c.max() + 1e-16)
+
+    return np.column_stack(
+        [
+            v5,
+            ha_E_tail,
+            low_res_w,
+            e_low,
+            kappa_c,
         ]
     ).astype(np.float64)
 
@@ -654,6 +696,8 @@ def prepare_graph_batch(
     max_reflections: int = 120,
     e_min: float = 0.9,
     feature_version: int = 5,
+    kappa_power: float = 1.25,
+    self_loop: float = 0.05,
 ) -> Dict:
     """Build graph + features + dense adj for one structure."""
     graph = reflection_graph(
@@ -668,14 +712,21 @@ def prepare_graph_batch(
     nbrs, wts = build_undirected_adj(n, edges, ewt)
     adj = build_normalized_adj(n, edges, ewt)
     # Soft κ-gated reweight: boost high-κ edges (GraPhAI / Melgalvis physics edges)
-    # v5.1: power-law emphasis on strongest triplets (more message from reliable κ)
+    # v5.1 / v6: power-law emphasis on strongest triplets (more message from reliable κ)
+    # v6 slightly stronger default emphasis when feature_version>=6
+    kpow = float(kappa_power)
+    if int(feature_version) >= 6 and kpow <= 1.25:
+        kpow = 1.35
+    sl = float(self_loop)
+    if int(feature_version) >= 6:
+        sl = max(sl, 0.08)
     if len(edges) > 0 and ewt is not None and len(ewt) == len(edges):
         w = np.asarray(ewt, dtype=np.float64)
         med = float(np.median(w) + 1e-16)
-        w = np.power(np.clip(w / med, 0.15, 6.0), 1.25)
+        w = np.power(np.clip(w / med, 0.15, 6.0), kpow)
         adj = build_normalized_adj(n, edges, w)
         # Add weak self-loops for numerical stability of residual MP
-        adj = adj + 0.05 * np.eye(n, dtype=np.float64)
+        adj = adj + sl * np.eye(n, dtype=np.float64)
         rs = adj.sum(axis=1, keepdims=True)
         adj = adj / np.maximum(rs, 1e-16)
     idx = graph["node_idx"]

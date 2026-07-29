@@ -65,11 +65,52 @@ def gemmi_available() -> bool:
         return False
 
 
+# Common short aliases → gemmi-friendly HM strings (v0.8)
+_SG_ALIASES = {
+    "P21/C": "P 1 21/c 1",
+    "P2(1)/C": "P 1 21/c 1",
+    "P21/C1": "P 1 21/c 1",
+    "P121/C1": "P 1 21/c 1",
+    "P2_1/C": "P 1 21/c 1",
+    "P21/N": "P 1 21/n 1",
+    "P21/A": "P 1 21/a 1",
+    "C2/C": "C 1 2/c 1",
+    "C2/M": "C 1 2/m 1",
+    "P-1": "P -1",
+    "P1-": "P -1",
+    "P21": "P 1 21 1",
+    "P2_1": "P 1 21 1",
+    "P212121": "P 21 21 21",
+    "P2_12_12_1": "P 21 21 21",
+    "PBCA": "P b c a",
+    "PNA21": "P n a 21",
+    "PCCN": "P c c n",
+    "I41/A": "I 41/a",
+    "R-3": "R -3",
+    "R3": "R 3",
+    "FDD2": "F d d 2",
+    "C2221": "C 2 2 21",
+}
+
+
+def normalize_space_group_name(name: Optional[str]) -> str:
+    """Normalize common short SG names to gemmi-friendly HM strings."""
+    raw = (name or "P 1").strip() or "P 1"
+    key = raw.replace(" ", "").upper().replace("−", "-")
+    if key in _SG_ALIASES:
+        return _SG_ALIASES[key]
+    # already spaced HM-like
+    return raw
+
+
 def parse_space_group(name: Optional[str]) -> SpaceGroupInfo:
     """
     Parse a space-group string (HM preferred). Fallback: P1 info without gemmi.
+
+    Accepts common short aliases (P21/c, Pbca, P212121, …) via
+    ``normalize_space_group_name`` (v0.8).
     """
-    raw = (name or "P 1").strip() or "P 1"
+    raw = normalize_space_group_name(name)
     if not gemmi_available():
         return SpaceGroupInfo(
             hm=raw,

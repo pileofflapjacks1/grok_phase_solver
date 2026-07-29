@@ -1,0 +1,42 @@
+{
+  "n_train": 150,
+  "n_test": 50,
+  "accuracy": 0.78,
+  "backend": "numpy_logistic",
+  "feature_names": [
+    "max_W",
+    "N_asym",
+    "Vol",
+    "seed_fraction",
+    "free_fom_composite",
+    "mean_E_seed",
+    "median_E_seed",
+    "R_pos",
+    "density_asym",
+    "d_min",
+    "n_seed",
+    "excess_kurtosis"
+  ],
+  "feature_importance": {
+    "max_W": 0.04970903587067777,
+    "N_asym": 0.021031757382612665,
+    "Vol": 0.019486912786731658,
+    "seed_fraction": 0.019306182384186178,
+    "free_fom_composite": 0.4213195007776853,
+    "mean_E_seed": 0.01156270942891753,
+    "median_E_seed": 0.02748260908861667,
+    "R_pos": 0.03343545503244454,
+    "density_asym": 0.0014072783102433092,
+    "d_min": 0.050753347392850104,
+    "n_seed": 0.12461478713874924,
+    "excess_kurtosis": 0.2198904244062849
+  },
+  "class_balance_train": {
+    "class0": 41,
+    "class1": 109
+  },
+  "note": "Synthetic/oracle-labeled Class 0/1 model aligned with Carrozzini feature list. Not the published 1505-COD RF; heuristic fallback always available.",
+  "bar_frac_within_20": 0.28,
+  "n_total": 200,
+  "class1_rate": 0.72
+}
