@@ -41,7 +41,7 @@ python -m twine upload dist/grok_phase_solver-0.8.0*
 - [x] Version aligned: pyproject, `__version__`, CHANGELOG → **0.8.0**
 - [x] Scoreboards: `strong_prior_v6`, `seed_quality_rf`, COD hard-path
 - [x] Docs: RELEASE_NOTES_v0.8.0, graph_phase_net_v6, TODO/README
-- [ ] Tag + GitHub Release assets
+- [x] Tag + GitHub Release assets
 - [ ] PyPI upload (maintainer token; can wait)
 - [x] No overclaims (seed bar honest; partial-φ hard path)
 
