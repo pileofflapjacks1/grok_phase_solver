@@ -917,7 +917,7 @@ def combine_phase_seeds(
         if zs:
             ww = np.asarray(ws, dtype=np.float64)
             if agreement_boost and len(phs) >= 2:
-                # mean pairwise |cos Δφ|
+                # mean pairwise |cos Δφ| + Carrozzini bin agreement (v0.9)
                 agree = 0.0
                 c = 0
                 for a in range(len(phs)):
@@ -925,6 +925,23 @@ def combine_phase_seeds(
                         agree += abs(np.cos(phs[a] - phs[b]))
                         c += 1
                 agree = agree / max(c, 1)
+                try:
+                    from grok_phase_solver.solvers.ai_phaseed import discretize_phases
+
+                    bins = [
+                        float(discretize_phases(np.array([p]), mode="quadrant")[0])
+                        for p in phs
+                    ]
+                    bin_agree = 0.0
+                    cb = 0
+                    for a in range(len(bins)):
+                        for b in range(a + 1, len(bins)):
+                            bin_agree += float(abs(bins[a] - bins[b]) < 1e-6)
+                            cb += 1
+                    bin_agree = bin_agree / max(cb, 1)
+                    agree = 0.65 * agree + 0.35 * bin_agree
+                except Exception:
+                    pass
                 agreement[i] = agree
                 ww = ww * (0.75 + 0.5 * agree)
             ww = ww / (np.sum(ww) + 1e-16)

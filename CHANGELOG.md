@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.9.0 — 2026-07
+
+### What’s new in v0.9.0
+
+#### A. GraphPhaseNet v7 (GraPhAI multipath + Carrozzini bins)
+- Node features **d_in=22**: v6 + hop2 local E, edge geometric E, Wilson residual,
+  centro-HA cue
+- κ×E multipath edge reweight; residual self-loops
+- Training loss: optional **discretized phase CE** (4-bin / centro auto)
+- `scripts/run_strong_prior_v7.py` (quick/pilot/scale/scale-xl; presets cod/hard/acta2026)
+- Scoreboard: `data/processed/strong_prior_v7.*`
+- Math: `docs/math/graph_phase_net_v7.md`, external GraPhAI note (no weight redistribution)
+- **Honest:** laptop pilots remain near ~21–25% frac≤20°; **30% bar not cleared**;
+  strict hard ab initio still 0% without partial-φ. Scale-xl left for cluster.
+
+#### B. AI-PhaSeed / seed quality
+- `discretize_phases(..., mode="quadrant")` alias; `phase_bin_agreement` helper
+- Multi-seed combine: bin-agreement boost with continuous agreement
+- Seed-quality features: bin entropy, mean |cos φ|, top-10% E; heuristic uses them
+
+#### C. Synthetic data (Acta 2026-style packing)
+- Multi-fragment packing; `actas2026_config` / preset
+- Realistic monoclinic angle nudge option
+
+#### D. Density modification
+- Solvent fraction estimate uses volume / N_atom density prior
+
+#### E. Packaging
+- Version **0.9.0**, RELEASE notes, tests
+
+#### Honest limits
+- Partial-φ / fragment / HA remains the reliable hard path.
+- Physics fallbacks retained for all ML components.
+- No PhAI / SHELX / GraPhAI weight redistribution.
+
 ## 0.8.0 — 2026-07
 
 ### What’s new in v0.8.0

@@ -169,6 +169,26 @@ def extract_seed_features(
         feats["R_pos"] = 1.0
         feats["excess_kurtosis"] = 0.0
 
+    # Carrozzini-style bin concentration on seed phases (v0.9)
+    if n_seed > 0:
+        ph_s = ph[seed_idx]
+        # 4-bin histogram entropy (lower = more decisive / discrete seed)
+        phw = (ph_s + np.pi) % (2 * np.pi) - np.pi
+        hist, _ = np.histogram(phw, bins=4, range=(-np.pi, np.pi))
+        p = hist.astype(np.float64) / max(hist.sum(), 1)
+        p = p[p > 0]
+        ent = float(-np.sum(p * np.log(p + 1e-16)) / np.log(4.0))  # ∈ [0,1]
+        feats["seed_bin_entropy"] = ent
+        # mean |cos| — high for centro-like 0/π seeds
+        feats["seed_mean_abs_cos"] = float(np.mean(np.abs(np.cos(ph_s))))
+        # top-10% |E| among seeds
+        k10 = max(1, int(0.10 * n_seed))
+        feats["max_W_top10_mean"] = float(np.mean(np.sort(E_s)[-k10:]))
+    else:
+        feats["seed_bin_entropy"] = 1.0
+        feats["seed_mean_abs_cos"] = 0.0
+        feats["max_W_top10_mean"] = 0.0
+
     return feats
 
 
@@ -251,6 +271,19 @@ def _heuristic_success_probability(feats: Dict[str, float]) -> Tuple[float, List
         p -= 0.08
         notes.append("Large N_asym: harder seed-only path")
 
+    # v0.9 Carrozzini bin concentration cues
+    ent = feats.get("seed_bin_entropy", 0.75)
+    if ent <= 0.55:
+        p += 0.08
+        notes.append("Low seed bin entropy (discrete-like phases)")
+    elif ent >= 0.90:
+        p -= 0.04
+        notes.append("High seed bin entropy (diffuse phases)")
+    mac = feats.get("seed_mean_abs_cos", 0.5)
+    if mac >= 0.75:
+        p += 0.05
+        notes.append("High |cos φ| (centro-like seed)")
+
     p = float(np.clip(p, 0.02, 0.95))
     return p, notes
 
@@ -289,6 +322,9 @@ DEFAULT_RF_FEATURE_NAMES: List[str] = [
     "d_min",
     "n_seed",
     "excess_kurtosis",
+    "seed_bin_entropy",
+    "seed_mean_abs_cos",
+    "max_W_top10_mean",
 ]
 
 

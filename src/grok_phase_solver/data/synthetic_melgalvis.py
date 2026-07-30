@@ -119,6 +119,11 @@ class MelgalvisGenConfig:
     # Larger ASU for hard curriculum (GraPhAI / low-res panels)
     p_large_molecule: float = 0.15  # chance to sample n_nonh toward hi end ×1.5
     n_nonh_hard_cap: int = 48
+    # v0.9: multi-fragment packing + Acta 2026-style denser COD volume band
+    p_multi_fragment: float = 0.18  # chance to pack 2 independent clusters
+    multi_frag_n_extra: Tuple[int, int] = (3, 10)
+    # Tighter axis ratios for more realistic packing (artificial structure gen)
+    prefer_realistic_angles: bool = True
 
 
 def _sample_weighted(rng: np.random.Generator, freq: Dict[str, float]) -> str:
@@ -169,8 +174,37 @@ def hard_curriculum_config(**overrides) -> MelgalvisGenConfig:
         p_partial_occupancy=0.15,
         p_large_molecule=0.35,
         p_special_seed=0.18,
+        p_multi_fragment=0.22,
+        prefer_realistic_angles=True,
         name_prefix="melg_hard",
         mode="hybrid",
+    )
+    base.update(overrides)
+    return MelgalvisGenConfig(**base)
+
+
+def actas2026_config(**overrides) -> MelgalvisGenConfig:
+    """
+    Curriculum tuned toward improved artificial structure generation (2026).
+
+    Emphasizes COD-like volumes, multi-fragment packing, and HA injection for
+    better domain match when training graph priors / PhAI-like models.
+    """
+    base = dict(
+        log_v_mu=float(np.log(700.0)),
+        log_v_sigma=0.58,
+        v_min=180.0,
+        v_max=4200.0,
+        n_nonh_lo=8,
+        n_nonh_hi=36,
+        p_heavy_atom=0.24,
+        p_partial_occupancy=0.12,
+        p_multi_fragment=0.25,
+        prefer_realistic_angles=True,
+        cod_like_volumes=True,
+        name_prefix="melg_acta2026",
+        mode="hybrid",
+        hybrid_cluster_frac=0.78,
     )
     base.update(overrides)
     return MelgalvisGenConfig(**base)
@@ -512,7 +546,25 @@ def generate_melgalvis_structure(
     V = float(np.clip(V, cfg.v_min, cfg.v_max))
 
     cell = sample_lattice_from_volume(rng, V, cfg)
+    if getattr(cfg, "prefer_realistic_angles", False):
+        # Soft nudge monoclinic β toward 90–120° if cell is monoclinic-like
+        a, b, c, al, be, ga = cell
+        if abs(al - 90) < 1e-6 and abs(ga - 90) < 1e-6 and abs(be - 90) > 1.0:
+            be = float(np.clip(be, 95.0, 125.0))
+            cell = np.array([a, b, c, al, be, ga], dtype=np.float64)
     elements, cart = build_artificial_molecule(rng, n_nonh, cfg, special_seed=special)
+    # v0.9 multi-fragment: second independent cluster (Acta-style packing variety)
+    if rng.random() < float(getattr(cfg, "p_multi_fragment", 0.0)):
+        lo, hi = getattr(cfg, "multi_frag_n_extra", (3, 10))
+        n2 = int(rng.integers(int(lo), int(hi) + 1))
+        el2, cart2 = build_artificial_molecule(rng, n2, cfg, special_seed=False)
+        # offset second fragment in Cartesian space
+        offset = rng.normal(size=3)
+        offset = 3.5 * offset / (np.linalg.norm(offset) + 1e-16)
+        cart2 = cart2 + offset
+        elements = list(elements) + list(el2)
+        cart = np.vstack([cart, cart2])
+        n_nonh = sum(1 for e in elements if e.upper() not in ("H", "D"))
     # Optional heavy-atom injection (HA-like for partial-seed curriculum)
     if rng.random() < float(getattr(cfg, "p_heavy_atom", 0.0)) and elements:
         heavies = list(getattr(cfg, "heavy_elements", ("BR", "CL", "S")))
@@ -595,6 +647,8 @@ def iter_melgalvis_samples(
             cfg = cod_like_config()
         elif preset == "hard":
             cfg = hard_curriculum_config()
+        elif preset in ("acta2026", "acta", "improved"):
+            cfg = actas2026_config()
         else:
             cfg = MelgalvisGenConfig()
     if n_nonh_range:

@@ -182,11 +182,20 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Full Fcalc soft prior for fragment seeds (from post-0.7 main)
 - [x] SG name aliases; trial_complete research mode; SE(3) research features
 - [x] Version 0.8.0 packaging + tests (187 passed)
-- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset cod`
+- [x] PyPI / GitHub Release 0.8.0 (when published by maintainer)
+
+### v0.9.0 GraphPhaseNet v7 + Carrozzini bins + packing
+- [x] GraphPhaseNet **v7** d_in=22 multipath + κ×E edges + bin CE loss
+- [x] `run_strong_prior_v7.py`; Melgalvis multi-fragment + acta2026 preset
+- [x] Seed bin features; multi-seed bin agreement; quadrant discretization
+- [x] Solvent estimate volume/N prior; docs graphai_external
+- [x] Version 0.9.0 packaging + tests
+- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset cod|acta2026`
+- [ ] Optional local GraPhAI Zenodo H2H (external weights; not redistributed)
 - [ ] True SE(3) equivariant atomic diffusion (external research)
 - [ ] Optional cctbx backend hooks
 - [ ] OMC25-scale data mirror
-- [ ] PyPI 0.8.0 upload (maintainer token)
+- [ ] PyPI 0.9.0 upload (maintainer token)
 - [ ] Optional: larger COD Vol 1000–3500 Å³ stratified AI-PhaSeed bench
 
 

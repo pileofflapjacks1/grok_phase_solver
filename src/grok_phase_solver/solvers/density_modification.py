@@ -80,22 +80,38 @@ def estimate_solvent_fraction(
     *,
     default: float = 0.45,
     protein_mode: bool = False,
+    volume: Optional[float] = None,
+    n_atoms_approx: Optional[float] = None,
 ) -> float:
     """
-    Heuristic solvent fraction from density histogram.
+    Heuristic solvent fraction from density histogram (+ optional cell cues).
 
     ``protein_mode``: bias toward higher solvent (0.45–0.65) typical of
     macromolecular crystals. Small-molecule default stays ~0.3–0.5.
+
+    v0.9: optional volume / N_atom density prior and Otsu-like low-density mass.
     """
     r = np.asarray(rho, dtype=np.float64).ravel()
     if r.size < 8:
         return float(default)
     # fraction of voxels below mean as crude solvent proxy
     below = float(np.mean(r < np.mean(r)))
+    # also use below median as softer solvent mass
+    below_med = float(np.mean(r < np.median(r)))
+    hist_proxy = 0.6 * below + 0.4 * below_med
     if protein_mode:
-        frac = float(np.clip(0.35 + 0.4 * below, 0.40, 0.70))
+        frac = float(np.clip(0.35 + 0.4 * hist_proxy, 0.40, 0.72))
     else:
-        frac = float(np.clip(0.15 + 0.45 * below, 0.20, 0.55))
+        frac = float(np.clip(0.15 + 0.45 * hist_proxy, 0.18, 0.55))
+    # density prior: large Vol / few atoms → higher solvent
+    if volume is not None and n_atoms_approx is not None and n_atoms_approx > 0:
+        vpa = float(volume) / float(n_atoms_approx)
+        if protein_mode and vpa > 30.0:
+            frac = float(np.clip(frac + 0.05, 0.40, 0.75))
+        elif not protein_mode and vpa > 22.0:
+            frac = float(np.clip(frac + 0.04, 0.18, 0.60))
+        elif vpa < 10.0 and not protein_mode:
+            frac = float(np.clip(frac - 0.04, 0.15, 0.50))
     return frac
 
 

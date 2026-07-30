@@ -120,6 +120,14 @@ def node_features_from_graph(
     - low_res_w: (1 − s_norm) low-resolution weight (HA dominate low-s)
     - E·low_res: couples strong |E| with low-s (GraPhAI HA panels)
     - κ_centrality: incident triplet-κ mass / max (physics edge centrality)
+
+    **v7 (d_in=22)** — GraPhAI-aligned multipath cues (v0.9):
+    v6 + ``[hop2_local_E, edge_E_geom, wilson_E_shell, centro_HA_cue]``
+
+    - hop2_local_E: 2-hop mean |E| (deeper graph context)
+    - edge_E_geom: mean √(E_i E_j) over incident triplet pairs
+    - wilson_E_shell: E / shell-mean E (Wilson residual)
+    - centro_HA_cue: ha_E_tail · low_res · shell_rank (Z≥19 / centro path)
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -242,7 +250,7 @@ def node_features_from_graph(
                     kappa_c[a] += ww
     kappa_c = kappa_c / (kappa_c.max() + 1e-16)
 
-    return np.column_stack(
+    v6 = np.column_stack(
         [
             v5,
             ha_E_tail,
@@ -251,6 +259,142 @@ def node_features_from_graph(
             kappa_c,
         ]
     ).astype(np.float64)
+    if int(feature_version) < 7:
+        return v6
+
+    # --- v7 extras (GraPhAI multipath / Wilson residual) ---
+    # 2-hop local |E| via one more adjacency multiply on 1-hop local_E
+    hop2 = local_E.copy()
+    if edges is not None and len(edges) > 0:
+        nbr_sum2 = np.zeros(n, dtype=np.float64)
+        nbr_cnt2 = np.zeros(n, dtype=np.float64)
+        for e in np.asarray(edges):
+            i, j, k = int(e[0]), int(e[1]), int(e[2])
+            for a, b in ((i, j), (i, k), (j, k)):
+                if a == b or a < 0 or b < 0 or a >= n or b >= n:
+                    continue
+                nbr_sum2[a] += local_E[b]
+                nbr_cnt2[a] += 1.0
+                nbr_sum2[b] += local_E[a]
+                nbr_cnt2[b] += 1.0
+        hop2 = nbr_sum2 / np.maximum(nbr_cnt2, 1.0)
+    hop2_n = hop2 / (hop2.max() + 1e-16)
+
+    # Geometric mean of |E| on incident undirected edges
+    edge_geom = np.zeros(n, dtype=np.float64)
+    edge_cnt = np.zeros(n, dtype=np.float64)
+    if edges is not None and len(edges) > 0:
+        for e in np.asarray(edges):
+            i, j, k = int(e[0]), int(e[1]), int(e[2])
+            for a, b in ((i, j), (i, k), (j, k)):
+                if a == b or a < 0 or b < 0 or a >= n or b >= n:
+                    continue
+                g = float(np.sqrt(max(E[a], 0.0) * max(E[b], 0.0)))
+                edge_geom[a] += g
+                edge_geom[b] += g
+                edge_cnt[a] += 1.0
+                edge_cnt[b] += 1.0
+        edge_geom = edge_geom / np.maximum(edge_cnt, 1.0)
+    edge_geom = edge_geom / (edge_geom.max() + 1e-16)
+
+    # Wilson residual: E / shell mean E
+    shell_E_mean = np.ones(n, dtype=np.float64)
+    for si in range(n_shells):
+        sl = order[edges_s[si] : edges_s[si + 1]]
+        if len(sl) == 0:
+            continue
+        shell_E_mean[sl] = float(np.mean(E[sl]) + 1e-16)
+    wilson_E = E / shell_E_mean
+    wilson_E = wilson_E / (wilson_E.max() + 1e-16)
+
+    centro_ha = ha_E_tail * low_res_w * shell_rank
+    centro_ha = centro_ha / (centro_ha.max() + 1e-16)
+
+    return np.column_stack(
+        [
+            v6,
+            hop2_n,
+            edge_geom,
+            wilson_E,
+            centro_ha,
+        ]
+    ).astype(np.float64)
+
+
+def phase_bin_cross_entropy(
+    out: np.ndarray,
+    phase_true: np.ndarray,
+    *,
+    n_bins: int = 4,
+    mode: str = "bins",
+) -> Tuple[float, np.ndarray]:
+    """
+    Carrozzini-style discretized phase classification loss on (cos, sin) heads.
+
+    Soft-assigns predicted phases to bins via circular proximity; CE vs true bin.
+    Returns (loss, dout) with dout shape matching ``out`` (N, 2).
+
+    ``mode``: ``bins`` (n_bins on circle) or ``centro`` (2 bins: 0 / π).
+    """
+    out = np.asarray(out, dtype=np.float64)
+    ph_t = np.asarray(phase_true, dtype=np.float64)
+    n = out.shape[0]
+    dout = np.zeros_like(out)
+    if n == 0:
+        return 0.0, dout
+
+    # predicted angle from (cos, sin) logits (treat as unnormalized direction)
+    c, s = out[:, 0], out[:, 1]
+    ph_p = np.arctan2(s, c + 1e-16)
+
+    if mode == "centro":
+        n_bins = 2
+        # bins: 0 and π represented by cos sign
+        # true label: 0 if cos(true)>=0 else 1
+        y = (np.cos(ph_t) < 0).astype(int)
+        # soft pred: p1 = sigmoid(-cos_pred) ≈ P(π)
+        logits = -c  # large positive → prefer π
+        # binary CE
+        p1 = 1.0 / (1.0 + np.exp(-np.clip(logits, -40, 40)))
+        p1 = np.clip(p1, 1e-7, 1 - 1e-7)
+        yf = y.astype(np.float64)
+        loss = float(-np.mean(yf * np.log(p1) + (1 - yf) * np.log(1 - p1)))
+        # dL/dlogit = (p1 - y) / n
+        dlog = (p1 - yf) / n
+        # logit = -c → dc = -dlog
+        dout[:, 0] = -dlog
+        return loss, dout
+
+    # multi-bin on circle
+    edges = np.linspace(-np.pi, np.pi, n_bins + 1)
+    mids = 0.5 * (edges[:-1] + edges[1:])
+    ph_tw = (ph_t + np.pi) % (2 * np.pi) - np.pi
+    y = np.digitize(ph_tw, edges[1:-1])
+    y = np.clip(y, 0, n_bins - 1)
+
+    # soft assignment: logits_k = cos(ph_p - mid_k)
+    # L = -mean log softmax_y
+    # d/dph_p via chain rule, then d cos/sin
+    loss_acc = 0.0
+    for i in range(n):
+        logits = np.cos(ph_p[i] - mids) * 3.0  # temperature
+        logits = logits - logits.max()
+        ex = np.exp(logits)
+        sm = ex / (ex.sum() + 1e-16)
+        yi = int(y[i])
+        loss_acc += -float(np.log(sm[yi] + 1e-16))
+        # dL/dlogit_k = sm_k - 1_{k=y}
+        dlog = sm.copy()
+        dlog[yi] -= 1.0
+        # dlogit_k / dph = -3 sin(ph - mid_k)
+        dph = float(np.sum(dlog * (-3.0 * np.sin(ph_p[i] - mids))))
+        # ph = atan2(s,c); dph/dc = -s/(c²+s²), dph/ds = c/(c²+s²)
+        den = c[i] ** 2 + s[i] ** 2 + 1e-16
+        dout[i, 0] = dph * (-s[i] / den)
+        dout[i, 1] = dph * (c[i] / den)
+    loss = loss_acc / n
+    dout = dout / n
+    return loss, dout
 
 
 def triplet_cos_invariant(c: np.ndarray, s: np.ndarray, edges: np.ndarray) -> np.ndarray:
@@ -469,6 +613,9 @@ class GraphPhaseNet:
         edges: Optional[np.ndarray] = None,
         edge_weight: Optional[np.ndarray] = None,
         triplet_weight: float = 0.0,
+        bin_weight: float = 0.0,
+        n_phase_bins: int = 4,
+        bin_mode: str = "bins",
     ) -> Tuple[float, dict]:
         out, cache = self.forward(X, nbrs, wts, adj=adj)
         if phase_true is None:
@@ -500,6 +647,14 @@ class GraphPhaseNet:
             )
             loss = loss + triplet_weight * t_loss
             dout = dout + triplet_weight * t_dout
+
+        # Carrozzini-style discretized phase classification (v0.9)
+        if bin_weight > 0 and phase_true is not None:
+            b_loss, b_dout = phase_bin_cross_entropy(
+                out, phase_true, n_bins=int(n_phase_bins), mode=bin_mode
+            )
+            loss = loss + float(bin_weight) * b_loss
+            dout = dout + float(bin_weight) * b_dout
 
         h = cache["h_final"]
         A = cache["A"]
@@ -712,16 +867,31 @@ def prepare_graph_batch(
     nbrs, wts = build_undirected_adj(n, edges, ewt)
     adj = build_normalized_adj(n, edges, ewt)
     # Soft κ-gated reweight: boost high-κ edges (GraPhAI / Melgalvis physics edges)
-    # v5.1 / v6: power-law emphasis on strongest triplets (more message from reliable κ)
-    # v6 slightly stronger default emphasis when feature_version>=6
+    # v5.1 / v6: power-law emphasis on strongest triplets
+    # v7: κ × √(E_i E_j E_k) multipath emphasis (GraPhAI-style reliability)
     kpow = float(kappa_power)
-    if int(feature_version) >= 6 and kpow <= 1.25:
+    if int(feature_version) >= 7:
+        kpow = max(kpow, 1.45)
+    elif int(feature_version) >= 6 and kpow <= 1.25:
         kpow = 1.35
     sl = float(self_loop)
-    if int(feature_version) >= 6:
+    if int(feature_version) >= 7:
+        sl = max(sl, 0.10)
+    elif int(feature_version) >= 6:
         sl = max(sl, 0.08)
     if len(edges) > 0 and ewt is not None and len(ewt) == len(edges):
         w = np.asarray(ewt, dtype=np.float64)
+        if int(feature_version) >= 7 and graph.get("E") is not None:
+            E_n = np.asarray(graph["E"], dtype=np.float64)
+            boost = np.ones(len(edges), dtype=np.float64)
+            for ti, e in enumerate(np.asarray(edges)):
+                i, j, k = int(e[0]), int(e[1]), int(e[2])
+                if 0 <= i < n and 0 <= j < n and 0 <= k < n:
+                    boost[ti] = float(
+                        (max(E_n[i], 0.0) * max(E_n[j], 0.0) * max(E_n[k], 0.0) + 1e-16)
+                        ** (1.0 / 6.0)
+                    )
+            w = w * (0.5 + 0.5 * boost / (boost.mean() + 1e-16))
         med = float(np.median(w) + 1e-16)
         w = np.power(np.clip(w / med, 0.15, 6.0), kpow)
         adj = build_normalized_adj(n, edges, w)

@@ -281,12 +281,16 @@ def train_graph_on_packed(
     within_weight: float = 0.25,
     within_deg: float = 20.0,
     optimizer: str = "adam",
+    bin_weight: float = 0.0,
+    n_phase_bins: int = 4,
+    bin_mode: str = "bins",
 ) -> List[float]:
     """
     Train on one prebuilt structure with OI + triplet aux + strong-seed focus.
 
     within_weight: extra penalty when cos/sin targets disagree beyond ~within_deg
     on high-|E| nodes (soft push toward the 20° seed bar).
+    bin_weight: Carrozzini-style discretized phase CE (v0.9).
     """
     X = packed["X"]
     adj = packed["adj"]
@@ -296,6 +300,12 @@ def train_graph_on_packed(
     losses: List[float] = []
     best_ph = packed["cands"][0]
     thr = np.deg2rad(within_deg)
+    # Prefer centro bin mode for P-1-like samples when auto
+    sample = packed.get("sample") or {}
+    sg = str(sample.get("space_group", "")).upper().replace(" ", "")
+    bmode = bin_mode
+    if bin_mode == "auto":
+        bmode = "centro" if ("-1" in sg or "P-1" in sg) else "bins"
     for ep in range(n_epochs):
         need_forward = (ep % max(origin_every, 1) == 0) or (within_weight > 0)
         z = None
@@ -318,6 +328,9 @@ def train_graph_on_packed(
             edges=edges,
             edge_weight=ewt,
             triplet_weight=triplet_weight,
+            bin_weight=bin_weight,
+            n_phase_bins=n_phase_bins,
+            bin_mode=bmode,
         )
         model.step(grads, lr=lr, optimizer=optimizer)
         losses.append(loss)
@@ -394,10 +407,12 @@ def predict_strong_phases(
     Returns (node_idx, phases_strong).
     """
     fver = int(getattr(model, "_feature_version", 5))
-    # Infer feature version from d_in if needed (v4=10, v5=14, v6=18)
+    # Infer feature version from d_in if needed (v4=10, v5=14, v6=18, v7=22)
     if hasattr(model, "d_in"):
         if model.d_in <= 10:
             fver = 4
+        elif model.d_in >= 22:
+            fver = 7
         elif model.d_in >= 18:
             fver = 6
         elif model.d_in >= 14:
@@ -504,6 +519,9 @@ def train_strong_prior(
     melgalvis_preset: Optional[str] = None,
     include_low_res_frac: float = 0.12,
     feature_version: int = 5,
+    bin_weight: float = 0.0,
+    n_phase_bins: int = 4,
+    bin_mode: str = "auto",
     verbose: bool = True,
 ) -> Tuple[GraphPhaseNet, Dict]:
     """
@@ -520,6 +538,9 @@ def train_strong_prior(
 
     v6: d_in=18 GraPhAI HA-aware features (strong-|E| tail, low-res weight,
     E·low_res, κ-centrality) + slightly stronger κ-gated message passing.
+
+    v7: d_in=22 GraPhAI multipath (hop2, edge geometric E, Wilson residual,
+    centro-HA cue) + κ×E edge reweight + optional Carrozzini bin CE (``bin_weight``).
 
     ``melgalvis_large_vol``: when using Melgalvis generator, bias toward larger
     volumes / lower-res shards (AI-PhaSeed curriculum).
@@ -658,6 +679,9 @@ def train_strong_prior(
                 within_weight=within_weight,
                 within_deg=within_deg,
                 optimizer=optimizer,
+                bin_weight=bin_weight,
+                n_phase_bins=n_phase_bins,
+                bin_mode=bin_mode,
             )
             all_losses.append(float(np.mean(losses[-5:])) if losses else 0.0)
 
@@ -715,6 +739,9 @@ def train_strong_prior(
             within_weight=within_weight * 1.25,
             within_deg=within_deg,
             optimizer=optimizer,
+            bin_weight=bin_weight * 1.1,
+            n_phase_bins=n_phase_bins,
+            bin_mode=bin_mode,
         )
 
     hold = _holdout_eval(
@@ -747,6 +774,10 @@ def train_strong_prior(
         "n_global_passes": n_global_passes,
         "epochs_refine": epochs_refine,
         "triplet_weight": triplet_weight,
+        "bin_weight": bin_weight,
+        "n_phase_bins": n_phase_bins,
+        "bin_mode": bin_mode,
+        "feature_version": feature_version,
         "curriculum": curriculum,
         "wilson_match": wilson_match,
         "e_power": e_power,

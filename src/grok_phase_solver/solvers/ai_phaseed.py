@@ -177,6 +177,7 @@ def discretize_phases(
       - ``none``: continuous
       - ``centro``: {0, π} (centrosymmetric)
       - ``bins``: n_bins equal bins on (-π, π]
+      - ``quadrant``: alias for n_bins=4 (Carrozzini-style quadrants)
     """
     ph = np.asarray(phases, dtype=np.float64)
     if mode == "none":
@@ -185,7 +186,9 @@ def discretize_phases(
         # nearest of 0 or π (map to [0, π] then fold)
         c = np.cos(ph)
         return np.where(c >= 0.0, 0.0, np.pi)
-    if mode == "bins":
+    if mode in ("bins", "quadrant"):
+        if mode == "quadrant":
+            n_bins = 4
         # quantize to midpoints of equal bins
         edges = np.linspace(-np.pi, np.pi, n_bins + 1)
         mids = 0.5 * (edges[:-1] + edges[1:])
@@ -194,6 +197,26 @@ def discretize_phases(
         idx = np.digitize(phw, edges[1:-1])
         return mids[np.clip(idx, 0, n_bins - 1)]
     raise ValueError(mode)
+
+
+def phase_bin_agreement(
+    phases_a: np.ndarray,
+    phases_b: np.ndarray,
+    *,
+    n_bins: int = 4,
+    mode: str = "bins",
+) -> float:
+    """
+    Fraction of reflections in the same Carrozzini bin (multi-seed agreement).
+
+    Used to boost combined seeds when independent sources agree.
+    """
+    a = discretize_phases(phases_a, mode=mode, n_bins=n_bins)
+    b = discretize_phases(phases_b, mode=mode, n_bins=n_bins)
+    if len(a) == 0:
+        return 0.0
+    # compare bin indices via angular distance to mids
+    return float(np.mean(np.abs(np.angle(np.exp(1j * (a - b)))) < 1e-6))
 
 
 def build_initial_phases(
