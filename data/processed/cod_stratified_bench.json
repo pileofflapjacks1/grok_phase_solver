@@ -1,0 +1,101 @@
+{
+  "rows": [
+    {
+      "dataset": "2016452",
+      "run": "auto",
+      "method": "ensemble",
+      "mapcc_oi": 0.43925226296907544,
+      "free_fom": 0.7082934639960474,
+      "vol": 604.7013959368531,
+      "vol_band": "vol_lt_1000",
+      "max_Z": 8,
+      "ha_bearing": false,
+      "space_group": "P121/c1",
+      "seconds": 3.1248061656951904
+    },
+    {
+      "dataset": "2016452",
+      "run": "partial_30",
+      "method": "partial_phaseed",
+      "mapcc_oi": 0.7821080993884023,
+      "free_fom": 0.7538218756901547,
+      "vol": 604.7013959368531,
+      "vol_band": "vol_lt_1000",
+      "max_Z": 8,
+      "ha_bearing": false,
+      "space_group": "P121/c1",
+      "seconds": 2.5759387016296387
+    },
+    {
+      "dataset": "2017775",
+      "run": "auto",
+      "method": "ensemble",
+      "mapcc_oi": 0.043664755621549346,
+      "free_fom": 0.6226495013213967,
+      "vol": 4675.794265536001,
+      "vol_band": "vol_gt_3500",
+      "max_Z": 6,
+      "ha_bearing": false,
+      "space_group": "P212121",
+      "seconds": 26.218265056610107
+    },
+    {
+      "dataset": "2017775",
+      "run": "partial_30",
+      "method": "partial_phaseed",
+      "mapcc_oi": 0.727692951640368,
+      "free_fom": 0.7868595740621112,
+      "vol": 4675.794265536001,
+      "vol_band": "vol_gt_3500",
+      "max_Z": 6,
+      "ha_bearing": false,
+      "space_group": "P212121",
+      "seconds": 16.256299018859863
+    },
+    {
+      "dataset": "2100301",
+      "run": "auto",
+      "method": "ensemble",
+      "mapcc_oi": 0.2995976008283823,
+      "free_fom": 0.6653922457400652,
+      "vol": 660.2550791116214,
+      "vol_band": "vol_lt_1000",
+      "max_Z": 8,
+      "ha_bearing": false,
+      "space_group": "P121/c1",
+      "seconds": 3.922096014022827
+    },
+    {
+      "dataset": "2100301",
+      "run": "partial_30",
+      "method": "partial_phaseed",
+      "mapcc_oi": 0.7690944529041522,
+      "free_fom": 0.7898793463428998,
+      "vol": 660.2550791116214,
+      "vol_band": "vol_lt_1000",
+      "max_Z": 8,
+      "ha_bearing": false,
+      "space_group": "P121/c1",
+      "seconds": 2.7440831661224365
+    }
+  ],
+  "summary": {
+    "vol_lt_1000/auto": {
+      "n": 2,
+      "mean_mapcc": 0.3694249318987289
+    },
+    "vol_lt_1000/partial_30": {
+      "n": 2,
+      "mean_mapcc": 0.7756012761462773
+    },
+    "vol_gt_3500/auto": {
+      "n": 1,
+      "mean_mapcc": 0.043664755621549346
+    },
+    "vol_gt_3500/partial_30": {
+      "n": 1,
+      "mean_mapcc": 0.727692951640368
+    }
+  },
+  "note": "Local COD stratified skeleton. Not a 1505-structure Carrozzini panel. partial_30 is oracle control; auto is ab initio."
+}

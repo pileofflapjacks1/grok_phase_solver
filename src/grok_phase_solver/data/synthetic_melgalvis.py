@@ -183,6 +183,35 @@ def hard_curriculum_config(**overrides) -> MelgalvisGenConfig:
     return MelgalvisGenConfig(**base)
 
 
+def ha_heavy_config(**overrides) -> MelgalvisGenConfig:
+    """
+    Heavy-atom / metal-organic curriculum (GraPhAI Z≥19 success regime).
+
+    Emphasizes Br/Cl/I/S injection and mid-large volumes for centrosymmetric
+    HA-friendly training of graph priors.
+    """
+    base = dict(
+        log_v_mu=float(np.log(900.0)),
+        log_v_sigma=0.55,
+        v_min=250.0,
+        v_max=4800.0,
+        n_nonh_lo=10,
+        n_nonh_hi=36,
+        p_heavy_atom=0.55,
+        heavy_elements=("BR", "I", "CL", "S", "P"),
+        p_partial_occupancy=0.10,
+        p_special_seed=0.22,
+        p_multi_fragment=0.20,
+        prefer_realistic_angles=True,
+        cod_like_volumes=True,
+        name_prefix="melg_ha",
+        mode="hybrid",
+        hybrid_cluster_frac=0.80,
+    )
+    base.update(overrides)
+    return MelgalvisGenConfig(**base)
+
+
 def actas2026_config(**overrides) -> MelgalvisGenConfig:
     """
     Curriculum tuned toward improved artificial structure generation (2026).
@@ -649,6 +678,8 @@ def iter_melgalvis_samples(
             cfg = hard_curriculum_config()
         elif preset in ("acta2026", "acta", "improved"):
             cfg = actas2026_config()
+        elif preset in ("ha", "heavy", "graphai_ha"):
+            cfg = ha_heavy_config()
         else:
             cfg = MelgalvisGenConfig()
     if n_nonh_range:

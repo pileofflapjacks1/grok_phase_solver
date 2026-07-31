@@ -53,6 +53,7 @@ KNOWN_METHODS = (
     "diffusion_phaseed",
     "diffusion_hybrid_v2",
     "diffusion_phaseed_v2",
+    "hdm",  # experimental Hybrid Difference Map (protein-mode gated)
 )
 
 
@@ -271,6 +272,24 @@ def _run_phasing(
             d_min=d_use,
             verbose=cfg.verbose,
         )
+        return method, phases, density, history
+
+    if method == "hdm":
+        from grok_phase_solver.solvers.iterative_retrieval import hybrid_difference_map_solve
+
+        phases, density, history = hybrid_difference_map_solve(
+            hkl,
+            amp,
+            cell_arr,
+            n_iter=cfg.n_iter,
+            solvent_fraction=cfg.solvent_fraction,
+            protein_mode=True,
+            seed=cfg.seed,
+            d_min=d_use,
+            verbose=cfg.verbose,
+        )
+        history = dict(history or {})
+        history["research_only"] = True
         return method, phases, density, history
 
     if method == "raar":

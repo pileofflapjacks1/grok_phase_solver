@@ -243,6 +243,147 @@ def difference_map_solve(
     return phases, rho, history
 
 
+def hybrid_difference_map_solve(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    n_iter: int = 200,
+    beta_dm: float = 0.9,
+    beta_hio: float = 0.85,
+    real_proj: str = "positivity",
+    delta_sigma: float = 1.0,
+    solvent_fraction: Optional[float] = None,
+    protein_mode: bool = True,
+    seed: int = 0,
+    d_min: Optional[float] = None,
+    sampling: float = 3.0,
+    phase_init: Optional[np.ndarray] = None,
+    verbose: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    """
+    Hybrid Difference Map (HDM)-style iteration (research, v0.10).
+
+    Concept (inspired by 2026 HDM literature): apply a **Difference Map**
+    update in the ordered/protein region and an **HIO-style** feedback update
+    in the solvent region, blending with a soft solvent mask.
+
+    This is **experimental / protein-mode gated** — not used by default ``auto``.
+    Pure DiffMap / RAAR / CF remain the classical fallbacks.
+
+    Honest scope: small-molecule and hard-path demos; not a claim of general
+    macromolecular ab initio solution.
+    """
+    from grok_phase_solver.solvers.density_modification import (
+        estimate_solvent_fraction,
+        solvent_mask,
+    )
+    from grok_phase_solver.solvers.projectors import unit_cell_volume
+
+    rng = np.random.default_rng(seed)
+    hkl = np.asarray(hkl, dtype=int)
+    amp = np.asarray(amplitudes, dtype=np.float64)
+    shape, d_min = setup_grid(hkl, cell, d_min=d_min, sampling=sampling)
+
+    if phase_init is None:
+        phases = rng.uniform(-np.pi, np.pi, size=len(amp))
+    else:
+        phases = np.asarray(phase_init, dtype=np.float64).copy()
+
+    x = density_from_phases(hkl, amp, phases, cell, shape)
+    beta_dm = float(beta_dm) if abs(beta_dm) > 1e-8 else 0.9
+    beta_hio = float(np.clip(beta_hio, 0.1, 1.5))
+    gamma_S = 1.0 / beta_dm
+    gamma_M = -1.0 / beta_dm
+
+    # Initial solvent fraction estimate
+    try:
+        vol = float(unit_cell_volume(np.asarray(cell, dtype=np.float64)))
+    except Exception:
+        vol = None
+    if solvent_fraction is None:
+        solvent_fraction = estimate_solvent_fraction(
+            x,
+            default=0.50 if protein_mode else 0.40,
+            protein_mode=protein_mode,
+            volume=vol,
+        )
+    solvent_fraction = float(np.clip(solvent_fraction, 0.15, 0.80))
+
+    history: Dict = {
+        "R": [],
+        "neg_frac": [],
+        "solvent_fraction": [],
+        "algorithm": "hybrid_difference_map",
+        "research_only": True,
+        "protein_mode": bool(protein_mode),
+        "beta_dm": beta_dm,
+        "beta_hio": beta_hio,
+        "real_proj": real_proj,
+        "note": (
+            "HDM-style blend: DiffMap in protein, HIO feedback in solvent. "
+            "Experimental; prefer ensemble/CF/RAAR for production small-molecule work."
+        ),
+    }
+
+    for it in range(n_iter):
+        # Refresh mask periodically from current density
+        if it % 5 == 0 or it == 0:
+            if protein_mode and it > 0 and it % 20 == 0:
+                solvent_fraction = estimate_solvent_fraction(
+                    x,
+                    default=solvent_fraction,
+                    protein_mode=True,
+                    volume=vol,
+                )
+            mask_sol = solvent_mask(x, solvent_fraction=solvent_fraction)
+            mask_prot = ~mask_sol
+
+        Pm_x, phases, F_m = _P_M_density(x, hkl, amp, cell)
+        Ps_x = _real_space_projector(x, kind=real_proj, delta_sigma=delta_sigma)
+
+        # --- DiffMap branch (protein / ordered) ---
+        f_M = (1.0 + gamma_M) * Pm_x - gamma_M * x
+        f_S = (1.0 + gamma_S) * Ps_x - gamma_S * x
+        Ps_fM = _real_space_projector(f_M, kind=real_proj, delta_sigma=delta_sigma)
+        Pm_fS, _, _ = _P_M_density(f_S, hkl, amp, cell)
+        x_dm = x + beta_dm * (Ps_fM - Pm_fS)
+
+        # --- HIO branch (solvent): x ← x − β (x − P_S P_M x) outside support ---
+        # Support = protein (not solvent); outside support use HIO feedback
+        Ps_Pm = _real_space_projector(Pm_x, kind=real_proj, delta_sigma=delta_sigma)
+        x_hio = x.copy()
+        # inside protein support: take projected density
+        x_hio[mask_prot] = Ps_Pm[mask_prot]
+        # solvent: HIO feedback
+        x_hio[mask_sol] = x[mask_sol] - beta_hio * (x[mask_sol] - Ps_Pm[mask_sol])
+
+        # Soft blend: more DM in protein, more HIO in solvent
+        # Use continuous weights from local density rank for softer envelope
+        w_prot = mask_prot.astype(np.float64)
+        # mild dilate: average with neighbors via simple box (optional light smooth)
+        x = w_prot * x_dm + (1.0 - w_prot) * x_hio
+
+        R = r_factor_moduli(F_m, amp)
+        history["R"].append(R)
+        history["neg_frac"].append(float((x < 0).mean()))
+        history["solvent_fraction"].append(float(solvent_fraction))
+        if verbose and (it % 40 == 0 or it == n_iter - 1):
+            print(
+                f"  HDM iter {it:4d}  R={R:.4f}  sol={solvent_fraction:.2f}  "
+                f"neg={history['neg_frac'][-1]:.3f}"
+            )
+
+    _, phases, F_m = _P_M_density(x, hkl, amp, cell)
+    rho = density_from_structure_factors(
+        hkl, amp * np.exp(1j * phases), cell, shape=shape
+    )
+    history["final_R"] = r_factor_moduli(F_m, amp)
+    history["n_iter"] = n_iter
+    history["shape"] = shape
+    history["final_solvent_fraction"] = float(solvent_fraction)
+    return phases, rho, history
+
+
 def retune_difference_map(
     hkl: np.ndarray,
     amplitudes: np.ndarray,

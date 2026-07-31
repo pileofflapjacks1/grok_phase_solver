@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.10.0 — 2026-07
+
+### What’s new in v0.10.0
+
+#### A. GraphPhaseNet v8 curriculum (same d_in=22 as v7)
+- HA-heavy Melgalvis preset (`--melgalvis-preset ha`) for GraPhAI Z≥19 regime
+- Stratified hold-out reporting (HA / max Z / organic): `metrics/stratified_prior.py`
+- `scripts/run_strong_prior_v8.py` with scale-xl path; Wilson match default
+- Docs: `docs/math/graph_phase_net_v8.md`
+- **Honest:** laptop pilots remain near ~21–25% frac≤20°; 30% bar not cleared
+
+#### B. Hybrid Difference Map (research)
+- `hybrid_difference_map_solve`: DiffMap in protein + HIO in solvent
+- CLI/pipeline method `hdm` (not used by `auto`)
+- Math note: `docs/math/hybrid_difference_map.md`
+
+#### C. AI-PhaSeed hardening
+- `filter_seed_by_bin_quality` (entropy-based seed thinning)
+- `select_seed_indices(..., e_min=)` strong-|E| floor
+- `recommend_seed_fraction` Vol-band preference for ≥25% seed
+
+#### D. Synthetic + COD stratified bench
+- `ha_heavy_config` curriculum
+- `scripts/run_cod_stratified_bench.py` (local COD Vol / Z skeleton)
+
+#### E. Packaging
+- Version **0.10.0**, RELEASE notes, tests
+
+#### Honest limits
+- Partial-φ / fragment / HA remains the reliable hard path.
+- HDM and scale-xl cluster runs are optional; physics fallbacks retained.
+- No PhAI / SHELX / GraPhAI weight redistribution.
+
 ## 0.9.0 — 2026-07
 
 ### What’s new in v0.9.0

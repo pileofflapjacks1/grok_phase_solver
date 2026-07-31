@@ -190,13 +190,21 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Seed bin features; multi-seed bin agreement; quadrant discretization
 - [x] Solvent estimate volume/N prior; docs graphai_external
 - [x] Version 0.9.0 packaging + tests
-- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset cod|acta2026`
+- [x] Tag + GitHub Release 0.9.0
+
+### v0.10.0 HA curriculum + HDM + stratified benches
+- [x] GraphPhaseNet **v8** curriculum (`ha` preset) + stratified Z/HA reporting
+- [x] Hybrid Difference Map research path (`--method hdm`)
+- [x] AI-PhaSeed bin-quality filter + |E| floor + Vol-band seed fraction
+- [x] `run_cod_stratified_bench.py` skeleton; `ha_heavy_config`
+- [x] Version 0.10.0 packaging + tests
+- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset ha|cod`
 - [ ] Optional local GraPhAI Zenodo H2H (external weights; not redistributed)
 - [ ] True SE(3) equivariant atomic diffusion (external research)
 - [ ] Optional cctbx backend hooks
 - [ ] OMC25-scale data mirror
-- [ ] PyPI 0.9.0 upload (maintainer token)
-- [ ] Optional: larger COD Vol 1000–3500 Å³ stratified AI-PhaSeed bench
+- [ ] PyPI 0.10.0 upload (maintainer token)
+- [ ] Expand COD Vol 1000–3500 Å³ stratified AI-PhaSeed panel
 
 
 

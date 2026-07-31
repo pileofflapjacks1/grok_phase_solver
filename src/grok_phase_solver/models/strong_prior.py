@@ -58,7 +58,7 @@ def iter_hard_multsg_samples(
     ``melgalvis_large_vol``: bias Melgalvis volumes toward ~1000–3500 Å³ and
     slightly lower resolution — useful for AI-PhaSeed / Carrozzini-like regimes.
 
-    ``melgalvis_preset``: ``"cod"`` | ``"hard"`` | None — v0.7 curriculum presets.
+    ``melgalvis_preset``: ``"cod"`` | ``"hard"`` | ``"acta2026"`` | ``"ha"`` | None.
     ``include_low_res_frac``: fraction of samples forced to d_min ∈ [1.8, 2.5] Å.
     """
     from grok_phase_solver.data.synthetic import generate_random_organic
@@ -80,12 +80,19 @@ def iter_hard_multsg_samples(
     if use_melgalvis_gen:
         from grok_phase_solver.data.synthetic_melgalvis import (
             MelgalvisGenConfig,
+            actas2026_config,
             cod_like_config,
+            ha_heavy_config,
             hard_curriculum_config,
         )
 
         if melgalvis_preset == "cod":
             melg_cfg = cod_like_config(mode=melgalvis_mode)
+        elif melgalvis_preset in ("acta2026", "acta", "improved"):
+            melg_cfg = actas2026_config(mode=melgalvis_mode)
+        elif melgalvis_preset in ("ha", "heavy", "graphai_ha"):
+            melg_cfg = ha_heavy_config(mode=melgalvis_mode)
+            d_lo, d_hi = min(d_lo, 1.2), max(d_hi, 1.7)
         elif melgalvis_preset == "hard" or melgalvis_large_vol:
             melg_cfg = hard_curriculum_config(mode=melgalvis_mode)
             if melgalvis_large_vol and melgalvis_preset != "hard":
