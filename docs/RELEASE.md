@@ -40,7 +40,7 @@ python -m twine upload dist/grok_phase_solver-0.10.0*
 - [x] `pytest -q` green (197 passed)
 - [x] Version aligned → **0.10.0**
 - [x] Docs: RELEASE_NOTES, HDM + v8 math notes
-- [ ] Tag + GitHub Release
+- [x] Tag + GitHub Release
 - [ ] PyPI upload
 - [x] No overclaims; HDM off auto; partial-φ hard path documented
 
