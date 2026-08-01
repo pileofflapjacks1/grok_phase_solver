@@ -30,4 +30,12 @@ budget; large macrolide 2017775 remains unsolved ab initio.
 Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 and legacy
 v4 XL plateau near 21%. Melgalvis & Rekis (2026) style XL retrain (N=1200)
 reaches ~22% with seedOK rate ~12.5%—still below the 30% oracle bar that enables
-reliable hard-region extension. Hard strict solves remain 0%.
+reliable hard-region extension. Later v5–v8 pilots (feature/curriculum upgrades;
+see `strong_prior_v5`–`v8.md`) remain in the ~21–24% band and do not clear the
+bar. Hard strict solves remain 0%.
+
+## Table (paper text §3.5) — COD hard path
+`data/processed/cod_hard_path_validation.md`
+
+Experimental Fobs: auto ~0.20 mapCC; oracle partial_30 ~0.72; fragment_half
+(SG expand + full Fcalc soft prior) ~0.80 / 0.74 on COD 2016452 / 2100301.
