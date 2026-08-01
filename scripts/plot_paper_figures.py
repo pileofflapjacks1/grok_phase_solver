@@ -2,7 +2,7 @@
 """
 Generate paper figures from data/processed scoreboards.
 
-Writes docs/figures/paper_fig{1..4}_*.png and a short figure captions file.
+Writes docs/figures/paper_fig{1..5}_*.png and a short figure captions file.
 """
 
 from __future__ import annotations
@@ -268,12 +268,116 @@ def fig4_seed_bar():
     return out
 
 
+def fig5_cod_hard_path():
+    """
+    COD experimental hard path: auto vs partial_30 vs fragment_half mapCC.
+
+    Source: data/processed/cod_hard_path_validation.json
+    """
+    try:
+        data = _load("cod_hard_path_validation.json")
+        rows = data.get("rows") or []
+    except Exception:
+        rows = []
+
+    runs = ["auto", "partial_15", "partial_30", "fragment_half"]
+    labels = {
+        "auto": "auto\n(ab initio)",
+        "partial_15": "partial_15\n(oracle)",
+        "partial_30": "partial_30\n(oracle)",
+        "fragment_half": "fragment_half\n(model seed)",
+    }
+    colors = {
+        "auto": "#9ecae1",
+        "partial_15": "#6baed6",
+        "partial_30": "#3182bd",
+        "fragment_half": "#2ca02c",
+    }
+
+    # dataset → run → mapcc
+    by_ds: dict = {}
+    for r in rows:
+        if "error" in r and "mapcc_oi" not in r:
+            continue
+        ds = str(r.get("dataset") or "")
+        run = str(r.get("run") or "")
+        cc = r.get("mapcc_oi")
+        if not ds or not run or cc is None:
+            continue
+        by_ds.setdefault(ds, {})[run] = float(cc)
+
+    if not by_ds:
+        # fallback frozen numbers from committed scoreboard
+        by_ds = {
+            "COD_2016452_exp": {
+                "auto": 0.196,
+                "partial_15": 0.599,
+                "partial_30": 0.718,
+                "fragment_half": 0.797,
+            },
+            "COD_2100301_exp": {
+                "auto": 0.204,
+                "partial_15": 0.516,
+                "partial_30": 0.713,
+                "fragment_half": 0.739,
+            },
+        }
+
+    datasets = sorted(by_ds.keys())
+    short = {
+        "COD_2016452_exp": "COD 2016452",
+        "COD_2100301_exp": "COD 2100301",
+    }
+    x = np.arange(len(datasets))
+    n_r = len(runs)
+    w = 0.8 / n_r
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    for i, run in enumerate(runs):
+        vals = [by_ds[ds].get(run, np.nan) for ds in datasets]
+        ax.bar(
+            x + (i - n_r / 2) * w + w / 2,
+            vals,
+            w,
+            label=labels[run],
+            color=colors[run],
+            edgecolor="k",
+            lw=0.4,
+        )
+        for xi, v in zip(x, vals):
+            if np.isfinite(v):
+                ax.text(
+                    xi + (i - n_r / 2) * w + w / 2,
+                    v + 0.02,
+                    f"{v:.2f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                    rotation=0,
+                )
+
+    ax.axhline(0.7, color="gray", ls=":", lw=1.2, label="strict mapCC ≥ 0.7")
+    ax.set_xticks(x)
+    ax.set_xticklabels([short.get(d, d.replace("_exp", "")) for d in datasets])
+    ax.set_ylabel("mapCC (OI vs deposited Fcalc)")
+    ax.set_ylim(0, 1.05)
+    ax.set_title("COD experimental Fobs hard path: ab initio vs oracle φ vs fragment seed")
+    ax.legend(fontsize=8, loc="upper left", ncol=2)
+    ax.grid(True, axis="y", alpha=0.3)
+    fig.tight_layout()
+    out = FIG / "paper_fig5_cod_hard_path.png"
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+    return out
+
+
 def main():
     outs = []
     outs.append(fig1_partial_seed_oracle())
     outs.append(fig2_shelxs_h2h())
     outs.append(fig3_experimental_cod())
     outs.append(fig4_seed_bar())
+    outs.append(fig5_cod_hard_path())
     cap = FIG / "paper_figure_captions.md"
     cap.write_text(
         """# Paper figure captions
@@ -308,7 +412,20 @@ budget; large macrolide 2017775 remains unsolved ab initio.
 Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 and legacy
 v4 XL plateau near 21%. Melgalvis & Rekis (2026) style XL retrain (N=1200)
 reaches ~22% with seedOK rate ~12.5%—still below the 30% oracle bar that enables
-reliable hard-region extension. Hard strict solves remain 0%.
+reliable hard-region extension. Later v5–v8 pilots (feature/curriculum upgrades;
+see `strong_prior_v5`–`v8.md`) remain in the ~21–24% band and do not clear the
+bar. Hard strict solves remain 0%.
+
+## Figure 5 — COD hard path (auto / partial_30 / fragment_half)
+`paper_fig5_cod_hard_path.png`
+
+Experimental COD Fobs (2016452, 2100301): origin-invariant mapCC vs deposited
+Fcalc truth under short budgets. **auto** (ab initio ensemble) remains ~0.20.
+Oracle **partial_30** (~30% strong $|E|$ true phases) reaches ~0.71–0.72.
+**fragment_half** (SG-expanded ~½ non-H ASU + full $F_{\\mathrm{calc}}$ soft prior)
+matches or exceeds partial_30 (~0.74–0.80). Dotted line: mapCC ≥ 0.7 (strict
+mapCC threshold alone). Multi-criterion *solved* can still fail on $R_1$.
+Source: `data/processed/cod_hard_path_validation.json`.
 """
     )
     print("Wrote:")

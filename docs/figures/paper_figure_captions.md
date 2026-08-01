@@ -34,8 +34,13 @@ reliable hard-region extension. Later v5–v8 pilots (feature/curriculum upgrade
 see `strong_prior_v5`–`v8.md`) remain in the ~21–24% band and do not clear the
 bar. Hard strict solves remain 0%.
 
-## Table (paper text §3.5) — COD hard path
-`data/processed/cod_hard_path_validation.md`
+## Figure 5 — COD hard path (auto / partial_30 / fragment_half)
+`paper_fig5_cod_hard_path.png`
 
-Experimental Fobs: auto ~0.20 mapCC; oracle partial_30 ~0.72; fragment_half
-(SG expand + full Fcalc soft prior) ~0.80 / 0.74 on COD 2016452 / 2100301.
+Experimental COD Fobs (2016452, 2100301): origin-invariant mapCC vs deposited
+Fcalc truth under short budgets. **auto** (ab initio ensemble) remains ~0.20.
+Oracle **partial_30** (~30% strong $|E|$ true phases) reaches ~0.71–0.72.
+**fragment_half** (SG-expanded ~½ non-H ASU + full $F_{\mathrm{calc}}$ soft prior)
+matches or exceeds partial_30 (~0.74–0.80). Dotted line: mapCC ≥ 0.7 (strict
+mapCC threshold alone). Multi-criterion *solved* can still fail on $R_1$.
+Source: `data/processed/cod_hard_path_validation.json`.

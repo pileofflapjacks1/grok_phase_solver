@@ -127,7 +127,11 @@ Caveat: experimental mapCC uses $F_{\mathrm{calc}}$ from the deposited structure
 
 ### 3.5 COD hard path: oracle partial-φ vs fragment-half seeds
 
-On experimental Fobs for COD **2016452** and **2100301** ($d_{\min}\approx 0.9$ Å), we compare pure ab initio `auto`, oracle **partial_30** (true phases on strong $|E|$), and **fragment_half** (heaviest-cluster ~½ non-H ASU atoms from the deposited model, space-group expanded, full $F_{\mathrm{calc}}$ soft prior + strong-$|E|$ hard mask) under short `partial_phaseed` budgets (`cod_hard_path_validation.md`):
+![Figure 5](figures/paper_fig5_cod_hard_path.png)
+
+**Figure 5.** Experimental COD Fobs hard path: origin-invariant mapCC (vs deposited $F_{\mathrm{calc}}$) for `auto`, oracle partial seeds, and fragment-half model seeding (`cod_hard_path_validation.md`).
+
+On COD **2016452** and **2100301** ($d_{\min}\approx 0.9$–1.0 Å), we compare pure ab initio `auto`, oracle **partial_30** (true phases on strong $|E|$), and **fragment_half** (heaviest-cluster ~½ non-H ASU atoms from the deposited model, space-group expanded, full $F_{\mathrm{calc}}$ soft prior + strong-$|E|$ hard mask) under short `partial_phaseed` budgets:
 
 | Dataset | auto mapCC | partial_30 mapCC | fragment_half mapCC |
 |---------|------------|------------------|---------------------|
@@ -168,7 +172,7 @@ Synthetic vs experimental $|F|$ Wilson statistics can be substantially aligned b
 
 ## 5. Conclusions
 
-*grok_phase_solver* is a correct, modular open framework for classical and hybrid crystallographic phasing with honest hard-region metrics and a scientist pipeline to `trial.res`. The strongest hard-region scientific result remains the **partial-φ seed bar** (Fig. 1), now complemented by a **fragment-half COD path** that can match oracle partial-φ mapCC without known phases (Table in §3.5). The strongest easy-region product result is **ensemble free-FOM multistart** (Fig. 2). Scaling GraphPhaseNet through Melgalvis/GraPhAI-inspired curricula does not clear the hard cliff (Fig. 4). Experimental COD results (Fig. 3) show that hybrid AI can succeed on real Fobs when the domain fits, while large/hard cases remain open.
+*grok_phase_solver* is a correct, modular open framework for classical and hybrid crystallographic phasing with honest hard-region metrics and a scientist pipeline to `trial.res`. The strongest hard-region scientific result remains the **partial-φ seed bar** (Fig. 1), now complemented by a **fragment-half COD path** that can match oracle partial-φ mapCC without known phases (Fig. 5). The strongest easy-region product result is **ensemble free-FOM multistart** (Fig. 2). Scaling GraphPhaseNet through Melgalvis/GraPhAI-inspired curricula does not clear the hard cliff (Fig. 4). Experimental COD results (Fig. 3) show that hybrid AI can succeed on real Fobs when the domain fits, while large/hard cases remain open.
 
 ---
 
@@ -245,7 +249,7 @@ Extended notes and derivations: `docs/math/` (including `graph_phase_net_v5`–`
 
 | Path | Content |
 |------|---------|
-| `docs/figures/paper_fig1_…png` – `fig4` | Main figures |
+| `docs/figures/paper_fig1_…png` – `fig5` | Main figures (incl. COD hard path) |
 | `docs/figures/solvability_heatmap.png` | Solvability cliff (extra) |
 | `data/processed/*` | Scoreboard JSON/MD |
 | `docs/math/*` | Detailed math |

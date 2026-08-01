@@ -6,8 +6,8 @@
 | [**PDF**](arxiv_draft.pdf) | Pandoc + tectonic build |
 | [**BibTeX**](references.bib) | Selected references |
 | [FOR_REVIEWERS](../FOR_REVIEWERS.md) | One-page claims C1–C18 |
-| [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–4 |
-| Figures | `docs/figures/paper_fig{1..4}_*.png` |
+| [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–5 |
+| Figures | `docs/figures/paper_fig{1..5}_*.png` |
 | Scoreboards | `data/processed/*.md` (source of all numbers) |
 | Release | package **0.10.0** on [PyPI](https://pypi.org/project/grok-phase-solver/) · tag `v0.10.0` |
 
@@ -49,14 +49,14 @@ The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fo
 - [x] Abstract with honest scope  
 - [x] Methods + metrics definitions  
 - [x] Results tables tied to scoreboards (incl. COD fragment hard path, GraphPhaseNet v5–v8)  
-- [x] Four main figures from frozen JSON  
+- [x] Main figures from frozen JSON (Figs. 1–5, incl. COD hard path)  
 - [x] Non-claims / uniqueness pointer  
 - [x] Reproducibility commands  
 - [x] PDF via pandoc + tectonic  
 - [x] Authors: Grok (xAI) and Joe  
 - [x] BibTeX (`references.bib`)  
 - [x] Version aligned to package **0.10.0**  
-- [ ] Optional new figure: COD hard-path auto / partial_30 / fragment_half  
+- [x] COD hard-path figure (auto / partial_30 / fragment_half)  
 - [ ] Affiliations / funding (optional)  
 - [ ] arXiv submit  
 
