@@ -41,8 +41,9 @@ python -m twine upload dist/grok_phase_solver-0.11.0*
 - [x] Version aligned → **0.11.0**
 - [x] Docs: RELEASE_NOTES_v0.11.0, synthetic_melgalvis, graph_phase_net_v9
 - [x] Scoreboard `strong_prior_v9` (quick; honest — does not clear 30% bar)
-- [ ] Tag + GitHub Release
-- [ ] PyPI upload
+- [x] Tag + GitHub Release → https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.11.0
+- [ ] PyPI upload (maintainer token)
 - [x] No overclaims; partial-φ hard path documented; no external weight redistribution
 
+**This release:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.11.0  
 **Prior:** v0.10.0 at https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.10.0
