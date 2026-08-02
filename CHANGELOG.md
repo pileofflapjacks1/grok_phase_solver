@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.11.0 — 2026-07
+
+### What’s new in v0.11.0
+
+#### A. Melgalvis synthetic generator (Acta Cryst. A 2026 style)
+- Ring / functional-group scaffolds (`build_ring_scaffold`), multi-fragment packing
+- Void + short-contact packing quality checks
+- New **`large_cell_config`** (Vol ~1000–3500 Å³) + stronger `ha` / `acta2026` / `hard`
+- Presets wired: `cod | hard | acta2026 | ha | large` in training + `iter_melgalvis_samples`
+- Docs: `docs/math/synthetic_melgalvis.md`
+
+#### B. GraphPhaseNet v9 (d_in=26)
+- Features: log Vol, shell E std, κ×E, low-res·rank·HA + stronger multipath edges
+- `scripts/run_strong_prior_v9.py` with HA/Z **and Vol-band** stratified hold-out
+- Scoreboard: `data/processed/strong_prior_v9.*`
+- Math: `docs/math/graph_phase_net_v9.md`
+- **Honest:** quick pilots expected near ~20–25% frac≤20°; **30% bar not claimed**
+
+#### C. AI-PhaSeed / seeding hardening
+- `recommend_seed_fraction` v11: Vol 1000–3500 → ~28–30% seed + practical-bar note
+- `filter_seed_by_bin_quality`: multi-bin entropy, optional `|E|` floor
+- Multi-seed `combine_phase_seeds`: continuous + bin agreement boost
+- Class 0/1 `format_seed_class_diagnostics` for report.md / GUI
+
+#### D. Packaging
+- Version **0.11.0**, tests (`test_v011_melgalvis_graph_seed.py`), RELEASE notes
+- Physics fallbacks, strict success definition, no PhAI/SHELX/GraPhAI redistribution
+
 ## 0.10.0 — 2026-07
 
 ### What’s new in v0.10.0

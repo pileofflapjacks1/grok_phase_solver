@@ -713,7 +713,47 @@ def predict_seed_quality(
         method=method,
         notes=notes,
     )
-    return report.to_dict()
+    d = report.to_dict()
+    d["diagnostics_md"] = format_seed_class_diagnostics(d)
+    return d
+
+
+def format_seed_class_diagnostics(report: Dict[str, Any]) -> str:
+    """
+    Human-readable Class 0/1 diagnostics for report.md / GUI (v0.11).
+
+    Clarifies operational labels vs Carrozzini published RF, and points to the
+    ≥~30% strong-φ ≤20° practical bar / partial_phaseed path.
+    """
+    cls = int(report.get("predicted_class", 0))
+    p = float(report.get("success_probability", 0.0))
+    mpe = float(report.get("predicted_mpe_deg", 90.0))
+    corr = float(report.get("predicted_corr", 0.0))
+    method = str(report.get("method", "heuristic"))
+    feats = report.get("features") or {}
+    vol = feats.get("Vol")
+    lines = [
+        "### Seed quality (Class 0/1 style)",
+        "",
+        f"- **Class:** {cls}  ({'higher chance' if cls == 1 else 'low — prefer partial seed'})",
+        f"- **P(success):** {p:.2f}  ·  method: `{method}`",
+        f"- **Est. seed MPE:** {mpe:.0f}°  ·  **Est. CORR:** {corr:.2f}",
+    ]
+    if vol is not None:
+        lines.append(f"- **Vol:** {float(vol):.0f} Å³  ·  seed frac: {feats.get('seed_fraction', float('nan')):.2f}")
+    if report.get("warning"):
+        lines.append(f"- **Warning:** {report['warning']}")
+    lines.extend(
+        [
+            "",
+            "**Honest scope.** Class labels are operational heuristics (or a "
+            "repo-trained logistic/RF), not the published Carrozzini 2025 RF on "
+            "1505 COD structures. Hard ab initio remains unsolved; the practical "
+            "bar is still **≥~30% of strong |E| phases within 20°** via "
+            "`partial_phaseed` / fragment / HA / predicted-model seeds.",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def oracle_seed_metrics(

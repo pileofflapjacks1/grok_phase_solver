@@ -58,7 +58,8 @@ def iter_hard_multsg_samples(
     ``melgalvis_large_vol``: bias Melgalvis volumes toward ~1000–3500 Å³ and
     slightly lower resolution — useful for AI-PhaSeed / Carrozzini-like regimes.
 
-    ``melgalvis_preset``: ``"cod"`` | ``"hard"`` | ``"acta2026"`` | ``"ha"`` | None.
+    ``melgalvis_preset``: ``"cod"`` | ``"hard"`` | ``"acta2026"`` | ``"ha"`` |
+    ``"large"`` | None.
     ``include_low_res_frac``: fraction of samples forced to d_min ∈ [1.8, 2.5] Å.
     """
     from grok_phase_solver.data.synthetic import generate_random_organic
@@ -84,6 +85,7 @@ def iter_hard_multsg_samples(
             cod_like_config,
             ha_heavy_config,
             hard_curriculum_config,
+            large_cell_config,
         )
 
         if melgalvis_preset == "cod":
@@ -93,26 +95,20 @@ def iter_hard_multsg_samples(
         elif melgalvis_preset in ("ha", "heavy", "graphai_ha"):
             melg_cfg = ha_heavy_config(mode=melgalvis_mode)
             d_lo, d_hi = min(d_lo, 1.2), max(d_hi, 1.7)
+        elif melgalvis_preset in ("large", "large_cell", "vol3500"):
+            melg_cfg = large_cell_config(mode=melgalvis_mode)
+            d_lo, d_hi = min(d_lo, 1.3), max(d_hi, 1.8)
         elif melgalvis_preset == "hard" or melgalvis_large_vol:
             melg_cfg = hard_curriculum_config(mode=melgalvis_mode)
             if melgalvis_large_vol and melgalvis_preset != "hard":
-                melg_cfg = MelgalvisGenConfig(
-                    mode=melgalvis_mode,
-                    log_v_mu=float(np.log(1800.0)),
-                    log_v_sigma=0.45,
-                    v_min=900.0,
-                    v_max=4000.0,
-                    n_nonh_lo=max(n_lo, 12),
-                    n_nonh_hi=max(n_hi, 40),
-                    p_heavy_atom=0.25,
-                    p_partial_occupancy=0.12,
-                )
+                melg_cfg = large_cell_config(mode=melgalvis_mode)
             d_lo, d_hi = min(d_lo, 1.2), max(d_hi, 1.6)
         else:
             melg_cfg = MelgalvisGenConfig(
                 mode=melgalvis_mode,
                 p_heavy_atom=0.18,
                 p_partial_occupancy=0.10,
+                p_ring_fragment=0.20,
             )
     for i in range(n_samples):
         s = int(rng.integers(0, 2**31 - 1))
@@ -414,10 +410,12 @@ def predict_strong_phases(
     Returns (node_idx, phases_strong).
     """
     fver = int(getattr(model, "_feature_version", 5))
-    # Infer feature version from d_in if needed (v4=10, v5=14, v6=18, v7=22)
+    # Infer feature version from d_in if needed (v4=10 … v8=26)
     if hasattr(model, "d_in"):
         if model.d_in <= 10:
             fver = 4
+        elif model.d_in >= 26:
+            fver = 8
         elif model.d_in >= 22:
             fver = 7
         elif model.d_in >= 18:
@@ -548,6 +546,9 @@ def train_strong_prior(
 
     v7: d_in=22 GraPhAI multipath (hop2, edge geometric E, Wilson residual,
     centro-HA cue) + κ×E edge reweight + optional Carrozzini bin CE (``bin_weight``).
+
+    v8 (v0.11): d_in=26 large-cell / HA cues (log Vol, shell E std, κ×E,
+    low-res strong rank) + stronger multipath edges; presets ``large`` / ``ha``.
 
     ``melgalvis_large_vol``: when using Melgalvis generator, bias toward larger
     volumes / lower-res shards (AI-PhaSeed curriculum).

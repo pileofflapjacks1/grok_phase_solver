@@ -128,6 +128,14 @@ def node_features_from_graph(
     - edge_E_geom: mean √(E_i E_j) over incident triplet pairs
     - wilson_E_shell: E / shell-mean E (Wilson residual)
     - centro_HA_cue: ha_E_tail · low_res · shell_rank (Z≥19 / centro path)
+
+    **v8 (d_in=26)** — large-cell / HA-stratified cues (v0.11):
+    v7 + ``[log_vol_n, shell_E_std, kappa_x_E, lowres_strong_rank]``
+
+    - log_vol_n: log unit-cell volume (broadcast; large-cell curriculum)
+    - shell_E_std: |E| std within resolution shell (HA shell heterogeneity)
+    - kappa_x_E: κ-centrality × |E| (physics edge reliability)
+    - lowres_strong_rank: low-res weight × shell_rank × ha_E_tail
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -310,13 +318,52 @@ def node_features_from_graph(
     centro_ha = ha_E_tail * low_res_w * shell_rank
     centro_ha = centro_ha / (centro_ha.max() + 1e-16)
 
-    return np.column_stack(
+    v7 = np.column_stack(
         [
             v6,
             hop2_n,
             edge_geom,
             wilson_E,
             centro_ha,
+        ]
+    ).astype(np.float64)
+    if int(feature_version) < 8:
+        return v7
+
+    # --- v8 extras (large-cell / HA-stratified multipath) ---
+    from grok_phase_solver.solvers.projectors import unit_cell_volume
+
+    try:
+        vol = float(unit_cell_volume(np.asarray(cell, dtype=np.float64)))
+    except Exception:
+        vol = 500.0
+    # log(V/500) soft-normalized to ~[0,1] for typical 150–3500 Å³
+    log_vol = np.log(max(vol, 50.0) / 500.0)
+    log_vol_n = float(np.clip((log_vol + 1.5) / 3.0, 0.0, 1.0))
+    log_vol_feat = np.full(n, log_vol_n, dtype=np.float64)
+
+    shell_std = np.zeros(n, dtype=np.float64)
+    for si in range(n_shells):
+        sl = order[edges_s[si] : edges_s[si + 1]]
+        if len(sl) < 2:
+            continue
+        sd = float(np.std(E[sl]))
+        shell_std[sl] = sd
+    shell_std = shell_std / (shell_std.max() + 1e-16)
+
+    kappa_x_e = kappa_c * E
+    kappa_x_e = kappa_x_e / (kappa_x_e.max() + 1e-16)
+
+    lowres_strong = low_res_w * shell_rank * (0.5 + 0.5 * ha_E_tail)
+    lowres_strong = lowres_strong / (lowres_strong.max() + 1e-16)
+
+    return np.column_stack(
+        [
+            v7,
+            log_vol_feat,
+            shell_std,
+            kappa_x_e,
+            lowres_strong,
         ]
     ).astype(np.float64)
 
@@ -870,12 +917,16 @@ def prepare_graph_batch(
     # v5.1 / v6: power-law emphasis on strongest triplets
     # v7: κ × √(E_i E_j E_k) multipath emphasis (GraPhAI-style reliability)
     kpow = float(kappa_power)
-    if int(feature_version) >= 7:
+    if int(feature_version) >= 8:
+        kpow = max(kpow, 1.55)
+    elif int(feature_version) >= 7:
         kpow = max(kpow, 1.45)
     elif int(feature_version) >= 6 and kpow <= 1.25:
         kpow = 1.35
     sl = float(self_loop)
-    if int(feature_version) >= 7:
+    if int(feature_version) >= 8:
+        sl = max(sl, 0.12)
+    elif int(feature_version) >= 7:
         sl = max(sl, 0.10)
     elif int(feature_version) >= 6:
         sl = max(sl, 0.08)
@@ -887,9 +938,11 @@ def prepare_graph_batch(
             for ti, e in enumerate(np.asarray(edges)):
                 i, j, k = int(e[0]), int(e[1]), int(e[2])
                 if 0 <= i < n and 0 <= j < n and 0 <= k < n:
+                    # v7: geometric mean sixth-root; v8: slightly stronger multipath
+                    exp = (1.0 / 5.5) if int(feature_version) >= 8 else (1.0 / 6.0)
                     boost[ti] = float(
                         (max(E_n[i], 0.0) * max(E_n[j], 0.0) * max(E_n[k], 0.0) + 1e-16)
-                        ** (1.0 / 6.0)
+                        ** exp
                     )
             w = w * (0.5 + 0.5 * boost / (boost.mean() + 1e-16))
         med = float(np.median(w) + 1e-16)

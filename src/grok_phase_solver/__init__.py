@@ -28,5 +28,5 @@ Package layout
 - ``models``    : neural architectures (PhAI-style interface; Phase 2+)
 """
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 __all__ = ["__version__"]

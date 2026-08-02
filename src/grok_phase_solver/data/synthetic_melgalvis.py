@@ -124,6 +124,11 @@ class MelgalvisGenConfig:
     multi_frag_n_extra: Tuple[int, int] = (3, 10)
     # Tighter axis ratios for more realistic packing (artificial structure gen)
     prefer_realistic_angles: bool = True
+    # v0.11: database-guided ring / functional-group scaffolds + packing quality
+    p_ring_fragment: float = 0.22  # chance to seed from a small ring scaffold
+    min_contact_frac: float = 0.88  # clash threshold vs covalent sum (packing)
+    void_check: bool = True  # reject packs with large empty voids (centroid gap)
+    max_void_frac: float = 0.55  # max empty volume fraction before re-pack
 
 
 def _sample_weighted(rng: np.random.Generator, freq: Dict[str, float]) -> str:
@@ -164,17 +169,18 @@ def cod_like_config(**overrides) -> MelgalvisGenConfig:
 def hard_curriculum_config(**overrides) -> MelgalvisGenConfig:
     """Hard-region / larger-Z curriculum (low-res friendly volumes)."""
     base = dict(
-        log_v_mu=float(np.log(1200.0)),
-        log_v_sigma=0.50,
+        log_v_mu=float(np.log(1400.0)),
+        log_v_sigma=0.48,
         v_min=500.0,
         v_max=5000.0,
         n_nonh_lo=14,
-        n_nonh_hi=40,
-        p_heavy_atom=0.28,
+        n_nonh_hi=44,
+        p_heavy_atom=0.30,
         p_partial_occupancy=0.15,
-        p_large_molecule=0.35,
+        p_large_molecule=0.38,
         p_special_seed=0.18,
-        p_multi_fragment=0.22,
+        p_multi_fragment=0.28,
+        p_ring_fragment=0.30,
         prefer_realistic_angles=True,
         name_prefix="melg_hard",
         mode="hybrid",
@@ -188,25 +194,27 @@ def ha_heavy_config(**overrides) -> MelgalvisGenConfig:
     Heavy-atom / metal-organic curriculum (GraPhAI Z≥19 success regime).
 
     Emphasizes Br/Cl/I/S injection and mid-large volumes for centrosymmetric
-    HA-friendly training of graph priors.
+    HA-friendly training of graph priors. v0.11: guarantee Z≥19 path via
+    forced Br/I and larger cells for HA-stratified scoreboards.
     """
     base = dict(
-        log_v_mu=float(np.log(900.0)),
-        log_v_sigma=0.55,
-        v_min=250.0,
+        log_v_mu=float(np.log(1100.0)),
+        log_v_sigma=0.52,
+        v_min=280.0,
         v_max=4800.0,
-        n_nonh_lo=10,
-        n_nonh_hi=36,
-        p_heavy_atom=0.55,
+        n_nonh_lo=12,
+        n_nonh_hi=40,
+        p_heavy_atom=0.70,
         heavy_elements=("BR", "I", "CL", "S", "P"),
         p_partial_occupancy=0.10,
         p_special_seed=0.22,
-        p_multi_fragment=0.20,
+        p_multi_fragment=0.28,
+        p_ring_fragment=0.28,
         prefer_realistic_angles=True,
         cod_like_volumes=True,
         name_prefix="melg_ha",
         mode="hybrid",
-        hybrid_cluster_frac=0.80,
+        hybrid_cluster_frac=0.82,
     )
     base.update(overrides)
     return MelgalvisGenConfig(**base)
@@ -218,22 +226,61 @@ def actas2026_config(**overrides) -> MelgalvisGenConfig:
 
     Emphasizes COD-like volumes, multi-fragment packing, and HA injection for
     better domain match when training graph priors / PhAI-like models.
+    v0.11: denser large-cell tail (Vol up to ~3500–4200 Å³) + ring fragments.
     """
     base = dict(
-        log_v_mu=float(np.log(700.0)),
-        log_v_sigma=0.58,
+        log_v_mu=float(np.log(850.0)),
+        log_v_sigma=0.60,
         v_min=180.0,
         v_max=4200.0,
         n_nonh_lo=8,
-        n_nonh_hi=36,
-        p_heavy_atom=0.24,
+        n_nonh_hi=40,
+        p_heavy_atom=0.26,
         p_partial_occupancy=0.12,
-        p_multi_fragment=0.25,
+        p_multi_fragment=0.30,
+        p_ring_fragment=0.35,
         prefer_realistic_angles=True,
         cod_like_volumes=True,
         name_prefix="melg_acta2026",
         mode="hybrid",
-        hybrid_cluster_frac=0.78,
+        hybrid_cluster_frac=0.80,
+    )
+    base.update(overrides)
+    return MelgalvisGenConfig(**base)
+
+
+def large_cell_config(**overrides) -> MelgalvisGenConfig:
+    """
+    Large-cell curriculum (Vol ~1000–3500 Å³, Z≥19 HA-friendly).
+
+    Targets Carrozzini / AI-PhaSeed hybrid-friendly volume band and
+    Melgalvis/Rekis larger-cell generalization. Prefer multi-fragment
+    packing with ring scaffolds and elevated HA rate.
+    """
+    base = dict(
+        log_v_mu=float(np.log(2000.0)),
+        log_v_sigma=0.40,
+        v_min=900.0,
+        v_max=3500.0,
+        n_nonh_lo=16,
+        n_nonh_hi=48,
+        n_nonh_hard_cap=56,
+        p_large_molecule=0.45,
+        p_heavy_atom=0.42,
+        heavy_elements=("BR", "I", "CL", "S", "P"),
+        p_partial_occupancy=0.12,
+        p_multi_fragment=0.40,
+        multi_frag_n_extra=(5, 14),
+        p_ring_fragment=0.45,
+        p_special_seed=0.18,
+        prefer_realistic_angles=True,
+        cod_like_volumes=True,
+        vol_per_nonh_lo=9.0,
+        vol_per_nonh_hi=18.0,
+        name_prefix="melg_large",
+        mode="hybrid",
+        hybrid_cluster_frac=0.85,
+        max_pack_trials=60,
     )
     base.update(overrides)
     return MelgalvisGenConfig(**base)
@@ -351,6 +398,68 @@ def _u_iso_from_b(rng: np.random.Generator, cfg: MelgalvisGenConfig) -> float:
     return float(rng.uniform(cfg.b_iso_lo, cfg.b_iso_hi))
 
 
+def build_ring_scaffold(
+    rng: np.random.Generator,
+    kind: Optional[str] = None,
+) -> Tuple[List[str], np.ndarray]:
+    """
+    Small database-guided molecule-like scaffolds (COD-inspired organic motifs).
+
+    Not a full CSD fragment library — transparent geometry priors for
+    Melgalvis-style packing realism (v0.11).
+    """
+    kind = kind or str(
+        rng.choice(["phenyl", "pyridine", "carboxyl", "imidazole", "chain"])
+    )
+    if kind == "phenyl":
+        # planar hexagon ~1.39 Å
+        els = ["C"] * 6
+        ang = np.linspace(0, 2 * np.pi, 7)[:-1]
+        r = 1.39
+        xyz = np.column_stack([r * np.cos(ang), r * np.sin(ang), np.zeros(6)])
+    elif kind == "pyridine":
+        els = ["N", "C", "C", "C", "C", "C"]
+        ang = np.linspace(0, 2 * np.pi, 7)[:-1]
+        r = 1.36
+        xyz = np.column_stack([r * np.cos(ang), r * np.sin(ang), np.zeros(6)])
+    elif kind == "carboxyl":
+        # C(=O)–OH-like flat fragment
+        els = ["C", "O", "O"]
+        xyz = np.array(
+            [[0.0, 0.0, 0.0], [1.21, 0.0, 0.0], [-0.65, 1.10, 0.0]],
+            dtype=np.float64,
+        )
+    elif kind == "imidazole":
+        # 5-membered N-heterocycle approx
+        els = ["N", "C", "N", "C", "C"]
+        ang = np.linspace(0, 2 * np.pi, 6)[:-1]
+        r = 1.32
+        xyz = np.column_stack([r * np.cos(ang), r * np.sin(ang), np.zeros(5)])
+    else:
+        # short aliphatic chain
+        n = int(rng.integers(3, 6))
+        els = ["C"] * n
+        xyz = np.zeros((n, 3), dtype=np.float64)
+        for i in range(1, n):
+            xyz[i] = xyz[i - 1] + np.array([1.54, 0.15 * (i % 2), 0.0])
+    # small random rigid tilt
+    axis = rng.normal(size=3)
+    axis /= np.linalg.norm(axis) + 1e-16
+    ang = float(rng.uniform(0, 2 * np.pi))
+    K = np.array(
+        [
+            [0, -axis[2], axis[1]],
+            [axis[2], 0, -axis[0]],
+            [-axis[1], axis[0], 0],
+        ],
+        dtype=np.float64,
+    )
+    R = np.eye(3) + np.sin(ang) * K + (1 - np.cos(ang)) * (K @ K)
+    xyz = (R @ xyz.T).T
+    xyz = xyz - xyz.mean(axis=0)
+    return els, xyz
+
+
 def build_artificial_molecule(
     rng: np.random.Generator,
     n_nonh: int,
@@ -359,6 +468,9 @@ def build_artificial_molecule(
 ) -> Tuple[List[str], np.ndarray]:
     """
     Grow a bonded cluster in Cartesian Å (origin-centered).
+
+    v0.11: optional ring / functional-group scaffold seed (database-guided),
+    then grow remaining non-H atoms by covalent attachment.
 
     Returns (elements, coords) including optional hydrogens.
     """
@@ -378,8 +490,21 @@ def build_artificial_molecule(
         coords.append(xyz.astype(np.float64))
         return True
 
-    seed_el = _sample_weighted(rng, {k: v for k, v in freq.items() if k != "H"})
-    add_nonh(seed_el, np.zeros(3))
+    # Optional ring / motif scaffold (Melgalvis-style molecule-like packing)
+    use_ring = (
+        float(getattr(cfg, "p_ring_fragment", 0.0)) > 0
+        and rng.random() < float(cfg.p_ring_fragment)
+        and n_nonh >= 4
+    )
+    if use_ring:
+        sc_els, sc_xyz = build_ring_scaffold(rng)
+        for el, p in zip(sc_els, sc_xyz):
+            if sum(1 for e in elements if e != "H") >= n_nonh:
+                break
+            add_nonh(el, p)
+    if not elements:
+        seed_el = _sample_weighted(rng, {k: v for k, v in freq.items() if k != "H"})
+        add_nonh(seed_el, np.zeros(3))
 
     while sum(1 for e in elements if e != "H") < n_nonh:
         # Attach to a random existing non-H
@@ -434,6 +559,30 @@ def build_artificial_molecule(
     return elements, xyz
 
 
+def _packing_void_fraction(
+    fracs: Sequence[np.ndarray],
+    M: np.ndarray,
+    n_probe: int = 48,
+    contact_r: float = 2.2,
+) -> float:
+    """
+    Crude empty-volume fraction via random probes (min-image).
+
+    Used to reject packs with large voids (v0.11 Melgalvis packing quality).
+    """
+    if not fracs:
+        return 1.0
+    F = np.asarray(fracs, dtype=np.float64)
+    empty = 0
+    rng = np.random.default_rng(abs(hash(tuple(F[0].round(4)))) % (2**31))
+    for _ in range(n_probe):
+        p = rng.random(3)
+        dmin = min(_min_image_cart(p, f, M) for f in F)
+        if dmin > contact_r:
+            empty += 1
+    return float(empty) / float(n_probe)
+
+
 def pack_molecule_in_cell(
     rng: np.random.Generator,
     elements: Sequence[str],
@@ -444,15 +593,21 @@ def pack_molecule_in_cell(
 ) -> Optional[List[AtomSite]]:
     """
     Place molecule in cell with random rotation/translation; optional inversion partner.
+
+    v0.11: tighter short-contact rejection + optional void-fraction check
+    (avoid large empty regions / unphysical packing).
     """
     M = _orth_matrix(cell)
     # Random rotation
     from grok_phase_solver.data.synthetic_v2 import _rotation_matrix
 
-    R = _rotation_matrix(rng)
-    xyz = (R @ cart.T).T
+    clash_frac = float(getattr(cfg, "min_contact_frac", 0.88))
+    do_void = bool(getattr(cfg, "void_check", True))
+    max_void = float(getattr(cfg, "max_void_frac", 0.55))
 
-    for _ in range(cfg.max_pack_trials):
+    for trial in range(cfg.max_pack_trials):
+        R = _rotation_matrix(rng)
+        xyz = (R @ cart.T).T
         if special_seed:
             # Seed near inversion center (0,0,0) with small offset
             t = rng.normal(scale=0.08, size=3)
@@ -471,7 +626,7 @@ def pack_molecule_in_cell(
             f = (t + dfrac) % 1.0
             # Clash with already placed
             for j, f2 in enumerate(fracs):
-                dmin = cfg.min_nonbond * (
+                dmin = clash_frac * (
                     _COVALENT_RADII.get(el, 0.75) + _COVALENT_RADII.get(elements[j], 0.75)
                 )
                 if _min_image_cart(f, f2, M) < dmin * 0.9:
@@ -480,10 +635,15 @@ def pack_molecule_in_cell(
             if not ok:
                 break
             fracs.append(f)
+            el_store = el
+            if el.upper() == "CL":
+                el_store = "Cl"
+            elif el.upper() == "BR":
+                el_store = "Br"
             atoms.append(
                 AtomSite(
-                    label=f"{el}{i+1}",
-                    element=el if el != "CL" else "Cl",
+                    label=f"{el_store}{i+1}",
+                    element=el_store,
                     fract=f,
                     occupancy=1.0,
                     u_iso=_u_iso_from_b(rng, cfg),
@@ -516,6 +676,14 @@ def pack_molecule_in_cell(
                         )
                     )
             atoms.extend(extra)
+
+        # Void / empty-space rejection (large cells especially)
+        if do_void and len(fracs) >= 4:
+            vf = _packing_void_fraction(fracs, M)
+            # allow slightly higher void on early trials; tighten later
+            thr = max_void + 0.12 * (1.0 - trial / max(cfg.max_pack_trials, 1))
+            if vf > thr:
+                continue
         return atoms
     return None
 
@@ -543,14 +711,44 @@ def generate_melgalvis_structure(
     if mode == "hybrid":
         mode = "cluster" if rng.random() < cfg.hybrid_cluster_frac else "rejection"
 
+    def _inject_ha_on_structure(st: CrystalStructure) -> CrystalStructure:
+        """Apply HA injection post-generation (cluster, rejection, or fallback)."""
+        if rng.random() >= float(getattr(cfg, "p_heavy_atom", 0.0)) or not st.atoms:
+            return st
+        heavies = list(getattr(cfg, "heavy_elements", ("BR", "CL", "S")))
+        weights = []
+        for h in heavies:
+            hu = h.upper()
+            weights.append(2.5 if hu in ("BR", "I") else 1.0)
+        w = np.asarray(weights, dtype=np.float64)
+        w = w / w.sum()
+        nonh = [a for a in st.atoms if a.element.upper() not in ("H", "D")]
+        if not nonh:
+            return st
+        n_ha = 1 + int(rng.random() < 0.30 and len(nonh) >= 2)
+        chosen = list(rng.choice(len(nonh), size=min(n_ha, len(nonh)), replace=False))
+        for j in chosen:
+            ha = str(rng.choice(heavies, p=w)).upper()
+            if ha == "CL":
+                nonh[j].element = "Cl"
+            elif ha == "BR":
+                nonh[j].element = "Br"
+            elif ha == "I":
+                nonh[j].element = "I"
+            else:
+                nonh[j].element = ha if len(ha) == 1 else ha.title()
+            nonh[j].label = f"{nonh[j].element}ha{j+1}"
+        return st
+
     if mode == "rejection":
         from grok_phase_solver.data.synthetic import generate_random_organic
 
         n_atoms = int(n_nonh or rng.integers(cfg.n_nonh_lo, cfg.n_nonh_hi + 1))
-        # volume-informed cell: map to volume_per_atom
+        # volume-informed cell: prefer log-normal V, then vpa (do not collapse large cells)
         V = sample_volume(rng, cfg)
         vpa = V / max(n_atoms, 1)
-        vpa = float(np.clip(vpa, cfg.vol_per_nonh_lo, cfg.vol_per_nonh_hi * 1.5))
+        # allow higher vpa for large-cell curricula (keep Vol near target)
+        vpa = float(np.clip(vpa, cfg.vol_per_nonh_lo, max(cfg.vol_per_nonh_hi * 2.5, vpa)))
         st = generate_random_organic(
             n_atoms=n_atoms,
             seed=seed,
@@ -558,20 +756,22 @@ def generate_melgalvis_structure(
             volume_per_atom=vpa,
         )
         st.name = f"{cfg.name_prefix}_rej_n{n_atoms}_s{seed}"
-        return st
+        return _inject_ha_on_structure(st)
 
     # Cluster mode
     n_nonh = int(n_nonh or rng.integers(cfg.n_nonh_lo, cfg.n_nonh_hi + 1))
     if rng.random() < float(getattr(cfg, "p_large_molecule", 0.0)):
         n_nonh = int(min(cfg.n_nonh_hard_cap, int(n_nonh * 1.5) + 2))
     special = bool(rng.random() < cfg.p_special_seed)
-    # Volume from density constraint
-    vpa = float(rng.uniform(cfg.vol_per_nonh_lo, cfg.vol_per_nonh_hi))
-    V = vpa * n_nonh
-    # blend with log-normal prior (stronger log-normal when cod_like)
+    # Volume: prefer log-normal for COD-like / large curricula (Melgalvis volume-first)
     V_ln = sample_volume(rng, cfg)
-    w_ln = 0.65 if getattr(cfg, "cod_like_volumes", False) else 0.5
-    V = (1.0 - w_ln) * V + w_ln * V_ln
+    vpa = float(rng.uniform(cfg.vol_per_nonh_lo, cfg.vol_per_nonh_hi))
+    V_den = vpa * n_nonh
+    w_ln = 0.75 if getattr(cfg, "cod_like_volumes", False) else 0.5
+    # large-cell band: force volume-first (Acta / Carrozzini regime)
+    if cfg.v_min >= 800.0:
+        w_ln = max(w_ln, 0.85)
+    V = (1.0 - w_ln) * V_den + w_ln * V_ln
     V = float(np.clip(V, cfg.v_min, cfg.v_max))
 
     cell = sample_lattice_from_volume(rng, V, cfg)
@@ -594,32 +794,20 @@ def generate_melgalvis_structure(
         elements = list(elements) + list(el2)
         cart = np.vstack([cart, cart2])
         n_nonh = sum(1 for e in elements if e.upper() not in ("H", "D"))
-    # Optional heavy-atom injection (HA-like for partial-seed curriculum)
-    if rng.random() < float(getattr(cfg, "p_heavy_atom", 0.0)) and elements:
-        heavies = list(getattr(cfg, "heavy_elements", ("BR", "CL", "S")))
-        ha = str(rng.choice(heavies))
-        # replace a peripheral non-H or append
-        j = int(rng.integers(0, len(elements)))
-        if elements[j].upper() in ("H", "D"):
-            j = 0
-        elements[j] = ha if ha != "BR" else "Br"
-        if ha == "CL":
-            elements[j] = "Cl"
-        elif ha == "BR":
-            elements[j] = "Br"
     atoms = pack_molecule_in_cell(rng, elements, cart, cell, cfg, special_seed=special)
     if atoms is None:
-        # fallback rejection
+        # fallback rejection — preserve large-cell volume when configured
         from grok_phase_solver.data.synthetic import generate_random_organic
 
+        vpa_fb = max(vpa, V / max(n_nonh, 1))
         st = generate_random_organic(
             n_atoms=n_nonh,
             seed=seed + 1,
             space_group=space_group,
-            volume_per_atom=vpa,
+            volume_per_atom=vpa_fb,
         )
         st.name = f"{cfg.name_prefix}_fb_n{n_nonh}_s{seed}"
-        return st
+        return _inject_ha_on_structure(st)
 
     # Partial occupancy injection (domain-gap realism)
     p_occ = float(getattr(cfg, "p_partial_occupancy", 0.0))
@@ -635,7 +823,7 @@ def generate_melgalvis_structure(
                     )
                 )
 
-    return CrystalStructure(
+    st = CrystalStructure(
         name=f"{cfg.name_prefix}_cl_n{n_nonh}_s{seed}",
         cell=cell,
         space_group_hm=space_group,
@@ -643,6 +831,7 @@ def generate_melgalvis_structure(
         z=1,
         wavelength=cfg.wavelength,
     )
+    return _inject_ha_on_structure(st)
 
 
 def iter_melgalvis_samples(
@@ -680,6 +869,8 @@ def iter_melgalvis_samples(
             cfg = actas2026_config()
         elif preset in ("ha", "heavy", "graphai_ha"):
             cfg = ha_heavy_config()
+        elif preset in ("large", "large_cell", "vol3500"):
+            cfg = large_cell_config()
         else:
             cfg = MelgalvisGenConfig()
     if n_nonh_range:

@@ -198,13 +198,22 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] AI-PhaSeed bin-quality filter + |E| floor + Vol-band seed fraction
 - [x] `run_cod_stratified_bench.py` skeleton; `ha_heavy_config`
 - [x] Version 0.10.0 packaging + tests
-- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset ha|cod`
+- [ ] PyPI 0.10.0 upload (maintainer token) — optional if 0.11.0 supersedes
+
+### v0.11.0 Melgalvis large-cell + GraphPhaseNet v9 + seed hardening
+- [x] Melgalvis ring scaffolds, void packing, `large_cell` / stronger HA presets
+- [x] GraphPhaseNet **v9** d_in=26 + `run_strong_prior_v9.py` + Vol-band stratify
+- [x] AI-PhaSeed multi-bin filter, continuous multi-seed agreement, Class 0/1 diagnostics
+- [x] Docs: synthetic_melgalvis, graph_phase_net_v9, FOR_REVIEWERS C19, CHANGELOG
+- [x] Tests `test_v011_melgalvis_graph_seed.py`; version 0.11.0
+- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset large|ha`
 - [ ] Optional local GraPhAI Zenodo H2H (external weights; not redistributed)
 - [ ] True SE(3) equivariant atomic diffusion (external research)
 - [ ] Optional cctbx backend hooks
 - [ ] OMC25-scale data mirror
-- [ ] PyPI 0.10.0 upload (maintainer token)
-- [ ] Expand COD Vol 1000–3500 Å³ stratified AI-PhaSeed panel
+- [ ] PyPI 0.11.0 upload (maintainer token)
+- [ ] Expand experimental COD Vol 1000–3500 Å³ AI-PhaSeed panel (beyond skeleton)
+- [ ] Streamlit multi-plane density / PyMOL export helper (optional)
 
 
 

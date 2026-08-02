@@ -74,9 +74,41 @@ def stratify_holdout_rows(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def stratify_by_volume(
+    rows: List[Dict[str, Any]],
+    vol_key: str = "cell_volume",
+) -> Dict[str, Any]:
+    """Stratify hold-out by unit-cell volume bands (AI-PhaSeed Vol 1000–3500)."""
+    def _agg(sub: List[Dict]) -> Dict[str, Any]:
+        if not sub:
+            return {"n": 0}
+        frac = [float(r["frac_within_20"]) for r in sub if "frac_within_20" in r]
+        mpe = [float(r["strong_mpe_oi"]) for r in sub if r.get("strong_mpe_oi") is not None]
+        sok = [1.0 if r.get("seedOK") else 0.0 for r in sub]
+        return {
+            "n": len(sub),
+            "mean_frac_within_20": float(np.mean(frac)) if frac else float("nan"),
+            "mean_strong_mpe_oi": float(np.mean(mpe)) if mpe else float("nan"),
+            "seedOK_rate": float(np.mean(sok)) if sok else float("nan"),
+        }
+
+    lo = [r for r in rows if float(r.get(vol_key, 0) or 0) < 1000]
+    mid = [
+        r
+        for r in rows
+        if 1000.0 <= float(r.get(vol_key, 0) or 0) <= 3500.0
+    ]
+    hi = [r for r in rows if float(r.get(vol_key, 0) or 0) > 3500]
+    return {
+        "vol_lt_1000": _agg(lo),
+        "vol_1000_3500": _agg(mid),
+        "vol_gt_3500": _agg(hi),
+    }
+
+
 def format_stratified_md(strat: Dict[str, Any]) -> str:
     lines = [
-        "## Stratified seed quality (v0.10)",
+        "## Stratified seed quality (v0.11)",
         "",
         "| Cohort | n | frac≤20° | seedOK | strong MPE |",
         "|--------|---|----------|--------|------------|",

@@ -116,13 +116,24 @@ def recommend_seed_fraction(
     if has_fragment_seed:
         frac = max(0.12, frac - 0.04)
         notes.append("fragment/predicted-model seed present")
-    # v0.10: hybrid-friendly Vol band prefers ~25–30% seed (Carrozzini sweet spot)
+    # v0.10–v0.11: hybrid-friendly Vol band prefers ~25–30% seed (Carrozzini)
+    vol_band = "unknown"
     if cell is not None:
         try:
             vol = float(unit_cell_volume(np.asarray(cell, dtype=np.float64)))
-            if 1000.0 <= vol <= 3500.0 and 0.20 <= frac <= 0.28:
-                frac = max(frac, 0.25)
-                notes.append("Vol band → prefer ≥25% seed (AI-PhaSeed-style)")
+            if vol < 1000:
+                vol_band = "vol_lt_1000"
+            elif vol <= 3500:
+                vol_band = "vol_1000_3500"
+            else:
+                vol_band = "vol_gt_3500"
+            if 1000.0 <= vol <= 3500.0:
+                # Sweet spot for hybrid AI-PhaSeed on organics
+                frac = float(np.clip(max(frac, 0.28), 0.22, 0.38))
+                notes.append("Vol 1000–3500 Å³ → prefer ~28–30% seed (AI-PhaSeed)")
+            elif vol > 3500:
+                frac = min(0.48, frac + 0.05)
+                notes.append("Vol >3500 Å³ → denser seed prior")
         except Exception:
             pass
     frac = float(np.clip(frac, 0.10, 0.50))
@@ -130,7 +141,12 @@ def recommend_seed_fraction(
         "seed_fraction": frac,
         "n_seed_est": int(np.clip(round(frac * n_refl), 15, min(250, n_refl))),
         "notes": notes,
-        "method": "carrozzini_heuristic_v10",
+        "method": "carrozzini_heuristic_v11",
+        "vol_band": vol_band,
+        "practical_bar_note": (
+            "Hard cells typically need ≥~30% of strong |E| phases within 20° "
+            "(partial_phaseed / fragment / HA seed) — pure ab initio remains rare."
+        ),
     }
 
 
@@ -142,13 +158,19 @@ def filter_seed_by_bin_quality(
     mode: str = "bins",
     max_entropy: float = 0.92,
     min_mean_abs_cos: float = 0.0,
+    e_values: Optional[np.ndarray] = None,
+    e_min: Optional[float] = None,
+    multi_bin: bool = True,
 ) -> Tuple[np.ndarray, Dict]:
     """
-    Drop / keep seed indices based on Carrozzini-style bin concentration (v0.10).
+    Drop / keep seed indices based on Carrozzini-style bin concentration (v0.10+).
 
-    If the seed phase set is too uniform (high bin entropy), return the original
-    set with a warning — do not empty the seed. If entropy is high, optionally
-    thin to top half by |cos| concentration (more decisive phases).
+    If the seed phase set is too uniform (high bin entropy), thin to more
+    decisive phases rather than emptying the seed. Optional ``e_min`` floor
+    removes weak-|E| seeds first (v0.11).
+
+    ``multi_bin=True`` also checks quadrant (4) and 8-bin entropy and uses the
+    worse (higher) normalized entropy for the filter decision.
 
     Returns (filtered_idx, meta).
     """
@@ -158,20 +180,44 @@ def filter_seed_by_bin_quality(
     if len(seed_idx) < 8:
         meta["note"] = "seed too small to filter"
         return seed_idx, meta
+
+    # Optional |E| floor before entropy thinning
+    if e_values is not None and e_min is not None:
+        E = np.asarray(e_values, dtype=np.float64)
+        keep = seed_idx[E[seed_idx] >= float(e_min)]
+        if len(keep) >= max(8, len(seed_idx) // 3):
+            meta["e_min"] = float(e_min)
+            meta["n_after_e_floor"] = int(len(keep))
+            seed_idx = keep
+        else:
+            meta["e_floor_skipped"] = True
+
     ph_s = ph[seed_idx]
     phw = (ph_s + np.pi) % (2 * np.pi) - np.pi
-    hist, _ = np.histogram(phw, bins=int(n_bins), range=(-np.pi, np.pi))
-    p = hist.astype(np.float64) / max(hist.sum(), 1)
-    p = p[p > 0]
-    ent = float(-np.sum(p * np.log(p + 1e-16)) / np.log(max(n_bins, 2)))
+
+    def _norm_entropy(nbins: int) -> float:
+        hist, _ = np.histogram(phw, bins=int(nbins), range=(-np.pi, np.pi))
+        p = hist.astype(np.float64) / max(hist.sum(), 1)
+        p = p[p > 0]
+        return float(-np.sum(p * np.log(p + 1e-16)) / np.log(max(nbins, 2)))
+
+    bins_use = 2 if mode == "centro" else int(n_bins)
+    ent = _norm_entropy(bins_use)
+    if multi_bin and mode not in ("centro",):
+        ent = max(ent, _norm_entropy(4), _norm_entropy(8))
     mac = float(np.mean(np.abs(np.cos(ph_s))))
     meta["seed_bin_entropy"] = ent
     meta["seed_mean_abs_cos"] = mac
+    meta["n_bins_eval"] = bins_use
     if ent <= max_entropy and mac >= min_mean_abs_cos:
         meta["note"] = "seed bin quality OK"
+        meta["n_out"] = int(len(seed_idx))
         return seed_idx, meta
-    # Thin to more decisive phases (high |cos| for centro-like; high |sin| kept too)
+    # Thin to more decisive phases (high |cos| for centro-like; keep some |sin|)
     score = np.abs(np.cos(ph_s)) + 0.25 * np.abs(np.sin(ph_s))
+    if e_values is not None:
+        E = np.asarray(e_values, dtype=np.float64)
+        score = score + 0.15 * (E[seed_idx] / (E[seed_idx].max() + 1e-16))
     keep_n = max(8, int(0.65 * len(seed_idx)))
     order = np.argsort(-score)[:keep_n]
     out = seed_idx[order]

@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.10.0 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.11.0 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 
@@ -12,7 +12,7 @@ An **open, Python-first framework** for the crystallographic phase problem:
 
 - Classical solvers (charge flipping, HIO, RAAR, DiffMap, direct methods, Patterson)
 - Hybrid pipelines (ensemble free-FOM ranking, AI-PhaSeed, partial-φ / fragment seeding)
-- Learned priors (GraphPhaseNet v3–v8, hard-P1 PhaseMLP) with **honest hard-region metrics**
+- Learned priors (GraphPhaseNet v3–v9, hard-P1 PhaseMLP) with **honest hard-region metrics**
 - Scientist CLI (`gps-solve`) exporting density + **SHELXL-style `trial.res`**
 - Optional head-to-head vs academic **SHELXS** (binaries not redistributed)
 
@@ -36,12 +36,13 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C10 | Melgalvis & Rekis (2026) style synthetic generator trains GraphPhaseNet at scale (N=**1200** XL): seed frac≤20° ≈**22%**, seedOK rate **12.5%**, hard strict still **0%** (comparable to legacy XL ~21%; **not yet** ≥30% bar) | [`strong_prior_melg_xl.md`](../data/processed/strong_prior_melg_xl.md), [math](math/synthetic_melgalvis.md) |
 | C11 | Carrozzini 2025-aligned DM+AI modified tangent (`dm_ai_weight`), seed Class 0/1 **heuristic** (+ optional synthetic/oracle trainable classifier), and low-res EDM path — **without** claiming reproduction of their 1505-COD RF or >90% Class-1 efficiency | [math/ai_phaseed.md](math/ai_phaseed.md), [`ai_phaseed_extended_benchmark.md`](../data/processed/ai_phaseed_extended_benchmark.md), [`seed_quality_rf.md`](../data/processed/seed_quality_rf.md) |
 | C12 | Experimental physics Langevin diffusion hybrid, fuller gemmi SG helpers, predicted-model CIF seeding, optional device FFT, and multistart phase UQ — **without** claiming PXRDnet/XRDSol parity or clearing the hard ab initio seed bar | [math/diffusion_phase.md](math/diffusion_phase.md), [math/symmetry.md](math/symmetry.md) |
-| C13 | GraphPhaseNet **v5** (d_in=14) through **v7/v8** (d_in=22 multipath, κ×E edges, bin CE, HA curricula) ship training/scoreboard infrastructure; hold-out frac≤20° remains **below the 30% bar** on pilots (~21–24%) — **does not claim** ≥30% seed bar | [math/graph_phase_net_v5.md](math/graph_phase_net_v5.md)–[v8.md](math/graph_phase_net_v8.md), [`strong_prior_v5.md`](../data/processed/strong_prior_v5.md)–[`v8.md`](../data/processed/strong_prior_v8.md) |
+| C13 | GraphPhaseNet **v5** (d_in=14) through **v9** (d_in=26 large-cell/HA multipath) ship training/scoreboard infrastructure; hold-out frac≤20° remains **below the 30% bar** on pilots (~21–24%) — **does not claim** ≥30% seed bar | [math/graph_phase_net_v5.md](math/graph_phase_net_v5.md)–[v9.md](math/graph_phase_net_v9.md), [`strong_prior_v5.md`](../data/processed/strong_prior_v5.md)–[`v9.md`](../data/processed/strong_prior_v9.md) |
 | C14 | Trainable **PhaseScoreNet** optional path inside diffusion hybrid, with physics Langevin fallback and lightweight checkpoint | [math/diffusion_phase.md](math/diffusion_phase.md) |
-| C15 | Melgalvis **COD/hard/acta2026/HA curricula** (HA injection, partial occ, multi-fragment packing, low-res fraction) and GraPhAI-style κ edges; seed-fraction heuristics aid AI-PhaSeed UX — **still no claim** of ≥30% mean strong-seed bar | [math/synthetic_melgalvis.md](math/synthetic_melgalvis.md), [`strong_prior_v5.md`](../data/processed/strong_prior_v5.md)–[`v8.md`](../data/processed/strong_prior_v8.md) |
+| C15 | Melgalvis **COD/hard/acta2026/HA/large curricula** (ring scaffolds, void packing, Vol~3500, HA Z≥19 bias, low-res) and GraPhAI-style κ edges; seed-fraction heuristics aid AI-PhaSeed UX — **still no claim** of ≥30% mean strong-seed bar | [math/synthetic_melgalvis.md](math/synthetic_melgalvis.md), [`strong_prior_v9.md`](../data/processed/strong_prior_v9.md) |
 | C16 | On COD **2016452 / 2100301** experimental Fobs, **fragment_half** (SG-expanded ~½ ASU + full $F_{\mathrm{calc}}$ soft prior) mapCC **0.80 / 0.74** approaches or beats oracle **partial_30** (**0.72 / 0.71**); `auto` remains ~0.20 | [`cod_hard_path_validation.md`](../data/processed/cod_hard_path_validation.md), [math/partial_seed.md](math/partial_seed.md) |
-| C17 | GraphPhaseNet **v6 pilot** (N=200, cod) reaches ~**24%** frac≤20° (above ~22% plateau) but **does not** clear 30%; later v7/v8 pilots remain in the same band — negative hard-ab-initio result **extended**, not overturned | [`strong_prior_v6.md`](../data/processed/strong_prior_v6.md), [`strong_prior_v7.md`](../data/processed/strong_prior_v7.md), [`strong_prior_v8.md`](../data/processed/strong_prior_v8.md) |
+| C17 | GraphPhaseNet **v6 pilot** (N=200, cod) reaches ~**24%** frac≤20° (above ~22% plateau) but **does not** clear 30%; later v7–v9 pilots remain in the same band — negative hard-ab-initio result **extended**, not overturned | [`strong_prior_v6.md`](../data/processed/strong_prior_v6.md)–[`v9.md`](../data/processed/strong_prior_v9.md) |
 | C18 | Experimental **Hybrid Difference Map** (`--method hdm`) is research-only (DiffMap in protein + HIO in solvent); **not** used by `auto` | [math/hybrid_difference_map.md](math/hybrid_difference_map.md) |
+| C19 | AI-PhaSeed **v0.11** bin multi-entropy filter, \|E\| floor, Vol-band seed fraction (~28–30% in 1000–3500 Å³), Class 0/1 diagnostics text — practical hard path remains **partial_phaseed / fragment / HA** | [math/ai_phaseed.md](math/ai_phaseed.md), `metrics/seed_quality.py` |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 

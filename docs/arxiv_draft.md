@@ -1,9 +1,9 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft · software package v0.10.0 (MIT)**  
+**Working draft · software package v0.11.0 (MIT)**  
 **Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
-**Release tag:** `v0.10.0`  
+**Release tag:** `v0.11.0`  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
 **Figures:** [`figures/paper_figure_captions.md`](figures/paper_figure_captions.md)  
 **Authors:** Grok (xAI) and Joe  
@@ -74,7 +74,7 @@ Strong reflections are fixed as seeds; phase extension and free-FOM-gated polish
 
 ### 2.6 Scientist pipeline
 
-`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ **0.10.0**.
+`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ **0.11.0**.
 
 ---
 
@@ -104,7 +104,7 @@ Caveat: SHELXS scoring uses Q-peaks → equal-atom $F_{\mathrm{calc}}$ phases fo
 
 **Figure 4.** Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 (250 structures) and v4 XL (1200 structures, residual layers, Adam, Wilson match) both plateau near **~21%**, below the **30%** oracle bar. A full Melgalvis & Rekis (2026) style XL retrain (N=1200 hybrid artificial crystals, same capacity) reaches ≈**22%** frac≤20° and **12.5%** seedOK rate—training-stable and slightly better seedOK than legacy, but **not** past the bar. Hold-out hard strict solves remain **0%** for graph prior ± AI-PhaSeed.
 
-**Later GraphPhaseNet pilots (v5–v8; laptop-scale unless noted).** Feature and curriculum upgrades (d_in=14→22, κ-gated / multipath edges, HA/low-res cues, bin CE, Melgalvis COD/hard/HA presets, stratified Z/HA reporting) yield hold-out frac≤20° typically in the **~21–24%** band (e.g. v5 pilot ≈22%, v6 pilot N=200 ≈**24%**, v7/v8 quick/HA pilots ≈19–26% depending on N and panel mix). These runs **extend the negative scale/architecture result**: they improve infrastructure and modestly beat the ~21% legacy plateau on some pilots, but **do not clear the 30% oracle bar** and do not produce reliable hard strict solves without partial information. Cluster **scale-xl** (5k–10k) remains documented for further tests.
+**Later GraphPhaseNet pilots (v5–v9; laptop-scale unless noted).** Feature and curriculum upgrades (d_in=14→22→**26**, κ-gated / multipath edges, HA/low-res/large-cell cues, bin CE, Melgalvis COD/hard/HA/**large** presets with ring scaffolds, stratified Z/HA **and Vol-band** reporting) yield hold-out frac≤20° typically in the **~21–24%** band (e.g. v5 pilot ≈22%, v6 pilot N=200 ≈**24%**, v7–v9 quick/HA/large pilots ≈19–26% depending on N and panel mix). These runs **extend the negative scale/architecture result**: they improve infrastructure and modestly beat the ~21% legacy plateau on some pilots, but **do not clear the 30% oracle bar** and do not produce reliable hard strict solves without partial information. Cluster **scale-xl** (5k–10k) remains documented for further tests (`run_strong_prior_v9.py`).
 
 This is an explicit **negative result** for pure scale-up of the current architecture on synthetic hard organics; improved generators and GraPhAI-inspired graphs are necessary infrastructure for further gains (as argued by Melgalvis & Rekis) but do not by themselves solve hard ab initio phasing in our metrics. Official GraPhAI weights are **not redistributed**; any external H2H is user-local (`docs/math/graphai_external.md`).
 
@@ -180,7 +180,7 @@ Synthetic vs experimental $|F|$ Wilson statistics can be substantially aligned b
 
 ```bash
 # Library
-python -m pip install "grok-phase-solver>=0.10.0"
+python -m pip install "grok-phase-solver>=0.11.0"
 # or from source
 git clone https://github.com/pileofflapjacks1/grok_phase_solver.git
 cd grok_phase_solver && python -m pip install -e ".[dev,gui]"
@@ -208,8 +208,8 @@ Frozen evidence files (selected):
 
 ## 7. Data and code availability
 
-- Source: MIT, GitHub `pileofflapjacks1/grok_phase_solver`, tag **`v0.10.0`**  
-- PyPI: `grok-phase-solver` (≥0.10.0)  
+- Source: MIT, GitHub `pileofflapjacks1/grok_phase_solver`, tag **`v0.11.0`**  
+- PyPI: `grok-phase-solver` (≥0.11.0)  
 - COD structures cited by ID (2016452, 2100301, 2017775, …)  
 - SHELX / PhAI / GraPhAI binaries and weights: user-supplied under their licenses (not redistributed)
 
@@ -238,7 +238,7 @@ BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patte
 11. Melgalvis & Rekis (2026) — artificial crystal generation for DL phasing.  
 12. COD — crystallography.net.  
 13. gemmi — crystallography toolkit.  
-14. Grok (xAI) and Joe (2026) — *grok_phase_solver* **v0.10.0** (this work).  
+14. Grok (xAI) and Joe (2026) — *grok_phase_solver* **v0.11.0** (this work).  
 15. PXRDnet / XRDSol (2025–2026) — diffusion-for-diffraction literature (conceptual context only).  
 
 Extended notes and derivations: `docs/math/` (including `graph_phase_net_v5`–`v8.md`, `partial_seed.md`, `hybrid_difference_map.md`, `graphai_external.md`), `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.

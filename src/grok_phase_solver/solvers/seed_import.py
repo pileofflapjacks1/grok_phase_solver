@@ -917,12 +917,16 @@ def combine_phase_seeds(
         if zs:
             ww = np.asarray(ws, dtype=np.float64)
             if agreement_boost and len(phs) >= 2:
-                # mean pairwise |cos Δφ| + Carrozzini bin agreement (v0.9)
+                # mean pairwise |cos Δφ| + continuous agreement + bin agreement (v0.11)
                 agree = 0.0
                 c = 0
                 for a in range(len(phs)):
                     for b in range(a + 1, len(phs)):
-                        agree += abs(np.cos(phs[a] - phs[b]))
+                        # continuous: |cos Δφ| (smooth) + soft 40° boost
+                        dphi = abs(((phs[a] - phs[b] + np.pi) % (2 * np.pi)) - np.pi)
+                        cos_a = abs(np.cos(phs[a] - phs[b]))
+                        soft = float(np.exp(-((dphi / (np.deg2rad(40.0))) ** 2)))
+                        agree += 0.55 * cos_a + 0.45 * soft
                         c += 1
                 agree = agree / max(c, 1)
                 try:
@@ -939,11 +943,13 @@ def combine_phase_seeds(
                             bin_agree += float(abs(bins[a] - bins[b]) < 1e-6)
                             cb += 1
                     bin_agree = bin_agree / max(cb, 1)
-                    agree = 0.65 * agree + 0.35 * bin_agree
+                    # v0.11: weight continuous more when multi-source dense
+                    agree = 0.55 * agree + 0.45 * bin_agree
                 except Exception:
                     pass
                 agreement[i] = agree
-                ww = ww * (0.75 + 0.5 * agree)
+                # Stronger boost when sources agree (0.7–1.4×)
+                ww = ww * (0.70 + 0.70 * agree)
             ww = ww / (np.sum(ww) + 1e-16)
             z = np.sum(ww * np.asarray(zs))
             out[i] = float(np.angle(z))
