@@ -206,14 +206,25 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] AI-PhaSeed multi-bin filter, continuous multi-seed agreement, Class 0/1 diagnostics
 - [x] Docs: synthetic_melgalvis, graph_phase_net_v9, FOR_REVIEWERS C19, CHANGELOG
 - [x] Tests `test_v011_melgalvis_graph_seed.py`; version 0.11.0
+- [x] Tag + GitHub Release 0.11.0
+
+### v0.12.0 GraphPhaseNet v10 + generative research path
+- [x] GraphPhaseNet **v10** d_in=30 (hop3, multipath span, Wilson B, E-outlier)
+- [x] `run_strong_prior_v10.py` + scoreboard + centro hold-out mix
+- [x] Melgalvis B-factor inflate + amp-noise hooks
+- [x] `generative_structure` research method (CF-peak→Fcalc; not auto)
+- [x] Docs: graph_phase_net_v10, generative_structure, FOR_REVIEWERS C20–C21
+- [x] Tests `test_v012_graph_generative.py`; version 0.12.0
 - [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset large|ha`
 - [ ] Optional local GraPhAI Zenodo H2H (external weights; not redistributed)
 - [ ] True SE(3) equivariant atomic diffusion (external research)
 - [ ] Optional cctbx backend hooks
 - [ ] OMC25-scale data mirror
-- [ ] PyPI 0.11.0 upload (maintainer token)
+- [ ] PyPI 0.12.0 upload (maintainer token)
 - [ ] Expand experimental COD Vol 1000–3500 Å³ AI-PhaSeed panel (beyond skeleton)
 - [ ] Streamlit multi-plane density / PyMOL export helper (optional)
+- [ ] Agent-style auto-method selection / beamline hooks
+- [ ] CrystalX-inspired peak→atom typing helper
 
 
 

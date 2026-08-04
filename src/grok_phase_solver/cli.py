@@ -158,6 +158,7 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
             "diffusion_hybrid_v2",
             "diffusion_phaseed_v2",
             "hdm",
+            "generative_structure",
             "recycle",
             "direct_methods",
             "hio",
@@ -170,7 +171,8 @@ Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
         help=(
             "Phasing method (default: auto = ensemble on easy, priors/CF on hard; "
             "if a seed source is given, auto → partial_phaseed; "
-            "diffusion_* = experimental Langevin hybrid)"
+            "diffusion_* = experimental Langevin hybrid; "
+            "generative_structure = research CF-peak→Fcalc proposal (not auto))"
         ),
     )
     p.add_argument("--dmin", type=float, default=None, help="High-resolution cutoff Å (optional)")

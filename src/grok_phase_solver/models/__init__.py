@@ -22,6 +22,10 @@ from .diffusion_score import (
     load_score_net,
     score_weights_available,
 )
+from .generative_structure import (
+    generative_structure_propose,
+    generative_structure_available,
+)
 # hard_p1_prior imported lazily (avoids cycle: models → data → solvers → models)
 
 __all__ = [
@@ -47,4 +51,6 @@ __all__ = [
     "train_score_on_structures",
     "load_score_net",
     "score_weights_available",
+    "generative_structure_propose",
+    "generative_structure_available",
 ]

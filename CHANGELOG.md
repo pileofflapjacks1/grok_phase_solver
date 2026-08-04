@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.12.0 — 2026-08
+
+### What’s new in v0.12.0
+
+#### A. GraphPhaseNet v10 (d_in=30)
+- Features: hop3 multipath, multipath span, Wilson B proxy, E-outlier ratio
+- Stronger κ-gated multipath edges (feature_version=9); bin CE weight 0.24
+- `scripts/run_strong_prior_v10.py` with large/HA curriculum + P−1 hold-out mix
+- Scoreboard: `data/processed/strong_prior_v10.*`
+- Math: `docs/math/graph_phase_net_v10.md`
+- **Honest:** pilots still below the 30% strong-seed bar unless scoreboard says YES
+
+#### B. Melgalvis experimental realism
+- Optional B-factor inflation (radiation-damage-ish) + amplitude noise hooks
+- Large-cell / HA / ring packing retained from v0.11
+
+#### C. Generative structure proposal (research)
+- CF-peak → Fcalc phase seed API (`models/generative_structure.py`)
+- CLI/pipeline method `generative_structure` (**not** used by `auto`)
+- Physics Langevin / CF polish fallback; math note `docs/math/generative_structure.md`
+
+#### D. Packaging
+- Version **0.12.0**, tests, RELEASE notes
+- Strict success, physics fallbacks, no PhAI/SHELX/GraPhAI redistribution
+
 ## 0.11.0 — 2026-07
 
 ### What’s new in v0.11.0

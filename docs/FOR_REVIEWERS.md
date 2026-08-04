@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.11.0 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.12.0 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 
@@ -12,7 +12,7 @@ An **open, Python-first framework** for the crystallographic phase problem:
 
 - Classical solvers (charge flipping, HIO, RAAR, DiffMap, direct methods, Patterson)
 - Hybrid pipelines (ensemble free-FOM ranking, AI-PhaSeed, partial-φ / fragment seeding)
-- Learned priors (GraphPhaseNet v3–v9, hard-P1 PhaseMLP) with **honest hard-region metrics**
+- Learned priors (GraphPhaseNet v3–v10, hard-P1 PhaseMLP) with **honest hard-region metrics**
 - Scientist CLI (`gps-solve`) exporting density + **SHELXL-style `trial.res`**
 - Optional head-to-head vs academic **SHELXS** (binaries not redistributed)
 
@@ -43,6 +43,8 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C17 | GraphPhaseNet **v6 pilot** (N=200, cod) reaches ~**24%** frac≤20° (above ~22% plateau) but **does not** clear 30%; later v7–v9 pilots remain in the same band — negative hard-ab-initio result **extended**, not overturned | [`strong_prior_v6.md`](../data/processed/strong_prior_v6.md)–[`v9.md`](../data/processed/strong_prior_v9.md) |
 | C18 | Experimental **Hybrid Difference Map** (`--method hdm`) is research-only (DiffMap in protein + HIO in solvent); **not** used by `auto` | [math/hybrid_difference_map.md](math/hybrid_difference_map.md) |
 | C19 | AI-PhaSeed **v0.11** bin multi-entropy filter, \|E\| floor, Vol-band seed fraction (~28–30% in 1000–3500 Å³), Class 0/1 diagnostics text — practical hard path remains **partial_phaseed / fragment / HA** | [math/ai_phaseed.md](math/ai_phaseed.md), `metrics/seed_quality.py` |
+| C20 | GraphPhaseNet **v10** (d_in=30 hop3 multipath + Wilson B proxy) + Melgalvis B-inflate/amp-noise hooks; hold-out frac≤20° remains **below 30% bar** on pilots | [math/graph_phase_net_v10.md](math/graph_phase_net_v10.md), [`strong_prior_v10.md`](../data/processed/strong_prior_v10.md) |
+| C21 | Research **generative_structure** method (CF-peak→Fcalc seed; optional Langevin polish) — **not** auto; no trained generative weights redistributed | [math/generative_structure.md](math/generative_structure.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 

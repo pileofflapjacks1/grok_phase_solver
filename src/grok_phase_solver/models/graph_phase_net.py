@@ -136,6 +136,14 @@ def node_features_from_graph(
     - shell_E_std: |E| std within resolution shell (HA shell heterogeneity)
     - kappa_x_E: κ-centrality × |E| (physics edge reliability)
     - lowres_strong_rank: low-res weight × shell_rank × ha_E_tail
+
+    **v9 (d_in=30)** — GraPhAI multipath depth + Wilson / HA diagnostics (v0.12):
+    v8 + ``[hop3_local_E, multipath_span, wilson_B_proxy, E_outlier_ratio]``
+
+    - hop3_local_E: 3-hop mean |E| (deeper multipath context)
+    - multipath_span: |hop2 − local_E| (path disagreement / multipath cue)
+    - wilson_B_proxy: soft overall B from log|E| vs s² slope (broadcast)
+    - E_outlier_ratio: E / median(E) clipped (HA / strong-spot diagnostic)
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -357,13 +365,62 @@ def node_features_from_graph(
     lowres_strong = low_res_w * shell_rank * (0.5 + 0.5 * ha_E_tail)
     lowres_strong = lowres_strong / (lowres_strong.max() + 1e-16)
 
-    return np.column_stack(
+    v8 = np.column_stack(
         [
             v7,
             log_vol_feat,
             shell_std,
             kappa_x_e,
             lowres_strong,
+        ]
+    ).astype(np.float64)
+    if int(feature_version) < 9:
+        return v8
+
+    # --- v9 extras (GraPhAI multipath depth + Wilson/HA diagnostics, v0.12) ---
+    hop3 = hop2.copy()
+    if edges is not None and len(edges) > 0:
+        nbr_sum3 = np.zeros(n, dtype=np.float64)
+        nbr_cnt3 = np.zeros(n, dtype=np.float64)
+        for e in np.asarray(edges):
+            i, j, k = int(e[0]), int(e[1]), int(e[2])
+            for a, b in ((i, j), (i, k), (j, k)):
+                if a == b or a < 0 or b < 0 or a >= n or b >= n:
+                    continue
+                nbr_sum3[a] += hop2[b]
+                nbr_cnt3[a] += 1.0
+                nbr_sum3[b] += hop2[a]
+                nbr_cnt3[b] += 1.0
+        hop3 = nbr_sum3 / np.maximum(nbr_cnt3, 1.0)
+    hop3_n = hop3 / (hop3.max() + 1e-16)
+
+    multipath_span = np.abs(hop2 - local_E)
+    multipath_span = multipath_span / (multipath_span.max() + 1e-16)
+
+    # Soft Wilson B proxy: slope of log(E+eps) vs s² (broadcast)
+    s2 = s_n ** 2
+    le = np.log(np.maximum(E, 1e-3))
+    if n >= 4 and float(np.std(s2)) > 1e-8:
+        # least-squares slope: cov(s2, le) / var(s2)
+        s2c = s2 - s2.mean()
+        lec = le - le.mean()
+        slope = float(np.dot(s2c, lec) / (np.dot(s2c, s2c) + 1e-16))
+        # more negative slope → larger B; map to [0,1]
+        wilson_b = float(np.clip((-slope + 0.5) / 2.0, 0.0, 1.0))
+    else:
+        wilson_b = 0.5
+    wilson_b_feat = np.full(n, wilson_b, dtype=np.float64)
+
+    med_E = float(np.median(E) + 1e-16)
+    e_out = np.clip(E / med_E, 0.0, 8.0) / 8.0
+
+    return np.column_stack(
+        [
+            v8,
+            hop3_n,
+            multipath_span,
+            wilson_b_feat,
+            e_out,
         ]
     ).astype(np.float64)
 
@@ -917,14 +974,18 @@ def prepare_graph_batch(
     # v5.1 / v6: power-law emphasis on strongest triplets
     # v7: κ × √(E_i E_j E_k) multipath emphasis (GraPhAI-style reliability)
     kpow = float(kappa_power)
-    if int(feature_version) >= 8:
+    if int(feature_version) >= 9:
+        kpow = max(kpow, 1.65)
+    elif int(feature_version) >= 8:
         kpow = max(kpow, 1.55)
     elif int(feature_version) >= 7:
         kpow = max(kpow, 1.45)
     elif int(feature_version) >= 6 and kpow <= 1.25:
         kpow = 1.35
     sl = float(self_loop)
-    if int(feature_version) >= 8:
+    if int(feature_version) >= 9:
+        sl = max(sl, 0.14)
+    elif int(feature_version) >= 8:
         sl = max(sl, 0.12)
     elif int(feature_version) >= 7:
         sl = max(sl, 0.10)
@@ -938,8 +999,13 @@ def prepare_graph_batch(
             for ti, e in enumerate(np.asarray(edges)):
                 i, j, k = int(e[0]), int(e[1]), int(e[2])
                 if 0 <= i < n and 0 <= j < n and 0 <= k < n:
-                    # v7: geometric mean sixth-root; v8: slightly stronger multipath
-                    exp = (1.0 / 5.5) if int(feature_version) >= 8 else (1.0 / 6.0)
+                    # v7: sixth-root; v8: 1/5.5; v9: stronger multipath (1/5)
+                    if int(feature_version) >= 9:
+                        exp = 1.0 / 5.0
+                    elif int(feature_version) >= 8:
+                        exp = 1.0 / 5.5
+                    else:
+                        exp = 1.0 / 6.0
                     boost[ti] = float(
                         (max(E_n[i], 0.0) * max(E_n[j], 0.0) * max(E_n[k], 0.0) + 1e-16)
                         ** exp

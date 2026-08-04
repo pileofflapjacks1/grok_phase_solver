@@ -410,10 +410,12 @@ def predict_strong_phases(
     Returns (node_idx, phases_strong).
     """
     fver = int(getattr(model, "_feature_version", 5))
-    # Infer feature version from d_in if needed (v4=10 … v8=26)
+    # Infer feature version from d_in if needed (v4=10 … v9=30)
     if hasattr(model, "d_in"):
         if model.d_in <= 10:
             fver = 4
+        elif model.d_in >= 30:
+            fver = 9
         elif model.d_in >= 26:
             fver = 8
         elif model.d_in >= 22:
@@ -549,6 +551,9 @@ def train_strong_prior(
 
     v8 (v0.11): d_in=26 large-cell / HA cues (log Vol, shell E std, κ×E,
     low-res strong rank) + stronger multipath edges; presets ``large`` / ``ha``.
+
+    v9 (v0.12 GraphPhaseNet v10): d_in=30 hop3 multipath, multipath span,
+    Wilson B proxy, E-outlier ratio; bin CE default higher on v10 runners.
 
     ``melgalvis_large_vol``: when using Melgalvis generator, bias toward larger
     volumes / lower-res shards (AI-PhaSeed curriculum).

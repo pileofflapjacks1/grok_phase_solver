@@ -1,7 +1,7 @@
 # grok_phase_solver
 
 **Open physics / AI phasing assistant for X-ray crystallography**  
-Version **0.11.0** · Python ≥ 3.10 · MIT
+Version **0.12.0** · Python ≥ 3.10 · MIT
 
 Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and a SHELXL-ready trial model, then refine elsewhere (Olex2 / SHELXL).
 
@@ -53,7 +53,7 @@ gps-solve --help
 ```
 
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
-Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.11.0 notes](docs/RELEASE_NOTES_v0.11.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.12.0 notes](docs/RELEASE_NOTES_v0.12.0.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 
 ### Phase your data
 
@@ -163,7 +163,8 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 | **Ensemble** best open ab initio on **easy** cells (vs CF / SHELXS in-repo H2H) | [`shelxs_h2h.md`](data/processed/shelxs_h2h.md) |
 | **Hard ab initio** ~0% strict for CF, priors, dual-space, SHELXS (our panels) | same + [`strong_prior.md`](data/processed/strong_prior.md) |
 | **Partial-φ bar** — ≥30% strong φ within 20° → hard strict solves | [`partial_seed_benchmark.md`](data/processed/partial_seed_benchmark.md), [math](docs/math/partial_seed.md) |
-| Graph prior strong-seed quality ~**21–24%** ≤20° (below 30% bar) through v4 XL / Melgalvis / **v9** pilots | [`strong_prior.md`](data/processed/strong_prior.md), [`strong_prior_v9.md`](data/processed/strong_prior_v9.md) |
+| Graph prior strong-seed quality ~**21–24%** ≤20° (below 30% bar) through v4 XL / Melgalvis / **v9–v10** pilots | [`strong_prior.md`](data/processed/strong_prior.md), [`strong_prior_v10.md`](data/processed/strong_prior_v10.md) |
+| Research generative structure proposal (CF-peak→Fcalc; not auto) | [math](docs/math/generative_structure.md) |
 | **COD fragment hard path** — fragment_half mapCC ≈/≥ partial_30 on 2016452 / 2100301 | [`cod_hard_path_validation.md`](data/processed/cod_hard_path_validation.md) |
 | Melgalvis large-cell + ring scaffolds (Vol ~1000–3500 Å³ curricula) | [math](docs/math/synthetic_melgalvis.md) |
 | Free FOM v2.1 — positivity residual $R_+$; reduces false “solved” gates | [math](docs/math/free_fom.md) |

@@ -129,6 +129,12 @@ class MelgalvisGenConfig:
     min_contact_frac: float = 0.88  # clash threshold vs covalent sum (packing)
     void_check: bool = True  # reject packs with large empty voids (centroid gap)
     max_void_frac: float = 0.55  # max empty volume fraction before re-pack
+    # v0.12: experimental realism degradations (synth→exp gap)
+    p_b_factor_inflate: float = 0.15  # chance to inflate U_iso (radiation-damage-ish)
+    b_inflate_lo: float = 1.4
+    b_inflate_hi: float = 2.8
+    p_amp_noise: float = 0.0  # applied in iter_melgalvis_samples if >0
+    amp_noise_frac: float = 0.04  # relative Gaussian noise on |F|
 
 
 def _sample_weighted(rng: np.random.Generator, freq: Dict[str, float]) -> str:
@@ -823,6 +829,15 @@ def generate_melgalvis_structure(
                     )
                 )
 
+    # v0.12 radiation-damage-ish B-factor inflation (subset of non-H atoms)
+    if float(getattr(cfg, "p_b_factor_inflate", 0.0)) > 0 and atoms:
+        for a in atoms:
+            if a.element.upper() in ("H", "D"):
+                continue
+            if rng.random() < float(cfg.p_b_factor_inflate):
+                fac = float(rng.uniform(cfg.b_inflate_lo, cfg.b_inflate_hi))
+                a.u_iso = float(min(0.35, max(a.u_iso, 0.01) * fac))
+
     st = CrystalStructure(
         name=f"{cfg.name_prefix}_cl_n{n_nonh}_s{seed}",
         cell=cell,
@@ -894,6 +909,13 @@ def iter_melgalvis_samples(
         if include_low_res > 0 and rng.random() < include_low_res:
             d = float(rng.uniform(*low_res_range))
         data = structure_to_fcalc(st, d_min=d)
+        amp = np.asarray(data["amplitudes"], dtype=np.float64)
+        # Optional relative amplitude noise (experimental realism; phases untouched)
+        p_noise = float(getattr(cfg, "p_amp_noise", 0.0))
+        if p_noise > 0 and rng.random() < p_noise:
+            nf = float(getattr(cfg, "amp_noise_frac", 0.04))
+            amp = amp * (1.0 + nf * rng.normal(size=amp.shape))
+            amp = np.maximum(amp, 1e-8)
         els = list(data["elements"])
         has_ha = any(e.upper() in ("BR", "CL", "I", "S", "P") for e in els)
         if has_ha:
@@ -902,7 +924,7 @@ def iter_melgalvis_samples(
             {
                 "name": st.name,
                 "hkl": data["hkl"],
-                "amplitudes": data["amplitudes"],
+                "amplitudes": amp,
                 "phases": data["phases"],
                 "cell": st.cell,
                 "n_atoms": data["n_atoms_cell"],

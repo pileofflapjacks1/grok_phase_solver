@@ -292,6 +292,29 @@ def _run_phasing(
         history["research_only"] = True
         return method, phases, density, history
 
+    if method in ("generative_structure", "generative_propose"):
+        from grok_phase_solver.models.generative_structure import generative_structure_propose
+
+        # Research-only: CF-peak → Fcalc seed → optional CF polish. Not used by auto.
+        polish = "cf" if cfg.n_iter and cfg.n_iter > 0 else "none"
+        phases, density, history = generative_structure_propose(
+            hkl,
+            amp,
+            cell_arr,
+            n_atoms=cfg.seed_n_atoms if getattr(cfg, "seed_n_atoms", None) else None,
+            d_min=d_use,
+            polish=polish,
+            n_polish=max(10, min(cfg.n_iter, 40)),
+            seed=cfg.seed,
+        )
+        history = dict(history or {})
+        history["research_only"] = True
+        warnings.append(
+            "generative_structure is research-only (no trained generative weights); "
+            "prefer partial_phaseed / fragment for hard data."
+        )
+        return method, phases, density, history
+
     if method == "raar":
         from grok_phase_solver.solvers.iterative_retrieval import raar_solve
 
