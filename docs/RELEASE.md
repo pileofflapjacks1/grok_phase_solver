@@ -37,12 +37,13 @@ python -m twine upload dist/grok_phase_solver-0.12.0*
 
 ## Pre-release checklist (0.12.0)
 
-- [x] `pytest -q` green
+- [x] `pytest -q` green (210 passed)
 - [x] Version aligned → **0.12.0**
 - [x] Docs: RELEASE_NOTES_v0.12.0, graph_phase_net_v10, generative_structure
 - [x] Scoreboard `strong_prior_v10` committed
-- [ ] Tag + GitHub Release
+- [x] Tag + GitHub Release → https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.12.0
 - [ ] PyPI upload (maintainer token)
 - [x] No overclaims; generative_structure off auto; partial-φ hard path documented
 
+**This release:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.12.0  
 **Prior:** v0.11.0 at https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.11.0
