@@ -125,6 +125,18 @@ This is an explicit **negative result** for pure scale-up of the current archite
 
 Caveat: experimental mapCC uses $F_{\mathrm{calc}}$ from the deposited structure as proxy truth, not refined $R_1$.
 
+### 3.5b COD Vol-band stratified panel (v0.13 software)
+
+Local panel of **six** COD entries with experimental Fobs and Fcalc controls,
+stratified by unit-cell volume (lt 1000 / **1000–3500** / gt 3500 Å³). Methods:
+`auto`, oracle partial_15/30, and fragment_half. In the hybrid-friendly
+**Vol 1000–3500** band (COD 2012000, 2013000), mean mapCC is approximately
+**auto ~0.27**, **partial_15 ~0.54**, **partial_30 ~0.70**, **fragment_half ~0.71**
+(Fobs+Fcalc pooled; short laptop budgets). This is **not** Carrozzini's
+1505-structure panel; it documents that partial information—not ab initio
+polish alone—recovers maps in the AI-PhaSeed volume regime. Scoreboard:
+`data/processed/cod_stratified_bench.md`.
+
 ### 3.5 COD hard path: oracle partial-φ vs fragment-half seeds
 
 ![Figure 5](figures/paper_fig5_cod_hard_path.png)

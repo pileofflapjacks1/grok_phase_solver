@@ -15,6 +15,20 @@ Strict / mapCC success uses Fcalc truth phases matched by Miller index when CIF 
 [`cod_hard_path_validation.md`](cod_hard_path_validation.md)
 (`python scripts/run_cod_hard_path_validation.py`).
 
+**v0.13+ companion:** **COD Vol-band stratified panel** (lt1000 / 1000–3500 / gt3500;
+Fobs + Fcalc; auto / partial_15 / partial_30 / fragment_half) →
+[`cod_stratified_bench.md`](cod_stratified_bench.md)
+(`python scripts/run_cod_stratified_bench.py --dmin 1.0`).
+
+### Vol 1000–3500 Å³ focus (from stratified bench)
+
+| Run (mid-band, n=4 amp×dataset) | mean mapCC |
+|---------------------------------|------------|
+| auto | ~0.27 |
+| partial_15 | ~0.54 |
+| partial_30 | ~0.70 |
+| fragment_half | ~0.71 |
+
 ## Results
 
 | Dataset | Method | mapCC | free FOM | peaks | solved | s |

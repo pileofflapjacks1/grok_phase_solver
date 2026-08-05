@@ -48,6 +48,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C22 | GraphPhaseNet **v11** (d_in=34 intensity moments / centro cues) + Melgalvis contact packing / `xdxd` curriculum; pilots remain **below 30%** strong-seed bar unless scoreboard says YES | [math/graph_phase_net_v11.md](math/graph_phase_net_v11.md), [`strong_prior_v11.md`](../data/processed/strong_prior_v11.md) |
 | C23 | CrystalX-inspired **peak→atom typing** (+ optional H) improves `trial.res` labels via geometry/height heuristics — not trained CrystalX weights | [math/crystalx_typing.md](math/crystalx_typing.md) |
 | C24 | XDXD-inspired **coordinate proposal** multi-start CF→atoms; optional GraPhAI **external** H2H skeleton (`GRAPHAI_HOME`) — weights never redistributed | [math/generative_structure.md](math/generative_structure.md), [`third_party/graphai/README.md`](../third_party/graphai/README.md) |
+| C25 | **COD Vol-band stratified panel** (6 local COD with Fobs+Fcalc): auto weak across bands; **Vol 1000–3500** fragment_half mean mapCC **~0.71** (matches/beats partial_30 mean ~0.70); partial_15 under-seeds; not a 1505-structure Carrozzini panel | [`cod_stratified_bench.md`](../data/processed/cod_stratified_bench.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 

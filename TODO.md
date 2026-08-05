@@ -222,7 +222,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Docs + tests; version 0.13.0
 - [ ] Cluster **scale-xl** retrain (5k–10k) toward 30% seed bar
 - [ ] Wire real GraPhAI local API when user installs Zenodo package
-- [ ] Expand experimental COD Vol 1000–3500 Å³ panel
+- [x] Expand experimental COD Vol 1000–3500 Å³ panel (`cod_stratified_bench` 6 COD, mid-band filled)
 - [ ] True SE(3) / trained XDXD weights (external research)
 - [ ] Optional cctbx backend; OMC25-scale data mirror
 - [ ] PyPI 0.13.0 upload (maintainer token)
