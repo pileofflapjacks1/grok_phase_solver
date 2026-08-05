@@ -42,8 +42,9 @@ python -m twine upload dist/grok_phase_solver-0.13.0*
 - [x] Version aligned → **0.13.0**
 - [x] Docs: RELEASE_NOTES, graph_phase_net_v11, crystalx_typing, generative_structure
 - [x] Scoreboard `strong_prior_v11` (quick; honest — does not clear 30% bar)
-- [ ] Tag + GitHub Release
+- [x] Tag + GitHub Release → https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.0
 - [ ] PyPI upload (maintainer token)
 - [x] No overclaims; generative/xdxd off auto; no GraPhAI redistribution
 
+**This release:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.0  
 **Prior:** v0.12.0 at https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.12.0
