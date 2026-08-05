@@ -103,9 +103,37 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         xyz_path.write_text("\n".join(peaks_to_xyz_lines(result.peaks, result.cell)) + "\n")
         written.append(xyz_path)
 
-        # SHELXL-style trial .res (Q peaks / carbon placeholders)
+        # SHELXL-style trial .res — CrystalX-inspired typing when available
         res_path = out_dir / "trial.res"
-        res_path.write_text(write_shelxl_res(result))
+        try:
+            from .crystalx_typing import type_peaks_crystalx, typed_atoms_to_shelxl_res
+
+            typed, tmeta = type_peaks_crystalx(
+                result.peaks, result.cell, place_hydrogens=True
+            )
+            res_path.write_text(
+                typed_atoms_to_shelxl_res(
+                    typed,
+                    result.cell,
+                    method=f"{result.method}+crystalx",
+                    space_group=result.space_group_hm or "P1",
+                    free_fom=result.diagnostics.get("free_fom_composite"),
+                )
+            )
+            # typed atom list for diagnostics
+            typed_csv = out_dir / "typed_atoms.csv"
+            with typed_csv.open("w") as f:
+                f.write("label,element,x,y,z,height_sigma,confidence,source\n")
+                for t in typed:
+                    f.write(
+                        f"{t.label},{t.element},{t.fract[0]:.6f},{t.fract[1]:.6f},"
+                        f"{t.fract[2]:.6f},{t.height_sigma:.3f},{t.confidence:.3f},"
+                        f"{t.source}\n"
+                    )
+            written.append(typed_csv)
+            result.diagnostics["crystalx_typing"] = tmeta
+        except Exception:
+            res_path.write_text(write_shelxl_res(result))
         written.append(res_path)
 
     # JSON summary

@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.13.0 — 2026-08
+
+### What’s new in v0.13.0
+
+#### A. GraphPhaseNet v11 (d_in=34) + Melgalvis packing
+- Features: ⟨E⁴⟩ moment, shell skew, deg×E, centro intensity cue
+- Stronger multipath edges; bin CE 0.26; presets include `xdxd` low-res curriculum
+- Intermolecular contact packing + solvent-void option in Melgalvis
+- `scripts/run_strong_prior_v11.py` + scoreboard `strong_prior_v11.*`
+- **Honest:** 30% seed bar claimed only if scoreboard YES
+
+#### B. CrystalX-inspired peak → atom typing
+- `pipeline/crystalx_typing.py`: height/geometry element assignment + H placement
+- `trial.res` + `typed_atoms.csv` from export; pure-physics untyped fallback
+
+#### C. XDXD-inspired generative coordinates (research)
+- `xdxd_propose_coordinates` multi-start CF→atoms→Fcalc
+- CLI `--method xdxd_structure` (**not** auto)
+
+#### D. GraPhAI external H2H skeleton
+- `models/graphai_external.py` + `third_party/graphai/README.md` (user Zenodo only)
+
+#### E. Auto routing
+- Very low-res / sparse data path with explicit partial-φ recommendation
+
+#### F. Packaging
+- Version **0.13.0**, tests, docs/math notes, FOR_REVIEWERS C22–C24
+
 ## 0.12.0 — 2026-08
 
 ### What’s new in v0.12.0

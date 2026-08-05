@@ -25,6 +25,7 @@ from .diffusion_score import (
 from .generative_structure import (
     generative_structure_propose,
     generative_structure_available,
+    xdxd_propose_coordinates,
 )
 # hard_p1_prior imported lazily (avoids cycle: models → data → solvers → models)
 
@@ -53,4 +54,5 @@ __all__ = [
     "score_weights_available",
     "generative_structure_propose",
     "generative_structure_available",
+    "xdxd_propose_coordinates",
 ]

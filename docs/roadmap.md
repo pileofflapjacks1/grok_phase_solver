@@ -49,14 +49,16 @@
 - [x] Fragment-based molecule builder (benzene / carboxyl / peptide)
 - [x] Training shard writer (`synthetic_v2.write_training_shard`)
 - [x] Physics-informed losses (NumPy: phase, positivity, modulus, triplets)
-- [ ] Space-group aware packing + clash/energy filters
+- [x] Melgalvis packing + large-cell / HA / xdxd curricula (v0.11–v0.13)
+- [x] GraphPhaseNet multipath priors v5–v11 + scale-xl scripts
+- [x] CrystalX-inspired peak typing (heuristic) → trial.res
+- [x] Generative / XDXD-style research coordinate proposal (not auto)
+- [x] GraPhAI external discovery skeleton (no weight redistribution)
+- [ ] Space-group aware packing for all IT groups
 - [ ] Millions-scale dataset pipeline (HDF5 / LMDB)
-- [ ] Graph + voxel dual representations
-- [ ] CNN/Transformer hybrid with equivariant layers
-- [ ] Torch training loop + triplet auxiliary head
-- [ ] PhAI weight load / reimplementation
-- [ ] Domain-gap metrics (experimental vs synthetic |F|)
-- [ ] Hybrid benchmark CLI
+- [ ] Trained equivariant / XDXD weights (external)
+- [ ] Cluster scale-xl clear of 30% seed bar
+- [ ] Expanded COD Vol 1000–3500 experimental panel
 
 ## Phase 3 — Hybrid solvers & new mathematics
 

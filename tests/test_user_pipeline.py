@@ -97,12 +97,21 @@ def test_resolve_method_auto_policy():
         "ensemble", "phai_phaseed", "phai+cf_cond", "charge_flipping",
         "hard_p1_phaseed", "strong_prior_phaseed",
     )
-    # Hard res → prior or CF (not ensemble-first)
+    # Hard / very low-res → prior or CF (not ensemble-first)
     m_hard, reason_hard = resolve_method("auto", "P1", data_dmin=1.7, n_refl=200)
     assert m_hard in (
         "strong_prior_phaseed", "hard_p1_phaseed", "charge_flipping",
     )
-    assert "hard" in reason_hard.lower() or "prior" in reason_hard.lower() or "CF" in reason_hard
+    r = reason_hard.lower()
+    assert (
+        "hard" in r
+        or "prior" in r
+        or "cf" in r
+        or "low-res" in r
+        or "sparse" in r
+        or "graphphasenet" in r
+        or "partial" in r
+    )
 
 
 def test_export_writes_trial_res(tmp_path: Path):

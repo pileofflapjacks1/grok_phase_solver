@@ -209,22 +209,25 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Tag + GitHub Release 0.11.0
 
 ### v0.12.0 GraphPhaseNet v10 + generative research path
-- [x] GraphPhaseNet **v10** d_in=30 (hop3, multipath span, Wilson B, E-outlier)
-- [x] `run_strong_prior_v10.py` + scoreboard + centro hold-out mix
-- [x] Melgalvis B-factor inflate + amp-noise hooks
-- [x] `generative_structure` research method (CF-peak→Fcalc; not auto)
-- [x] Docs: graph_phase_net_v10, generative_structure, FOR_REVIEWERS C20–C21
-- [x] Tests `test_v012_graph_generative.py`; version 0.12.0
-- [ ] Cluster **scale-xl** retrain (5k–10k) with `--melgalvis-preset large|ha`
-- [ ] Optional local GraPhAI Zenodo H2H (external weights; not redistributed)
-- [ ] True SE(3) equivariant atomic diffusion (external research)
-- [ ] Optional cctbx backend hooks
-- [ ] OMC25-scale data mirror
-- [ ] PyPI 0.12.0 upload (maintainer token)
-- [ ] Expand experimental COD Vol 1000–3500 Å³ AI-PhaSeed panel (beyond skeleton)
-- [ ] Streamlit multi-plane density / PyMOL export helper (optional)
-- [ ] Agent-style auto-method selection / beamline hooks
-- [ ] CrystalX-inspired peak→atom typing helper
+- [x] GraphPhaseNet **v10** d_in=30 + generative_structure research method
+- [x] Tag + GitHub Release 0.12.0
+
+### v0.13.0 GraphPhaseNet v11 + CrystalX typing + XDXD coords
+- [x] GraphPhaseNet **v11** d_in=34 + `run_strong_prior_v11.py`
+- [x] Melgalvis intermolecular contacts + `xdxd_lowres_config`
+- [x] CrystalX-inspired peak→atom typing → `trial.res`
+- [x] XDXD-inspired multi-start coordinate proposal (`xdxd_structure`)
+- [x] GraPhAI external discovery skeleton (`third_party/graphai`)
+- [x] Auto routing: very low-res/sparse partial-φ recommendation
+- [x] Docs + tests; version 0.13.0
+- [ ] Cluster **scale-xl** retrain (5k–10k) toward 30% seed bar
+- [ ] Wire real GraPhAI local API when user installs Zenodo package
+- [ ] Expand experimental COD Vol 1000–3500 Å³ panel
+- [ ] True SE(3) / trained XDXD weights (external research)
+- [ ] Optional cctbx backend; OMC25-scale data mirror
+- [ ] PyPI 0.13.0 upload (maintainer token)
+- [ ] Streamlit multi-plane density / PyMOL export helper
+- [ ] Full agent-style experimental action recommender
 
 
 

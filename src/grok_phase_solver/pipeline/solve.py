@@ -54,6 +54,11 @@ KNOWN_METHODS = (
     "diffusion_hybrid_v2",
     "diffusion_phaseed_v2",
     "hdm",  # experimental Hybrid Difference Map (protein-mode gated)
+    "generative_structure",
+    "generative_propose",
+    "xdxd_structure",
+    "xdxd_propose",
+    "generative_coords",
 )
 
 
@@ -211,6 +216,20 @@ def resolve_method(
         return "phai+cf_cond", "auto: PhAI + free-FOM–gated CF"
 
     # 3) Hard-resolution / sparse data: domain priors, then CF
+    # v0.13: very low-res + sparse → explicit partial-φ recommendation (still CF/prior)
+    if data_dmin >= 1.6 and n_refl < 250:
+        if strong_ok:
+            return (
+                "strong_prior_phaseed",
+                "auto: very low-res/sparse → GraphPhaseNet+PhaSeed "
+                "(expect Class-0 seed; prefer partial_phaseed / fragment / HA)",
+            )
+        return (
+            "charge_flipping",
+            "auto: very low-res/sparse → CF "
+            "(hard path: partial_phaseed with ≥~30% strong φ ≤20°)",
+        )
+
     if data_dmin >= 1.3 and (_is_p1(sg) or not sg or n_refl < 400):
         if strong_ok:
             return (
@@ -311,6 +330,30 @@ def _run_phasing(
         history["research_only"] = True
         warnings.append(
             "generative_structure is research-only (no trained generative weights); "
+            "prefer partial_phaseed / fragment for hard data."
+        )
+        return method, phases, density, history
+
+    if method in ("xdxd_structure", "xdxd_propose", "generative_coords"):
+        from grok_phase_solver.models.generative_structure import xdxd_propose_coordinates
+
+        polish = "cf" if cfg.n_iter and cfg.n_iter > 0 else "none"
+        fracs, els, phases, density, history = xdxd_propose_coordinates(
+            hkl,
+            amp,
+            cell_arr,
+            n_atoms=cfg.seed_n_atoms if getattr(cfg, "seed_n_atoms", None) else None,
+            d_min=d_use,
+            n_starts=max(2, min(cfg.n_starts, 5)),
+            polish=polish,
+            n_polish=max(10, min(cfg.n_iter, 40)),
+            seed=cfg.seed,
+        )
+        history = dict(history or {})
+        history["research_only"] = True
+        history["n_trial_atoms"] = len(fracs)
+        warnings.append(
+            "xdxd_structure is research-only multi-start CF→coords (no trained XDXD weights); "
             "prefer partial_phaseed / fragment for hard data."
         )
         return method, phases, density, history

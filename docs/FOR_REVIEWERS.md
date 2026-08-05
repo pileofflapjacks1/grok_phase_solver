@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.12.0 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.13.0 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 
@@ -45,6 +45,9 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C19 | AI-PhaSeed **v0.11** bin multi-entropy filter, \|E\| floor, Vol-band seed fraction (~28–30% in 1000–3500 Å³), Class 0/1 diagnostics text — practical hard path remains **partial_phaseed / fragment / HA** | [math/ai_phaseed.md](math/ai_phaseed.md), `metrics/seed_quality.py` |
 | C20 | GraphPhaseNet **v10** (d_in=30 hop3 multipath + Wilson B proxy) + Melgalvis B-inflate/amp-noise hooks; hold-out frac≤20° remains **below 30% bar** on pilots | [math/graph_phase_net_v10.md](math/graph_phase_net_v10.md), [`strong_prior_v10.md`](../data/processed/strong_prior_v10.md) |
 | C21 | Research **generative_structure** method (CF-peak→Fcalc seed; optional Langevin polish) — **not** auto; no trained generative weights redistributed | [math/generative_structure.md](math/generative_structure.md) |
+| C22 | GraphPhaseNet **v11** (d_in=34 intensity moments / centro cues) + Melgalvis contact packing / `xdxd` curriculum; pilots remain **below 30%** strong-seed bar unless scoreboard says YES | [math/graph_phase_net_v11.md](math/graph_phase_net_v11.md), [`strong_prior_v11.md`](../data/processed/strong_prior_v11.md) |
+| C23 | CrystalX-inspired **peak→atom typing** (+ optional H) improves `trial.res` labels via geometry/height heuristics — not trained CrystalX weights | [math/crystalx_typing.md](math/crystalx_typing.md) |
+| C24 | XDXD-inspired **coordinate proposal** multi-start CF→atoms; optional GraPhAI **external** H2H skeleton (`GRAPHAI_HOME`) — weights never redistributed | [math/generative_structure.md](math/generative_structure.md), [`third_party/graphai/README.md`](../third_party/graphai/README.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 

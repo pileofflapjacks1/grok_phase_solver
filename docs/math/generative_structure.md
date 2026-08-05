@@ -31,8 +31,17 @@ are used as a degraded path. Prefer:
 - `partial_phaseed` / fragment / HA / predicted-model on hard cells
 - `diffusion_hybrid` for experimental Langevin phase completion
 
+## XDXD-inspired coordinate proposal (v0.13)
+
+`xdxd_propose_coordinates`: multi-start CF density → peak atoms → Fcalc seed,
+ranked by modulus R. Primary product is **trial fractional coordinates**.
+
+```bash
+gps-solve --hkl data.hkl --ins data.ins --method xdxd_structure --out ./out
+```
+
 ## Non-claims
 
-- No trained generative weights are redistributed.
+- No trained generative / XDXD weights are redistributed.
 - Not a general ab initio solution of the phase problem.
 - Full SE(3) equivariant atomic diffusion remains a stub (`diffusion_se3_stub`).

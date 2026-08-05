@@ -86,6 +86,7 @@ def iter_hard_multsg_samples(
             ha_heavy_config,
             hard_curriculum_config,
             large_cell_config,
+            xdxd_lowres_config,
         )
 
         if melgalvis_preset == "cod":
@@ -98,6 +99,9 @@ def iter_hard_multsg_samples(
         elif melgalvis_preset in ("large", "large_cell", "vol3500"):
             melg_cfg = large_cell_config(mode=melgalvis_mode)
             d_lo, d_hi = min(d_lo, 1.3), max(d_hi, 1.8)
+        elif melgalvis_preset in ("xdxd", "lowres", "generative"):
+            melg_cfg = xdxd_lowres_config(mode=melgalvis_mode)
+            d_lo, d_hi = min(d_lo, 1.5), max(d_hi, 2.2)
         elif melgalvis_preset == "hard" or melgalvis_large_vol:
             melg_cfg = hard_curriculum_config(mode=melgalvis_mode)
             if melgalvis_large_vol and melgalvis_preset != "hard":
@@ -410,10 +414,12 @@ def predict_strong_phases(
     Returns (node_idx, phases_strong).
     """
     fver = int(getattr(model, "_feature_version", 5))
-    # Infer feature version from d_in if needed (v4=10 … v9=30)
+    # Infer feature version from d_in if needed (v4=10 … v10=34)
     if hasattr(model, "d_in"):
         if model.d_in <= 10:
             fver = 4
+        elif model.d_in >= 34:
+            fver = 10
         elif model.d_in >= 30:
             fver = 9
         elif model.d_in >= 26:

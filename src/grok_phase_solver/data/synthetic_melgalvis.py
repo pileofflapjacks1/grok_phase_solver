@@ -135,6 +135,10 @@ class MelgalvisGenConfig:
     b_inflate_hi: float = 2.8
     p_amp_noise: float = 0.0  # applied in iter_melgalvis_samples if >0
     amp_noise_frac: float = 0.04  # relative Gaussian noise on |F|
+    # v0.13: intermolecular contact density (Acta 2026 packing realism)
+    enforce_intermol_contacts: bool = True
+    target_contacts_per_nonh: float = 1.2  # min nonbond neighbors in 2.5–4.0 Å
+    p_solvent_void: float = 0.08  # chance to leave a larger solvent channel
 
 
 def _sample_weighted(rng: np.random.Generator, freq: Dict[str, float]) -> str:
@@ -250,6 +254,39 @@ def actas2026_config(**overrides) -> MelgalvisGenConfig:
         name_prefix="melg_acta2026",
         mode="hybrid",
         hybrid_cluster_frac=0.80,
+    )
+    base.update(overrides)
+    return MelgalvisGenConfig(**base)
+
+
+def xdxd_lowres_config(**overrides) -> MelgalvisGenConfig:
+    """
+    Low-resolution / larger-cell curriculum (XDXD-inspired training domain).
+
+    Emphasizes Vol ~1500–3500 Å³, lower d_min bands, multi-fragment packing —
+    for generative coordinate proposal and hard AI-PhaSeed panels.
+    """
+    base = dict(
+        log_v_mu=float(np.log(2200.0)),
+        log_v_sigma=0.38,
+        v_min=1200.0,
+        v_max=3800.0,
+        n_nonh_lo=18,
+        n_nonh_hi=52,
+        n_nonh_hard_cap=60,
+        p_large_molecule=0.50,
+        p_heavy_atom=0.35,
+        p_multi_fragment=0.45,
+        p_ring_fragment=0.40,
+        p_b_factor_inflate=0.22,
+        p_amp_noise=0.15,
+        amp_noise_frac=0.05,
+        prefer_realistic_angles=True,
+        cod_like_volumes=True,
+        enforce_intermol_contacts=True,
+        name_prefix="melg_xdxd",
+        mode="hybrid",
+        hybrid_cluster_frac=0.88,
     )
     base.update(overrides)
     return MelgalvisGenConfig(**base)
@@ -686,10 +723,33 @@ def pack_molecule_in_cell(
         # Void / empty-space rejection (large cells especially)
         if do_void and len(fracs) >= 4:
             vf = _packing_void_fraction(fracs, M)
-            # allow slightly higher void on early trials; tighten later
+            # optional solvent channel: allow higher voids occasionally
             thr = max_void + 0.12 * (1.0 - trial / max(cfg.max_pack_trials, 1))
+            if rng.random() < float(getattr(cfg, "p_solvent_void", 0.0)):
+                thr = min(0.75, thr + 0.12)
             if vf > thr:
                 continue
+        # v0.13: require some intermolecular contacts (packing density)
+        if (
+            bool(getattr(cfg, "enforce_intermol_contacts", False))
+            and len(fracs) >= 6
+            and trial > cfg.max_pack_trials // 3
+        ):
+            nonh_f = [
+                fracs[i]
+                for i, el in enumerate(elements)
+                if str(el).upper() not in ("H", "D")
+            ]
+            if len(nonh_f) >= 4:
+                contacts = 0
+                for i in range(len(nonh_f)):
+                    for j in range(i + 1, len(nonh_f)):
+                        d = _min_image_cart(nonh_f[i], nonh_f[j], M)
+                        if 2.5 <= d <= 4.0:
+                            contacts += 1
+                need = float(getattr(cfg, "target_contacts_per_nonh", 1.2)) * len(nonh_f) * 0.5
+                if contacts < need * 0.35:
+                    continue
         return atoms
     return None
 
@@ -886,6 +946,8 @@ def iter_melgalvis_samples(
             cfg = ha_heavy_config()
         elif preset in ("large", "large_cell", "vol3500"):
             cfg = large_cell_config()
+        elif preset in ("xdxd", "lowres", "generative"):
+            cfg = xdxd_lowres_config()
         else:
             cfg = MelgalvisGenConfig()
     if n_nonh_range:

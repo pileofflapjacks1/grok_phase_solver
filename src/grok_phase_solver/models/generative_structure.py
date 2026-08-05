@@ -245,3 +245,116 @@ def generative_structure_propose(
         meta["polish"] = {"method": "none"}
 
     return ph, rho, meta
+
+
+def xdxd_propose_coordinates(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    *,
+    n_atoms: Optional[int] = None,
+    elements: Optional[Sequence[str]] = None,
+    ha_element: Optional[str] = None,
+    d_min: Optional[float] = None,
+    n_starts: int = 3,
+    n_cf_iter: int = 30,
+    seed: int = 0,
+    polish: str = "cf",
+    n_polish: int = 20,
+) -> Tuple[np.ndarray, List[str], np.ndarray, np.ndarray, Dict]:
+    """
+    XDXD-inspired research path: multi-start density → peak atoms → Fcalc seed.
+
+    Returns (fracs, elements, phases, density, meta).
+
+    Not a trained end-to-end diffusion model — multi-start classical proposal
+    that outputs **atomic coordinates** as primary product (phases secondary).
+    Physics CF / Langevin polish remains the fallback.
+    """
+    from grok_phase_solver.solvers.charge_flipping import charge_flipping_solve
+    from grok_phase_solver.solvers.projectors import r_factor_moduli
+
+    if elements is None:
+        els, n = estimate_composition_from_volume(
+            cell, n_atoms_user=n_atoms, ha_element=ha_element
+        )
+    else:
+        els = list(elements)
+        n = int(n_atoms or len(els))
+
+    best = None
+    best_R = 1e9
+    trials = []
+    amp = np.asarray(amplitudes, dtype=np.float64)
+    for s in range(int(n_starts)):
+        fracs, els2, pmeta = propose_trial_atoms_from_density(
+            hkl,
+            amplitudes,
+            cell,
+            n_atoms=n,
+            elements=els,
+            d_min=d_min,
+            seed=seed + 17 * s,
+            n_cf_iter=n_cf_iter,
+        )
+        ph, rho, fmeta = propose_phases_from_trial(
+            hkl, amplitudes, cell, fracs, els2, blend=0.5, d_min=d_min
+        )
+        try:
+            F = amp * np.exp(1j * ph)
+            R = float(r_factor_moduli(F, amp))
+        except Exception:
+            R = 1.0
+        trials.append({"R": R, "seed": seed + 17 * s, "pmeta": pmeta})
+        if R < best_R:
+            best_R = R
+            best = (fracs, els2, ph, rho, pmeta, fmeta)
+    if best is None:
+        ph, rho, meta = generative_structure_propose(
+            hkl, amplitudes, cell, n_atoms=n, elements=els, d_min=d_min, seed=seed
+        )
+        return np.zeros((0, 3)), els, ph, rho, meta
+
+    fracs, els2, ph, rho, pmeta, fmeta = best
+    meta = {
+        "algorithm": "xdxd_propose_coordinates_v1",
+        "research_only": True,
+        "n_starts": int(n_starts),
+        "best_R_moduli": float(best_R),
+        "trials": trials,
+        "density_proposal": pmeta,
+        "fcalc_seed": fmeta,
+        "note": (
+            "XDXD-inspired multi-start CF→atoms→Fcalc (no trained diffusion weights). "
+            "Primary output is trial coordinates; not a claim of end-to-end solution."
+        ),
+        "fallback": "ensemble / charge_flipping / partial_phaseed",
+    }
+    if polish == "cf":
+        ph2, rho2, _ = charge_flipping_solve(
+            hkl, amplitudes, cell, n_iter=n_polish, seed=seed, d_min=d_min
+        )
+        ph = np.angle(0.35 * np.exp(1j * ph) + 0.65 * np.exp(1j * ph2))
+        rho = density_from_structure_factors(
+            hkl, amplitudes * np.exp(1j * ph), cell, d_min=d_min
+        )
+        meta["polish"] = {"method": "cf"}
+    elif polish in ("diffusion", "langevin"):
+        from grok_phase_solver.models.diffusion_phase import reverse_diffusion_phases
+
+        ph, rho, hist = reverse_diffusion_phases(
+            hkl,
+            amplitudes,
+            cell,
+            n_steps=max(5, n_polish // 2),
+            seed_phases=ph,
+            seed=seed,
+            d_min=d_min,
+            use_learned_score=False,
+        )
+        meta["polish"] = {"method": "diffusion_langevin"}
+    else:
+        meta["polish"] = {"method": "none"}
+    meta["trial_fracs"] = np.asarray(fracs).tolist()
+    meta["trial_elements"] = list(els2)
+    return np.asarray(fracs), list(els2), ph, rho, meta

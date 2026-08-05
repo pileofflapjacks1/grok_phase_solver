@@ -144,6 +144,14 @@ def node_features_from_graph(
     - multipath_span: |hop2 − local_E| (path disagreement / multipath cue)
     - wilson_B_proxy: soft overall B from log|E| vs s² slope (broadcast)
     - E_outlier_ratio: E / median(E) clipped (HA / strong-spot diagnostic)
+
+    **v10 (d_in=34)** — GraPhAI / centro path + intensity moments (v0.13):
+    v9 + ``[wilson_E4_moment, shell_skew, deg_x_E, centro_intensity_cue]``
+
+    - wilson_E4_moment: ⟨E⁴⟩/3−1 style kurtosis proxy (broadcast; acentric/HA)
+    - shell_skew: |E| skewness within resolution shell
+    - deg_x_E: degree × |E| (connectivity-weighted strength)
+    - centro_intensity_cue: low-s strong-E mass (centrosymmetric HA path)
     """
     idx = graph["node_idx"]
     hkl_s = np.asarray(hkl[idx], dtype=np.float64)
@@ -414,13 +422,51 @@ def node_features_from_graph(
     med_E = float(np.median(E) + 1e-16)
     e_out = np.clip(E / med_E, 0.0, 8.0) / 8.0
 
-    return np.column_stack(
+    v9 = np.column_stack(
         [
             v8,
             hop3_n,
             multipath_span,
             wilson_b_feat,
             e_out,
+        ]
+    ).astype(np.float64)
+    if int(feature_version) < 10:
+        return v9
+
+    # --- v10 extras (GraPhAI intensity moments / centro cues, v0.13) ---
+    # ⟨E⁴⟩ / 3 − 1 (acentric Wilson ≈ 0 for ideal; elevated for HA / centro mix)
+    e4 = float(np.mean(E ** 4))
+    wilson_e4 = float(np.clip((e4 / 3.0 - 1.0 + 1.0) / 3.0, 0.0, 1.0))
+    wilson_e4_feat = np.full(n, wilson_e4, dtype=np.float64)
+
+    shell_skew = np.zeros(n, dtype=np.float64)
+    for si in range(n_shells):
+        sl = order[edges_s[si] : edges_s[si + 1]]
+        if len(sl) < 3:
+            continue
+        x = E[sl]
+        m = float(x.mean())
+        s = float(x.std()) + 1e-16
+        sk = float(np.mean(((x - m) / s) ** 3))
+        shell_skew[sl] = sk
+    shell_skew = np.clip(shell_skew, -3.0, 3.0)
+    shell_skew = (shell_skew + 3.0) / 6.0  # → [0,1]
+
+    deg_x_e = deg_n * (E / (E.max() + 1e-16))
+    deg_x_e = deg_x_e / (deg_x_e.max() + 1e-16)
+
+    # Centrosymmetric / HA path: mass of strong low-s reflections
+    centro_cue = low_res_w * e_out * (0.5 + 0.5 * ha_E_tail)
+    centro_cue = centro_cue / (centro_cue.max() + 1e-16)
+
+    return np.column_stack(
+        [
+            v9,
+            wilson_e4_feat,
+            shell_skew,
+            deg_x_e,
+            centro_cue,
         ]
     ).astype(np.float64)
 
@@ -974,7 +1020,9 @@ def prepare_graph_batch(
     # v5.1 / v6: power-law emphasis on strongest triplets
     # v7: κ × √(E_i E_j E_k) multipath emphasis (GraPhAI-style reliability)
     kpow = float(kappa_power)
-    if int(feature_version) >= 9:
+    if int(feature_version) >= 10:
+        kpow = max(kpow, 1.70)
+    elif int(feature_version) >= 9:
         kpow = max(kpow, 1.65)
     elif int(feature_version) >= 8:
         kpow = max(kpow, 1.55)
@@ -983,7 +1031,9 @@ def prepare_graph_batch(
     elif int(feature_version) >= 6 and kpow <= 1.25:
         kpow = 1.35
     sl = float(self_loop)
-    if int(feature_version) >= 9:
+    if int(feature_version) >= 10:
+        sl = max(sl, 0.15)
+    elif int(feature_version) >= 9:
         sl = max(sl, 0.14)
     elif int(feature_version) >= 8:
         sl = max(sl, 0.12)
@@ -999,8 +1049,10 @@ def prepare_graph_batch(
             for ti, e in enumerate(np.asarray(edges)):
                 i, j, k = int(e[0]), int(e[1]), int(e[2])
                 if 0 <= i < n and 0 <= j < n and 0 <= k < n:
-                    # v7: sixth-root; v8: 1/5.5; v9: stronger multipath (1/5)
-                    if int(feature_version) >= 9:
+                    # v7–v10 multipath geometric mean of |E|
+                    if int(feature_version) >= 10:
+                        exp = 1.0 / 4.8
+                    elif int(feature_version) >= 9:
                         exp = 1.0 / 5.0
                     elif int(feature_version) >= 8:
                         exp = 1.0 / 5.5
