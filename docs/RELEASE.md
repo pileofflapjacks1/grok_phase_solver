@@ -41,9 +41,9 @@ python -m twine upload dist/grok_phase_solver-0.13.1*
 - [x] Version aligned → **0.13.1**
 - [x] COD Vol-band scoreboard on main
 - [x] RELEASE_NOTES_v0.13.1
-- [ ] Tag + GitHub Release
-- [ ] PyPI upload
+- [x] Tag + GitHub Release → https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.1
+- [ ] PyPI upload (maintainer token — run twine locally)
 - [x] No overclaims; mid-band numbers honest
 
-**This release:** (after publish) https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.1  
+**This release:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.1  
 **Prior:** v0.13.0 at https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.0
