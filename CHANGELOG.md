@@ -1,12 +1,15 @@
 # Changelog
 
-## 0.13.1 — 2026-08 (docs/scoreboard)
+## 0.13.1 — 2026-08
+
+Patch release so the **COD Vol-band experimental panel** rides the published tag (was on `main` only after v0.13.0).
 
 ### COD Vol-band experimental panel
 - Expanded `run_cod_stratified_bench.py`: Fobs + Fcalc; auto / partial_15 / partial_30 / fragment_half
 - Added mid-band COD **2012000**, **2013000** (+ small **2200000**); 6 datasets, 48 runs
 - Scoreboard: `data/processed/cod_stratified_bench.{md,json}`; math note `docs/math/cod_vol_band_panel.md`
 - Mid-band (Vol 1000–3500): fragment_half mean mapCC **~0.71** vs auto **~0.27**
+- Packaging: version **0.13.1**, PyPI + GitHub Release
 
 ## 0.13.0 — 2026-08
 
