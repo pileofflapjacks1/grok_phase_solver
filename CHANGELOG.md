@@ -2,7 +2,8 @@
 
 ## 0.13.2 — 2026-08
 
-Patch so the **Vol-band next-action chooser** rides PyPI (was on `main` only after 0.13.1).
+Patch so the **Vol-band next-action chooser** rides PyPI (was on `main` only after 0.13.1).  
+Published: https://pypi.org/project/grok-phase-solver/0.13.2/
 
 ### Partial-φ next-action product
 - `report.md` / `solve_summary.json` / GUI banner: Vol-band chooser

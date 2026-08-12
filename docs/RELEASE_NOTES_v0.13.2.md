@@ -29,7 +29,7 @@ Evidence: local COD Vol-band panel (C25). Free FOM remains a ranking score.
 ```bash
 python -m pip install -U "grok-phase-solver>=0.13.2"
 gps-solve --help
-# https://pypi.org/project/grok-phase-solver/0.13.2/
+# live: https://pypi.org/project/grok-phase-solver/0.13.2/
 ```
 
 ## Prior
