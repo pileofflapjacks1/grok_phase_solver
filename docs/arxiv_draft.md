@@ -1,9 +1,9 @@
 # Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
-**Working draft · software package v0.13.1 (MIT)**  
+**Working draft · software package v0.13.2 (MIT)**  
 **Code & data:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **PyPI:** https://pypi.org/project/grok-phase-solver/  
-**Release tag:** `v0.13.1`  
+**Release tag:** `v0.13.2`  
 **Reviewer one-pager:** [`FOR_REVIEWERS.md`](FOR_REVIEWERS.md)  
 **Figures:** [`figures/paper_figure_captions.md`](figures/paper_figure_captions.md)  
 **Authors:** Grok (xAI) and Joe  
@@ -74,7 +74,7 @@ Strong reflections are fixed as seeds; phase extension and free-FOM-gated polish
 
 ### 2.6 Scientist pipeline
 
-`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ **0.13.1** (https://pypi.org/project/grok-phase-solver/0.13.1/).
+`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ **0.13.2** (https://pypi.org/project/grok-phase-solver/0.13.2/).
 
 ---
 
@@ -197,7 +197,7 @@ Synthetic vs experimental $|F|$ Wilson statistics can be substantially aligned b
 
 ```bash
 # Library
-python -m pip install "grok-phase-solver>=0.13.1"
+python -m pip install "grok-phase-solver>=0.13.2"
 # or from source
 git clone https://github.com/pileofflapjacks1/grok_phase_solver.git
 cd grok_phase_solver && python -m pip install -e ".[dev,gui]"
@@ -230,8 +230,8 @@ Frozen evidence files (selected) under `data/processed/`:
 
 ## 7. Data and code availability
 
-- Source: MIT, GitHub `pileofflapjacks1/grok_phase_solver`, tag **`v0.13.1`**  
-- PyPI: [`grok-phase-solver` 0.13.1](https://pypi.org/project/grok-phase-solver/0.13.1/)  
+- Source: MIT, GitHub `pileofflapjacks1/grok_phase_solver`, tag **`v0.13.2`**  
+- PyPI: [`grok-phase-solver` 0.13.2](https://pypi.org/project/grok-phase-solver/0.13.2/)  
 - COD structures cited by ID (2012000, 2013000, 2016452, 2017775, 2100301, 2200000, …)  
 - SHELX / PhAI / GraPhAI binaries and weights: user-supplied under their licenses (not redistributed)
 
@@ -260,7 +260,7 @@ BibTeX: [`docs/paper/references.bib`](paper/references.bib) (`bragg1915`, `patte
 11. Melgalvis & Rekis (2026) — artificial crystal generation for DL phasing.  
 12. COD — crystallography.net.  
 13. gemmi — crystallography toolkit.  
-14. Grok (xAI) and Joe (2026) — *grok_phase_solver* **v0.13.1** (this work).  
+14. Grok (xAI) and Joe (2026) — *grok_phase_solver* **v0.13.2** (this work).  
 15. PXRDnet / XRDSol (2025–2026) — diffusion-for-diffraction literature (conceptual context only).  
 
 Extended notes and derivations: `docs/math/` (including `graph_phase_net_v5`–`v11.md`, `partial_seed.md`, `cod_vol_band_panel.md`, `hybrid_difference_map.md`, `graphai_external.md`, `crystalx_typing.md`), `docs/cowtan_phase_problem_notes.md`, notebooks 01–03.

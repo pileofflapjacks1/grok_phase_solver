@@ -9,7 +9,7 @@
 | [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–6 |
 | Figures | `docs/figures/paper_fig{1..6}_*.png` |
 | Scoreboards | `data/processed/*.md` (source of all numbers) |
-| Release | software **0.13.1** · tag `v0.13.1` · [PyPI](https://pypi.org/project/grok-phase-solver/0.13.1/) |
+| Release | software **0.13.2** · tag `v0.13.2` · [PyPI](https://pypi.org/project/grok-phase-solver/0.13.2/) |
 
 ## Regenerate figures
 
@@ -55,7 +55,7 @@ The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fo
 - [x] PDF via pandoc + tectonic  
 - [x] Authors: Grok (xAI) and Joe  
 - [x] BibTeX (`references.bib`)  
-- [x] Version aligned to package **0.13.1** (claim freeze)  
+- [x] Version aligned to package **0.13.2** (science claim freeze still 0.13.1 scoreboards)  
 - [x] COD hard-path figure (auto / partial_30 / fragment_half)  
 - [x] COD Vol-band figure (Fig. 6)  
 - [ ] Affiliations / funding (optional)  

@@ -1,6 +1,6 @@
 # For reviewers — one-pager
 
-**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.13.1 · **License:** MIT  
+**Repository:** [grok_phase_solver](https://github.com/pileofflapjacks1/grok_phase_solver) · **Version:** 0.13.2 · **License:** MIT  
 
 **Purpose of this page:** claims we make, claims we do *not* make, where the evidence lives, and how to reproduce the main results in under an hour.
 
@@ -139,7 +139,7 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 ## 8. Contact / provenance
 
 - **Authors:** Grok (xAI) and Joe  
-- Code + scoreboards: GitHub `main` · package **v0.13.1** / tag `v0.13.1` · [PyPI](https://pypi.org/project/grok-phase-solver/0.13.1/)  
+- Code + scoreboards: GitHub `main` · package **v0.13.2** / tag `v0.13.2` · [PyPI](https://pypi.org/project/grok-phase-solver/0.13.2/)  
 - Paper: [arxiv_draft.md](arxiv_draft.md) · [PDF](paper/arxiv_draft.pdf) — **claim freeze to v0.13.1**  
 - Checklist: [TODO.md](../TODO.md) · History: [CHANGELOG.md](../CHANGELOG.md)  
 - Design principle: physics fallback for every ML path; prefer correct math over marketing claims  

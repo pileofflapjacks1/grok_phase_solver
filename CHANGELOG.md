@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.13.2 — 2026-08
+
+Patch so the **Vol-band next-action chooser** rides PyPI (was on `main` only after 0.13.1).
 
 ### Partial-φ next-action product
 - `report.md` / `solve_summary.json` / GUI banner: Vol-band chooser
@@ -9,12 +11,9 @@
   undersized seed → enlarge; healthy free-FOM → SHELXL inspect
 - Evidence cited is the local COD Vol-band panel (C25), not a 1505-COD set
 
-### Paper / claim freeze (software still **0.13.1**)
-- arXiv draft + FOR_REVIEWERS aligned to tag **v0.13.1** (was still saying v0.11.0 / v0.10.0 in places)
-- **Figure 6:** COD Vol-band stratified panel is the experimental headline (C25)
-- **Figure 4:** GraphPhaseNet through v11 — v6 `cod` pilot ~24%; v11 `large` quick ~18%; none clear 30%
-- Paper pack README, captions, BibTeX updated; affiliations / arXiv submit still open
-- **PyPI 0.13.1 published:** https://pypi.org/project/grok-phase-solver/0.13.1/
+### Also on this tag
+- Paper / claim freeze to v0.13.1 scoreboards (Figs. 1–6)
+- Science claims unchanged; no GraphPhaseNet bump
 
 ## 0.13.1 — 2026-08
 
