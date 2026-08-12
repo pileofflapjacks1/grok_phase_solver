@@ -139,7 +139,7 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 ## 8. Contact / provenance
 
 - **Authors:** Grok (xAI) and Joe  
-- Code + scoreboards: GitHub `main` · package **v0.13.1** / tag `v0.13.1` (PyPI upload may lag)  
+- Code + scoreboards: GitHub `main` · package **v0.13.1** / tag `v0.13.1` · [PyPI](https://pypi.org/project/grok-phase-solver/0.13.1/)  
 - Paper: [arxiv_draft.md](arxiv_draft.md) · [PDF](paper/arxiv_draft.pdf) — **claim freeze to v0.13.1**  
 - Checklist: [TODO.md](../TODO.md) · History: [CHANGELOG.md](../CHANGELOG.md)  
 - Design principle: physics fallback for every ML path; prefer correct math over marketing claims  

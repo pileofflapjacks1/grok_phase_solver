@@ -9,7 +9,7 @@
 | [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–6 |
 | Figures | `docs/figures/paper_fig{1..6}_*.png` |
 | Scoreboards | `data/processed/*.md` (source of all numbers) |
-| Release | software **0.13.1** · tag `v0.13.1` · [PyPI](https://pypi.org/project/grok-phase-solver/) (upload may lag) |
+| Release | software **0.13.1** · tag `v0.13.1` · [PyPI](https://pypi.org/project/grok-phase-solver/0.13.1/) |
 
 ## Regenerate figures
 

@@ -7,7 +7,7 @@
 - **Figure 6:** COD Vol-band stratified panel is the experimental headline (C25)
 - **Figure 4:** GraphPhaseNet through v11 — v6 `cod` pilot ~24%; v11 `large` quick ~18%; none clear 30%
 - Paper pack README, captions, BibTeX updated; affiliations / arXiv submit still open
-- No software API or version bump
+- **PyPI 0.13.1 published:** https://pypi.org/project/grok-phase-solver/0.13.1/
 
 ## 0.13.1 — 2026-08
 

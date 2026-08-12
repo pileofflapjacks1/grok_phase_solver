@@ -74,7 +74,7 @@ Strong reflections are fixed as seeds; phase extension and free-FOM-gated polish
 
 ### 2.6 Scientist pipeline
 
-`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ **0.13.1** (GitHub tag `v0.13.1`; maintainer PyPI upload may lag the tag).
+`gps-solve` / `gps-gui`: SHELX HKL/INS, CIF HKL, MTZ → phases, density, peaks, `report.md` (seed-quality Class 0/1 section), **`trial.res`** for Olex2/SHELXL. Package on PyPI as `grok-phase-solver` ≥ **0.13.1** (https://pypi.org/project/grok-phase-solver/0.13.1/).
 
 ---
 
@@ -196,7 +196,7 @@ Synthetic vs experimental $|F|$ Wilson statistics can be substantially aligned b
 ## 6. Reproducibility
 
 ```bash
-# Library (tag v0.13.1). PyPI may lag; install from source if pip is older.
+# Library
 python -m pip install "grok-phase-solver>=0.13.1"
 # or from source
 git clone https://github.com/pileofflapjacks1/grok_phase_solver.git
@@ -231,7 +231,7 @@ Frozen evidence files (selected) under `data/processed/`:
 ## 7. Data and code availability
 
 - Source: MIT, GitHub `pileofflapjacks1/grok_phase_solver`, tag **`v0.13.1`**  
-- PyPI: `grok-phase-solver` (≥0.13.1 when the maintainer upload lands; otherwise install from the tag)  
+- PyPI: [`grok-phase-solver` 0.13.1](https://pypi.org/project/grok-phase-solver/0.13.1/)  
 - COD structures cited by ID (2012000, 2013000, 2016452, 2017775, 2100301, 2200000, …)  
 - SHELX / PhAI / GraPhAI binaries and weights: user-supplied under their licenses (not redistributed)
 

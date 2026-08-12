@@ -28,6 +28,7 @@ All of **v0.13.0** (GraphPhaseNet v11, CrystalX typing, XDXD research path), plu
 ```bash
 python -m pip install -U "grok-phase-solver>=0.13.1"
 gps-solve --help
+# https://pypi.org/project/grok-phase-solver/0.13.1/
 
 # regenerate panel
 python scripts/run_cod_stratified_bench.py --dmin 1.0
