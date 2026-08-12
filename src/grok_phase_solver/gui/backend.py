@@ -246,6 +246,27 @@ def map_quality_hints(summary: Dict[str, Any]) -> List[str]:
     n_peaks = summary.get("n_peaks") or 0
     method = summary.get("method") or ""
 
+    try:
+        from grok_phase_solver.pipeline.next_action import (
+            next_action_banner,
+            recommend_next_action,
+        )
+
+        rec = summary.get("next_action") or d.get("next_action")
+        if not isinstance(rec, dict):
+            rec = recommend_next_action(
+                cell=summary.get("cell"),
+                d_min=summary.get("d_min"),
+                method=str(method),
+                n_reflections=int(summary.get("n_reflections") or 0),
+                n_peaks=int(n_peaks or 0),
+                diagnostics=d,
+                space_group=summary.get("space_group"),
+            )
+        hints.append(next_action_banner(rec))
+    except Exception:
+        pass
+
     sq = d.get("seed_quality") or {}
     if isinstance(sq, dict) and sq.get("predicted_class") == 0:
         hints.append(

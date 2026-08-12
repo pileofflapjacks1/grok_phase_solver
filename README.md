@@ -115,7 +115,7 @@ Have partial info (φ / fragment / HA)?
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → --method auto   (→ ensemble)
             NO  → --method auto   (→ prior/CF; may fail — get partial φ or try shelxs)
-Finish → trial.res → SHELXL / Olex2
+Finish → report.md Next action (Vol-band) → trial.res → SHELXL / Olex2
 ```
 
 | Situation | Flag |

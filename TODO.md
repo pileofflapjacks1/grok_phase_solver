@@ -139,6 +139,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
       seed-quality section in `report.md` (`solvers/seed_import.py`)
 - [x] **GUI (Streamlit):** `gps-gui` / `python -m grok_phase_solver.gui`
       (`gui/app.py` + `gui/backend.py`); optional dep `.[gui]`
+- [x] **Vol-band next-action** in `report.md` / GUI (`pipeline/next_action.py`)
 
 ## Immediate next actions (honest priority)
 
@@ -266,6 +267,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
 23. [ ] Affiliations / funding + arXiv submit (optional)  
 24. [x] **Paper / claim freeze to v0.13.1:** draft + FOR_REVIEWERS + Fig. 6 Vol-band;
       GraphPhaseNet v9–v11 recorded as negative; no software bump
+25. [x] **Partial-φ next-action product:** Vol-band + seed-source chooser in
+      `report.md` / `solve_summary.json` / GUI banner
 
 ---
 

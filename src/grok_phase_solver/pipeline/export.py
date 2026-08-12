@@ -136,6 +136,19 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
             res_path.write_text(write_shelxl_res(result))
         written.append(res_path)
 
+    from grok_phase_solver.pipeline.next_action import recommend_next_action
+
+    next_act = recommend_next_action(
+        cell=result.cell,
+        d_min=result.d_min,
+        method=result.method,
+        n_reflections=len(hkl),
+        n_peaks=len(result.peaks),
+        diagnostics=result.diagnostics,
+        space_group=result.space_group_hm,
+    )
+    result.diagnostics["next_action"] = next_act
+
     # JSON summary
     summary = {
         "method": result.method,
@@ -146,6 +159,7 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         "diagnostics": result.diagnostics,
         "warnings": result.warnings,
         "n_peaks": len(result.peaks),
+        "next_action": next_act,
     }
     js = out_dir / "solve_summary.json"
     js.write_text(json.dumps(summary, indent=2))
@@ -160,7 +174,24 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
 
 
 def _render_report(result: "SolveResult") -> str:
+    from grok_phase_solver.pipeline.next_action import (
+        format_next_action_md,
+        next_action_banner,
+        recommend_next_action,
+    )
+
     d = result.diagnostics
+    next_act = d.get("next_action")
+    if not isinstance(next_act, dict):
+        next_act = recommend_next_action(
+            cell=result.cell,
+            d_min=result.d_min,
+            method=result.method,
+            n_reflections=len(result.hkl),
+            n_peaks=len(result.peaks),
+            diagnostics=d,
+            space_group=result.space_group_hm,
+        )
     lines = [
         f"# gps-solve report",
         "",
@@ -168,6 +199,9 @@ def _render_report(result: "SolveResult") -> str:
         f"**Reflections:** {len(result.hkl)}  ",
         f"**Space group:** {result.space_group_hm or 'unknown'}  ",
         f"**d_min (Å):** {result.d_min if result.d_min else 'auto'}  ",
+        f"**{next_action_banner(next_act)}**",
+        "",
+        format_next_action_md(next_act),
         "",
         "## Cell",
         "",
@@ -352,15 +386,9 @@ def _render_report(result: "SolveResult") -> str:
             "   ```bash",
             "   cp trial.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work",
             "   ```",
-            "4. If the map is poor:",
-            "   - Easy/high-res: `--method ensemble` (default `auto` already prefers this).",
-            "   - Hard ab initio failed — **seed paths**:",
-            "     - `--phase-seed-csv known.csv` (known φ)",
-            "     - `--phase-seed-res model.res` (SHELXS/fragment atoms → Fcalc)",
-            "     - `--seed-peaks-csv peaks.csv` (recycle density peaks)",
-            "     - `--native-hkl` + `--derivative-hkl` (isomorphous HA)",
-            "     - `gps-make-seed …` then `partial_phaseed`",
-            "   - Classical external: `--method shelxs` or `shelxs+shelxe`.",
+            "4. If the map is poor: follow **Next action** above (Vol-band chooser).",
+            "   Catalog: `--phase-seed-res` / `--predicted-model` / `--phase-seed-csv` /",
+            "   `--seed-peaks-csv` / HA pair / `gps-make-seed` / `--method shelxs`.",
             "5. Free-FOM composite is a **truth-free** ranking score, not proof of solution.",
             "6. Demo hard + partial-φ: `examples/partial_seed_demo/`.",
             "",

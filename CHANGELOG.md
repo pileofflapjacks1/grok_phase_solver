@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Partial-φ next-action product
+- `report.md` / `solve_summary.json` / GUI banner: Vol-band chooser
+  (`pipeline/next_action.py`) names one seed source after `auto`
+- Mid-band → fragment / predicted model; large cell → bigger fragment or HA;
+  undersized seed → enlarge; healthy free-FOM → SHELXL inspect
+- Evidence cited is the local COD Vol-band panel (C25), not a 1505-COD set
+
 ### Paper / claim freeze (software still **0.13.1**)
 - arXiv draft + FOR_REVIEWERS aligned to tag **v0.13.1** (was still saying v0.11.0 / v0.10.0 in places)
 - **Figure 6:** COD Vol-band stratified panel is the experimental headline (C25)

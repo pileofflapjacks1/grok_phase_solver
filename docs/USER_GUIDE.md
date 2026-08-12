@@ -128,7 +128,7 @@ Have partial phases (HA / MAD / MR / SHELXS fragment)?
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → auto (ensemble)
             NO  → auto (prior/CF) — if map fails, get partial φ or try shelxs
-Finish → trial.res → SHELXL / Olex2
+Finish → read report.md **Next action** (Vol-band chooser) → trial.res → SHELXL / Olex2
 ```
 
 | Situation | Command |
@@ -138,7 +138,7 @@ Finish → trial.res → SHELXL / Olex2
 | Hard, pure ab initio | `auto` (expect struggle; see free FOM) |
 | **Hard + known φ / fragment / HA** | `partial_phaseed` + seed source (below) |
 | External classical | `shelxs` or `shelxs+shelxe` |
-| After any solve | `trial.res` → **SHELXL** |
+| After any solve | `report.md` **Next action** (Vol-band + seed source) → `trial.res` → **SHELXL** |
 
 ### Partial-φ hard path (recommended when ab initio fails)
 
@@ -149,7 +149,10 @@ Oracle benchmarks: **≥ ~30% correct strong \|E\| phases (≲20° error)** → 
 Size alone is not enough — correctness still requires truth or a good fragment/HA.
 
 Validated on synthetic hard demo (`examples/partial_seed_demo/HARD_PATH_VALIDATION.md`)
-and experimental COD Fobs (`data/processed/cod_hard_path_validation.md`).
+and experimental COD Fobs (`data/processed/cod_hard_path_validation.md`,
+`cod_stratified_bench.md`). After every solve, `report.md` opens with a
+**Next action** block: volume band + one concrete seed command (fragment /
+predicted model / HA / enlarge seed), not a generic flag dump.
 
 **Any seed source works** — if you pass one of these with `--method auto`, gps-solve switches to `partial_phaseed`:
 

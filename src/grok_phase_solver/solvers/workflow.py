@@ -89,5 +89,5 @@ def workflow_decision_tree_md() -> str:
 | Hard + isomorphous HA | `--native-hkl … --derivative-hkl … --method ha_phaseed` |
 | Build seed only | `gps-make-seed --hkl … --from-res model.res -o seed.csv` |
 | External classical solve | `--method shelxs` or `shelxs+shelxe` |
-| After any solve | Open `trial.res` → **SHELXL** / Olex2 |
+| After any solve | Read `report.md` **Next action** → `trial.res` → **SHELXL** / Olex2 |
 """
