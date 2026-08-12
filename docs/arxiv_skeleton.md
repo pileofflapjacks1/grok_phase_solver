@@ -1,7 +1,7 @@
 # arXiv preprint skeleton
 
-**Fleshed draft (Lane C):** [`arxiv_draft.md`](arxiv_draft.md) — abstract through conclusions
-with claims C1–C8, scoreboard pointers, and reproduce steps.
+**Fleshed draft (claim freeze v0.13.1):** [`arxiv_draft.md`](arxiv_draft.md) — abstract through conclusions
+with claims C1–C25, Vol-band Fig. 6, GraphPhaseNet v3–v11 negative, and reproduce steps.
 
 **Title:** Toward an Open Physics/AI Framework for the Crystallographic Phase Problem
 
@@ -35,8 +35,9 @@ We present *grok_phase_solver*, an open-source Python framework that unifies cla
 - Synthetic P1 atomic resolution; solvability cliff
 - Easy ensemble vs SHELXS H2H
 - Hard partial-φ oracle curves (30%/20° bar)
-- GraphPhaseNet scale (Lane A: ~21% ≤20°)
+- GraphPhaseNet scale (Lane A: ~21–24% ≤20°; v9–v11 large pilots ~18%; not 30%)
 - COD 2016452 / 2100301 Fcalc + experimental Fobs scoreboard
+- COD Vol-band panel (6 local structures; mid-band fragment ~0.71 vs auto ~0.27)
 - Wilson domain-gap closing
 - Failure taxonomy A/B/C
 

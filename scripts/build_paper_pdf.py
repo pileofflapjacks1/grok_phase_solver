@@ -53,6 +53,7 @@ def preprocess(md: str) -> str:
         else:
             p = (
                 p.replace("φ", r"$\varphi$")
+                .replace("κ", r"$\kappa$")
                 .replace("≥", r"$\geq$")
                 .replace("≤", r"$\leq$")
                 .replace("≈", r"$\approx$")

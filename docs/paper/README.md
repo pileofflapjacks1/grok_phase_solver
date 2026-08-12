@@ -5,17 +5,17 @@
 | [**Manuscript draft**](../arxiv_draft.md) | Full methods-style draft (abstract → conclusions) |
 | [**PDF**](arxiv_draft.pdf) | Pandoc + tectonic build |
 | [**BibTeX**](references.bib) | Selected references |
-| [FOR_REVIEWERS](../FOR_REVIEWERS.md) | One-page claims C1–C18 |
-| [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–5 |
-| Figures | `docs/figures/paper_fig{1..5}_*.png` |
+| [FOR_REVIEWERS](../FOR_REVIEWERS.md) | One-page claims **C1–C25** |
+| [Figure captions](../figures/paper_figure_captions.md) | Captions for Figs. 1–6 |
+| Figures | `docs/figures/paper_fig{1..6}_*.png` |
 | Scoreboards | `data/processed/*.md` (source of all numbers) |
-| Release | package **0.10.0** on [PyPI](https://pypi.org/project/grok-phase-solver/) · tag `v0.10.0` |
+| Release | software **0.13.1** · tag `v0.13.1` · [PyPI](https://pypi.org/project/grok-phase-solver/) (upload may lag) |
 
 ## Regenerate figures
 
 ```bash
 python scripts/plot_paper_figures.py
-# → docs/figures/paper_fig1_… paper_fig4_… + paper_figure_captions.md
+# → docs/figures/paper_fig1_… paper_fig6_… + paper_figure_captions.md
 ```
 
 ## Authors
@@ -48,15 +48,16 @@ The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fo
 
 - [x] Abstract with honest scope  
 - [x] Methods + metrics definitions  
-- [x] Results tables tied to scoreboards (incl. COD fragment hard path, GraphPhaseNet v5–v8)  
-- [x] Main figures from frozen JSON (Figs. 1–5, incl. COD hard path)  
+- [x] Results tables tied to scoreboards (incl. Vol-band C25, fragment hard path, GraphPhaseNet v3–v11 negative)  
+- [x] Main figures from frozen JSON (Figs. 1–6, incl. COD Vol-band)  
 - [x] Non-claims / uniqueness pointer  
 - [x] Reproducibility commands  
 - [x] PDF via pandoc + tectonic  
 - [x] Authors: Grok (xAI) and Joe  
 - [x] BibTeX (`references.bib`)  
-- [x] Version aligned to package **0.10.0**  
+- [x] Version aligned to package **0.13.1** (claim freeze)  
 - [x] COD hard-path figure (auto / partial_30 / fragment_half)  
+- [x] COD Vol-band figure (Fig. 6)  
 - [ ] Affiliations / funding (optional)  
 - [ ] arXiv submit  
 
@@ -66,7 +67,8 @@ The build script rewrites Unicode (φ, ≥, ≤, …) to TeX math for default fo
 |------------|-----|
 | `partial_seed_benchmark.md` | C4 seed bar |
 | `shelxs_h2h.md` | C1–C3 ensemble vs SHELXS |
-| `strong_prior*.md` / `strong_prior_melg_xl.md` | C5, C10, C13–C15, C17 graph prior |
+| `strong_prior*.md` / `strong_prior_melg_xl.md` | C5, C10, C13–C15, C17, C20, C22 graph prior (v3–v11) |
 | `cod_hard_path_validation.md` | C16 fragment vs partial_30 |
+| `cod_stratified_bench.md` | **C25 Vol-band panel (Fig. 6)** |
 | `experimental_scoreboard.md` | C9 COD Fobs |
 | `cod_hybrid_benchmark.md` | C8 PhAI hybrid |

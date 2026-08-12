@@ -29,10 +29,11 @@ budget; large macrolide 2017775 remains unsolved ab initio.
 
 Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 and legacy
 v4 XL plateau near 21%. Melgalvis & Rekis (2026) style XL retrain (N=1200)
-reaches ~22% with seedOK rate ~12.5%—still below the 30% oracle bar that enables
-reliable hard-region extension. Later v5–v8 pilots (feature/curriculum upgrades;
-see `strong_prior_v5`–`v8.md`) remain in the ~21–24% band and do not clear the
-bar. Hard strict solves remain 0%.
+reaches ~22%. Best laptop pilot is v6 on the `cod` preset (~24%). v9–v11
+`large`-preset quick/pilot runs sit ~18–19% (harder curriculum, not a like-for-like
+regression). None clear the 30% oracle bar. Hard strict solves remain 0%.
+Sources: `strong_prior.md`, `strong_prior_melg_xl.md`, `strong_prior_v6.md`,
+`strong_prior_v11.md`.
 
 ## Figure 5 — COD hard path (auto / partial_30 / fragment_half)
 `paper_fig5_cod_hard_path.png`
@@ -44,3 +45,12 @@ Oracle **partial_30** (~30% strong $|E|$ true phases) reaches ~0.71–0.72.
 matches or exceeds partial_30 (~0.74–0.80). Dotted line: mapCC ≥ 0.7 (strict
 mapCC threshold alone). Multi-criterion *solved* can still fail on $R_1$.
 Source: `data/processed/cod_hard_path_validation.json`.
+
+## Figure 6 — COD Vol-band stratified panel
+`paper_fig6_cod_vol_band.png`
+
+Local six-structure COD panel (Fobs+Fcalc pooled) stratified by unit-cell volume.
+**auto** stays weak in every band. In the hybrid-friendly **Vol 1000–3500 Å³**
+band, fragment_half mean mapCC ~0.71 matches oracle partial_30 ~0.70; partial_15
+under-seeds (~0.54). Vol > 3500 remains hard even with a half-model. **Not** a
+1505-structure Carrozzini replication. Source: `cod_stratified_bench.json`.

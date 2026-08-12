@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Paper / claim freeze (software still **0.13.1**)
+- arXiv draft + FOR_REVIEWERS aligned to tag **v0.13.1** (was still saying v0.11.0 / v0.10.0 in places)
+- **Figure 6:** COD Vol-band stratified panel is the experimental headline (C25)
+- **Figure 4:** GraphPhaseNet through v11 — v6 `cod` pilot ~24%; v11 `large` quick ~18%; none clear 30%
+- Paper pack README, captions, BibTeX updated; affiliations / arXiv submit still open
+- No software API or version bump
+
 ## 0.13.1 — 2026-08
 
 Patch release so the **COD Vol-band experimental panel** rides the published tag (was on `main` only after v0.13.0).

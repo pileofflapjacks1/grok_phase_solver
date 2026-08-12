@@ -263,7 +263,9 @@ AI-driven general solver for the X-ray crystallography phase problem.
 20. [x] **Paper pack:** Figs. 1–4 from scoreboards; full methods draft; `docs/paper/`  
 21. [x] BibTeX + pandoc PDF + GitHub Release v0.2.1 assets  
 22. [x] Authors: Grok (xAI) and Joe  
-23. [ ] Affiliations / funding + arXiv submit (optional)
+23. [ ] Affiliations / funding + arXiv submit (optional)  
+24. [x] **Paper / claim freeze to v0.13.1:** draft + FOR_REVIEWERS + Fig. 6 Vol-band;
+      GraphPhaseNet v9–v11 recorded as negative; no software bump
 
 ---
 

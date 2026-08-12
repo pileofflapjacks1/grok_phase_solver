@@ -12,7 +12,7 @@ An **open, Python-first framework** for the crystallographic phase problem:
 
 - Classical solvers (charge flipping, HIO, RAAR, DiffMap, direct methods, Patterson)
 - Hybrid pipelines (ensemble free-FOM ranking, AI-PhaSeed, partial-φ / fragment seeding)
-- Learned priors (GraphPhaseNet v3–v10, hard-P1 PhaseMLP) with **honest hard-region metrics**
+- Learned priors (GraphPhaseNet v3–**v11**, hard-P1 PhaseMLP) with **honest hard-region metrics**
 - Scientist CLI (`gps-solve`) exporting density + **SHELXL-style `trial.res`**
 - Optional head-to-head vs academic **SHELXS** (binaries not redistributed)
 
@@ -60,7 +60,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 |---|---------------------|
 | N1 | A general solution of the phase problem for arbitrary macromolecules |
 | N2 | Pure ab initio superiority over industrial SHELXT/SHELXS on all small-molecule cases |
-| N3 | That GraphPhaseNet / hard-P1 priors currently clear the hard cliff without partial information (v4–v8 scale/architecture do not change this) |
+| N3 | That GraphPhaseNet / hard-P1 priors currently clear the hard cliff without partial information (**v3–v11** scale/features do not change this; architecture frozen at v11 pending scale-xl) |
 | N4 | That free FOM proves a correct structure (it is a **truth-free ranking** score) |
 | N5 | Redistribution or equivalence of official SHELX, PhAI, or GraPhAI binaries/weights |
 
@@ -71,9 +71,9 @@ See also: [math/uniqueness_and_bounds.md](math/uniqueness_and_bounds.md).
 ## 4. Primary contribution (for a methods referee)
 
 1. **Integrated open stack** — classical + hybrid + metrics + CLI in one reproducible package.  
-2. **Honest hard-region science** — seed-quality bar (30% / 20°) separates “extension works” from “prior insufficient.”  
+2. **Honest hard-region science** — seed-quality bar (30% / 20°) separates “extension works” from “prior insufficient.” GraphPhaseNet **v3–v11** is a documented negative.  
 3. **Product path** — `auto` → ensemble (easy); `partial_phaseed` / fragment / predicted model (hard + partial info); optional SHELXS±E → `trial.res` → SHELXL.  
-4. **External calibration** — SHELXS H2H protocol; COD Fobs + hard-path fragment validation.  
+4. **External calibration** — SHELXS H2H; COD Fobs; two-cell fragment hard path (C16); **Vol-band panel** (C25).  
 
 ---
 
@@ -101,9 +101,15 @@ python scripts/run_cod_hard_path_validation.py
 
 # Experimental COD Fobs + Fcalc scoreboard (Lane C)
 python scripts/run_experimental_scoreboard.py --quick
+
+# COD Vol-band panel (C25; needs local CIF+HKL under data/raw/cod/)
+python scripts/run_cod_stratified_bench.py --dmin 1.0
+
+# Rebuild paper figures (Figs. 1–6)
+python scripts/plot_paper_figures.py
 ```
 
-Precomputed report tables (no recompute needed for reading): `data/processed/*_h2h.md`, `partial_seed_benchmark.md`, `strong_prior*.md`, `cod_hard_path_validation.md`, `failure_taxonomy.md`, `experimental_scoreboard.md`.
+Precomputed report tables (no recompute needed for reading): `data/processed/*_h2h.md`, `partial_seed_benchmark.md`, `strong_prior*.md`, `cod_hard_path_validation.md`, `cod_stratified_bench.md`, `failure_taxonomy.md`, `experimental_scoreboard.md`.
 
 ---
 
@@ -114,7 +120,7 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 | 5 min | This page + [README §1–4](../README.md) |
 | 15 min | [USER_GUIDE](USER_GUIDE.md) decision tree |
 | 30 min | [partial_seed.md](math/partial_seed.md) + [free_fom.md](math/free_fom.md) + [failure_taxonomy.md](math/failure_taxonomy.md) |
-| 45 min | Scoreboards linked in §2 + [experimental_scoreboard.md](../data/processed/experimental_scoreboard.md) + [cod_hard_path_validation.md](../data/processed/cod_hard_path_validation.md) |
+| 45 min | Scoreboards linked in §2 + [experimental_scoreboard.md](../data/processed/experimental_scoreboard.md) + [cod_hard_path_validation.md](../data/processed/cod_hard_path_validation.md) + [cod_stratified_bench.md](../data/processed/cod_stratified_bench.md) |
 | 60 min | **Manuscript** [arxiv_draft.md](arxiv_draft.md) + [figures](figures/paper_figure_captions.md) |
 | Paper hub | [docs/paper/README.md](paper/README.md) |
 | Optional | [Cowtan notes](cowtan_phase_problem_notes.md), [arxiv_skeleton.md](arxiv_skeleton.md) |
@@ -126,16 +132,16 @@ Precomputed report tables (no recompute needed for reading): `data/processed/*_h
 - **SHELXS scoring** uses Q-peaks → equal-atom Fcalc phases for mapCC, **not** full SHELXL-refined R1. Fair for *phasing* H2H; not a claim about refined structures.  
 - **SHELX / PhAI / GraPhAI** binaries and weights are **user-supplied**; CI and default installs run without them.  
 - Synthetic organics are **pipeline-grade** (not full force-field chemistry); Wilson matching addresses amplitude statistics, not bonding realism.  
-- Graph prior pilots (v5–v8) are often **laptop-scale**; XL numbers are called out when N≈1200.
+- Graph prior pilots (v5–v11) are often **laptop-scale**; XL numbers are called out when N≈1200. v9–v11 `large` presets are a harder mix than v6 `cod` — do not read 18% vs 24% as a like-for-like regression.
 
 ---
 
 ## 8. Contact / provenance
 
 - **Authors:** Grok (xAI) and Joe  
-- Code + scoreboards: GitHub `main` · package **v0.10.0** on PyPI / tag `v0.10.0`  
-- Paper: [arxiv_draft.md](arxiv_draft.md) · [PDF](paper/arxiv_draft.pdf)  
+- Code + scoreboards: GitHub `main` · package **v0.13.1** / tag `v0.13.1` (PyPI upload may lag)  
+- Paper: [arxiv_draft.md](arxiv_draft.md) · [PDF](paper/arxiv_draft.pdf) — **claim freeze to v0.13.1**  
 - Checklist: [TODO.md](../TODO.md) · History: [CHANGELOG.md](../CHANGELOG.md)  
 - Design principle: physics fallback for every ML path; prefer correct math over marketing claims  
 
-*Thank you for reviewing. The strongest positive result for hard cells is C4 (partial-φ) and C16 (fragment hard path); the strongest product result for easy cells is C1–C2 (ensemble).*
+*Thank you for reviewing. The strongest positive result for hard cells is C4 (partial-φ), C16 (two-cell fragment path), and **C25 (Vol-band panel)**; the strongest product result for easy cells is C1–C2 (ensemble); the strongest negative is C5/C17/C22 (GraphPhaseNet v3–v11 below the seed bar).*

@@ -58,7 +58,8 @@
 - [ ] Millions-scale dataset pipeline (HDF5 / LMDB)
 - [ ] Trained equivariant / XDXD weights (external)
 - [ ] Cluster scale-xl clear of 30% seed bar
-- [ ] Expanded COD Vol 1000–3500 experimental panel
+- [x] Expanded COD Vol 1000–3500 experimental panel (local 6-structure / 48-run; not 1505-COD)
+- [x] Paper / claim freeze to v0.13.1 (Figs. 1–6; Vol-band headline; v3–v11 negative)
 
 ## Phase 3 — Hybrid solvers & new mathematics
 
@@ -75,7 +76,7 @@
 - [ ] Comparison to SHELXD/SHELXT, Phenix.twinning, etc.
 - [ ] Density visualization (PyMOL / NGL / web)
 - [ ] Interactive notebooks + dashboards
-- [ ] arXiv preprint skeleton
+- [x] arXiv preprint draft (claim freeze v0.13.1; submit still optional)
 - [ ] Public datasets + model zoo
 - [ ] Grok agent integration for beamline experiment design
 

@@ -1,5 +1,7 @@
 # COD Vol-band experimental panel
 
+**Paper:** Figure 6 of `docs/arxiv_draft.md` · claim **C25** · software freeze **v0.13.1**.
+
 ## Purpose
 
 Stratified evaluation of ab initio vs partial-φ / fragment seeding on **local

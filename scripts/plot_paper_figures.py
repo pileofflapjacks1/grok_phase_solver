@@ -2,7 +2,7 @@
 """
 Generate paper figures from data/processed scoreboards.
 
-Writes docs/figures/paper_fig{1..5}_*.png and a short figure captions file.
+Writes docs/figures/paper_fig{1..6}_*.png and a short figure captions file.
 """
 
 from __future__ import annotations
@@ -231,35 +231,68 @@ def fig3_experimental_cod():
     return out
 
 
-def fig4_seed_bar():
-    """Seed quality: graph prior frac≤20% vs 30% bar (incl. Melgalvis XL)."""
-    # Prefer live Melg XL JSON if present
-    melg_frac = 22
+def _frac20_pct(name: str, fallback: float) -> float:
+    """Scoreboard headline frac≤20° as percent from a strong_prior_*.json."""
     try:
-        meta = _load("strong_prior_melg_xl.json")
-        if meta.get("mean_holdout_frac_within_20") is not None:
-            melg_frac = int(round(100 * float(meta["mean_holdout_frac_within_20"])))
+        data = _load(name)
     except Exception:
-        pass
+        return fallback
+
+    def _walk(obj):
+        if isinstance(obj, dict):
+            yield obj
+            for v in obj.values():
+                yield from _walk(v)
+
+    # Prefer the published hold-out mean (scoreboard table), then train-holdout.
+    for key in ("mean_frac_within_20", "mean_holdout_frac_within_20"):
+        for rec in _walk(data):
+            if rec.get(key) is not None:
+                v = float(rec[key])
+                return 100.0 * v if v <= 1.5 else v
+    return fallback
+
+
+def fig4_seed_bar():
+    """Seed quality: graph prior frac≤20% vs 30% bar through v11."""
+    melg_frac = _frac20_pct("strong_prior_melg_xl.json", 22)
+    v6_frac = _frac20_pct("strong_prior_v6.json", 24)
+    v11_frac = _frac20_pct("strong_prior_v11.json", 18)
 
     labels = [
-        "Random\n(~11%)",
-        "v3 prior\n(250)",
-        "v4 XL\nlegacy 1200",
-        f"Melg XL\n(1200)",
-        "Oracle bar\n(target)",
+        "Random",
+        "v3\n(250)",
+        "v4 XL\nlegacy",
+        "Melg XL\n(1200)",
+        "v6 pilot\n(cod)",
+        "v11 quick\n(large)",
+        "Oracle\nbar",
     ]
-    vals = [11, 21, 21, melg_frac, 30]
-    colors = ["#9ecae1", "#6baed6", "#3182bd", "#2ca02c", "#e6550d"]
+    vals = [11, 21, 21, melg_frac, v6_frac, v11_frac, 30]
+    colors = [
+        "#9ecae1",
+        "#6baed6",
+        "#3182bd",
+        "#2ca02c",
+        "#74c476",
+        "#9e9ac8",
+        "#e6550d",
+    ]
 
-    fig, ax = plt.subplots(figsize=(7.0, 3.9))
+    fig, ax = plt.subplots(figsize=(7.6, 3.9))
     bars = ax.bar(labels, vals, color=colors, edgecolor="k", lw=0.5)
     ax.axhline(30, color="#e6550d", ls="--", lw=1.5)
     ax.set_ylabel("% of strong $|E|$ phases within 20°")
     ax.set_ylim(0, 45)
-    ax.set_title("Hard-region seed quality (hold-out mean)")
+    ax.set_title("Hard-region seed quality (hold-out mean; v3–v11)")
     for b, v in zip(bars, vals):
-        ax.text(b.get_x() + b.get_width() / 2, v + 1.2, f"{v}%", ha="center", fontsize=10)
+        ax.text(
+            b.get_x() + b.get_width() / 2,
+            v + 1.2,
+            f"{v:.0f}%",
+            ha="center",
+            fontsize=10,
+        )
     ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     out = FIG / "paper_fig4_seed_bar.png"
@@ -371,6 +404,101 @@ def fig5_cod_hard_path():
     return out
 
 
+def fig6_cod_vol_band():
+    """
+    COD Vol-band stratified panel: mean mapCC by volume band × method.
+
+    Source: data/processed/cod_stratified_bench.json  (summary.by_vol_band_run)
+    """
+    by = {}
+    try:
+        data = _load("cod_stratified_bench.json")
+        by = ((data.get("summary") or {}).get("by_vol_band_run")) or {}
+    except Exception:
+        by = {}
+
+    bands = ["vol_lt_1000", "vol_1000_3500", "vol_gt_3500"]
+    band_labels = {
+        "vol_lt_1000": "Vol < 1000",
+        "vol_1000_3500": "Vol 1000–3500",
+        "vol_gt_3500": "Vol > 3500",
+    }
+    runs = ["auto", "partial_15", "partial_30", "fragment_half"]
+    run_labels = {
+        "auto": "auto",
+        "partial_15": "partial_15",
+        "partial_30": "partial_30",
+        "fragment_half": "fragment_half",
+    }
+    colors = {
+        "auto": "#9ecae1",
+        "partial_15": "#6baed6",
+        "partial_30": "#3182bd",
+        "fragment_half": "#2ca02c",
+    }
+    fallback = {
+        "vol_lt_1000/auto": 0.318,
+        "vol_lt_1000/partial_15": 0.546,
+        "vol_lt_1000/partial_30": 0.723,
+        "vol_lt_1000/fragment_half": 0.740,
+        "vol_1000_3500/auto": 0.269,
+        "vol_1000_3500/partial_15": 0.542,
+        "vol_1000_3500/partial_30": 0.698,
+        "vol_1000_3500/fragment_half": 0.714,
+        "vol_gt_3500/auto": 0.075,
+        "vol_gt_3500/partial_15": 0.447,
+        "vol_gt_3500/partial_30": 0.662,
+        "vol_gt_3500/fragment_half": 0.493,
+    }
+
+    def _cc(band: str, run: str) -> float:
+        key = f"{band}/{run}"
+        rec = by.get(key)
+        if isinstance(rec, dict) and rec.get("mean_mapcc") is not None:
+            return float(rec["mean_mapcc"])
+        return float(fallback[key])
+
+    x = np.arange(len(bands))
+    n_r = len(runs)
+    w = 0.8 / n_r
+
+    fig, ax = plt.subplots(figsize=(7.6, 4.3))
+    for i, run in enumerate(runs):
+        vals = [_cc(b, run) for b in bands]
+        ax.bar(
+            x + (i - n_r / 2) * w + w / 2,
+            vals,
+            w,
+            label=run_labels[run],
+            color=colors[run],
+            edgecolor="k",
+            lw=0.4,
+        )
+        for xi, v in zip(x, vals):
+            ax.text(
+                xi + (i - n_r / 2) * w + w / 2,
+                v + 0.02,
+                f"{v:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
+
+    ax.axhline(0.7, color="gray", ls=":", lw=1.2, label="mapCC ≥ 0.7")
+    ax.set_xticks(x)
+    ax.set_xticklabels([band_labels[b] for b in bands])
+    ax.set_ylabel("Mean mapCC (OI; Fobs+Fcalc pooled)")
+    ax.set_ylim(0, 1.05)
+    ax.set_title("COD Vol-band panel: ab initio vs oracle φ vs fragment seed")
+    ax.legend(fontsize=8, loc="upper right", ncol=2)
+    ax.grid(True, axis="y", alpha=0.3)
+    fig.tight_layout()
+    out = FIG / "paper_fig6_cod_vol_band.png"
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+    return out
+
+
 def main():
     outs = []
     outs.append(fig1_partial_seed_oracle())
@@ -378,6 +506,7 @@ def main():
     outs.append(fig3_experimental_cod())
     outs.append(fig4_seed_bar())
     outs.append(fig5_cod_hard_path())
+    outs.append(fig6_cod_vol_band())
     cap = FIG / "paper_figure_captions.md"
     cap.write_text(
         """# Paper figure captions
@@ -411,10 +540,11 @@ budget; large macrolide 2017775 remains unsolved ab initio.
 
 Mean fraction of strong phases within 20° of truth. GraphPhaseNet v3 and legacy
 v4 XL plateau near 21%. Melgalvis & Rekis (2026) style XL retrain (N=1200)
-reaches ~22% with seedOK rate ~12.5%—still below the 30% oracle bar that enables
-reliable hard-region extension. Later v5–v8 pilots (feature/curriculum upgrades;
-see `strong_prior_v5`–`v8.md`) remain in the ~21–24% band and do not clear the
-bar. Hard strict solves remain 0%.
+reaches ~22%. Best laptop pilot is v6 on the `cod` preset (~24%). v9–v11
+`large`-preset quick/pilot runs sit ~18–19% (harder curriculum, not a like-for-like
+regression). None clear the 30% oracle bar. Hard strict solves remain 0%.
+Sources: `strong_prior.md`, `strong_prior_melg_xl.md`, `strong_prior_v6.md`,
+`strong_prior_v11.md`.
 
 ## Figure 5 — COD hard path (auto / partial_30 / fragment_half)
 `paper_fig5_cod_hard_path.png`
@@ -426,6 +556,15 @@ Oracle **partial_30** (~30% strong $|E|$ true phases) reaches ~0.71–0.72.
 matches or exceeds partial_30 (~0.74–0.80). Dotted line: mapCC ≥ 0.7 (strict
 mapCC threshold alone). Multi-criterion *solved* can still fail on $R_1$.
 Source: `data/processed/cod_hard_path_validation.json`.
+
+## Figure 6 — COD Vol-band stratified panel
+`paper_fig6_cod_vol_band.png`
+
+Local six-structure COD panel (Fobs+Fcalc pooled) stratified by unit-cell volume.
+**auto** stays weak in every band. In the hybrid-friendly **Vol 1000–3500 Å³**
+band, fragment_half mean mapCC ~0.71 matches oracle partial_30 ~0.70; partial_15
+under-seeds (~0.54). Vol > 3500 remains hard even with a half-model. **Not** a
+1505-structure Carrozzini replication. Source: `cod_stratified_bench.json`.
 """
     )
     print("Wrote:")

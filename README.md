@@ -321,7 +321,7 @@ gps-download-cod          # helper for COD samples
 | Wilson matching | [docs/math/wilson_domain_gap.md](docs/math/wilson_domain_gap.md) |
 | Uniqueness / non-claims | [docs/math/uniqueness_and_bounds.md](docs/math/uniqueness_and_bounds.md) |
 | Cowtan overview | [docs/cowtan_phase_problem_notes.md](docs/cowtan_phase_problem_notes.md) |
-| Paper / arXiv draft | [docs/paper/README.md](docs/paper/README.md) · [arxiv_draft.md](docs/arxiv_draft.md) · [figures](docs/figures/paper_figure_captions.md) |
+| Paper / arXiv draft | [docs/paper/README.md](docs/paper/README.md) · [arxiv_draft.md](docs/arxiv_draft.md) · [figures](docs/figures/paper_figure_captions.md) (claim freeze **v0.13.1**; Figs. 1–6) |
 | Notebooks | [01](notebooks/01_math_and_baseline.md) · [02](notebooks/02_patterson_and_triplets.md) · [03](notebooks/03_uniqueness_parseval_friedel.md) |
 
 ---
