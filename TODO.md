@@ -121,7 +121,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Math failure documentation
 - [x] Head-to-head harness vs SHELXD/SHELXS (runners + dual_space; binaries external)
 - [x] PyMOL / Coot map handoff (`density.map` + `open_in_pymol.pml`)
-- [x] PyPI release (**0.13.3** — https://pypi.org/project/grok-phase-solver/0.13.3/)
+- [ ] PyPI release (**0.13.4** — pending upload)
 - [ ] Full public multi-TB dataset mirrors
 - [ ] Grok agent beamline design integration
 
@@ -226,7 +226,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Expand experimental COD Vol 1000–3500 Å³ panel (`cod_stratified_bench` 6 COD, mid-band filled)
 - [ ] True SE(3) / trained XDXD weights (external research)
 - [ ] Optional cctbx backend; OMC25-scale data mirror
-- [x] PyPI 0.13.3 upload — https://pypi.org/project/grok-phase-solver/0.13.3/
+- [ ] PyPI 0.13.4 upload (pending)
 - [x] PyMOL / Coot export helper (`pipeline/map_export.py`; Streamlit multi-plane still optional)
 - [ ] Full agent-style experimental action recommender
 
@@ -257,7 +257,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
       + `strong_prior_v4_xl.npz` / `_ft.npz`. **Mean seed bar not cleared by scale alone.**  
 17. [ ] Further scale (10⁴ cells / torch equivariant) **or** accept ceiling and invest in partial-φ UX  
 18. [x] **v0.2.1 ship:** version align, tag, `docs/RELEASE.md`; build+twine check  
-      PyPI **0.13.3** published — https://pypi.org/project/grok-phase-solver/0.13.3/
+      PyPI **0.13.4** pending upload
 19. [x] **Lane C:** expanded experimental COD Fobs scoreboard (2016452, 2100301,
       2017775) + Fcalc controls + oracle partial-φ rows; `arxiv_draft.md`;
       FOR_REVIEWERS C9. SHELXD binary still not present (SHELXS used when available).  

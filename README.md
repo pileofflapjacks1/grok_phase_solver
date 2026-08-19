@@ -1,7 +1,7 @@
 # grok_phase_solver
 
 **Open physics / AI phasing assistant for X-ray crystallography**  
-Version **0.13.3** · Python ≥ 3.10 · MIT
+Version **0.13.4** · Python ≥ 3.10 · MIT
 
 Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and a SHELXL-ready trial model, then refine elsewhere (Olex2 / SHELXL).
 
@@ -53,7 +53,7 @@ gps-solve --help
 ```
 
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
-Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.13.3 notes](docs/RELEASE_NOTES_v0.13.3.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
+Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.13.4 notes](docs/RELEASE_NOTES_v0.13.4.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 
 ### Phase your data
 

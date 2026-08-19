@@ -1,12 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.13.4 — 2026-08
+
+Patch so **`--retry-with-peaks`** rides PyPI (was on `main` only after 0.13.3).
 
 ### One-command hard retry
 - `gps-solve --retry-with-peaks`: if the first pass looks weak, re-run
   `partial_phaseed` using this run's `peaks.csv` (writes `--out/retry_peaks/`)
 - Same gate as the GUI "Retry with peaks as seed" button
 - Peaks-as-carbon is a cheap fallback, not a substitute for a real fragment/HA
+- Science claims unchanged (still 0.13.1 freeze)
 
 ## 0.13.3 — 2026-08
 
