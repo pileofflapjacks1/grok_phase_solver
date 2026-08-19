@@ -121,9 +121,9 @@ Examples:
   gps-solve --hkl reflections.hkl --ins job.ins --method auto --n-iter 150
 
 Outputs (in --out):
-  report.md, phases.csv, structure_factors.F, density.npz, peaks.csv, peaks.xyz, ...
+  report.md, density.map, open_in_pymol.pml, trial.res, peaks.pdb, density.npz, ...
 
-Next: inspect density_slice.png / peaks, then refine in SHELXL or Olex2.
+Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2.
         """,
     )
     p.add_argument("--hkl", required=True, help="Reflection file (.hkl SHELX, CIF HKL, or .mtz)")

@@ -226,8 +226,11 @@ macOS: `xattr -dr com.apple.quarantine ShelX && chmod +x ShelX/*`
 | **`phases.csv`** | h, k, l, \|F\|, phase (°), A, B |
 | **`structure_factors.F`** | Complex F for custom tools |
 | **`density.npz`** | Electron density grid + cell |
+| **`density.map`** | CCP4 map for PyMOL / Coot |
+| **`open_in_pymol.pml`** | `pymol open_in_pymol.pml` (from the `--out` folder) |
+| **`open_in_coot.sh`** | `sh open_in_coot.sh` |
 | **`density_slice.png`** | Quick visual check |
-| **`peaks.csv` / `peaks.xyz`** | Strongest density maxima (trial atoms) |
+| **`peaks.csv` / `peaks.xyz` / `peaks.pdb`** | Strongest density maxima (trial atoms) |
 | **`trial.res`** | SHELXL-style trial model (Q/C peaks) for Olex2 |
 | **`solve_summary.json`** | Machine-readable log |
 
@@ -244,9 +247,10 @@ This tool **phases** data and suggests **density peaks**. It does **not** replac
 **Typical path:**
 
 1. Open `density_slice.png` and `peaks.csv`.  
-2. Load **`trial.res`** in Olex2 / ShelXle (or `peaks.xyz` in PyMOL).  
-3. Assign C/N/O/… from chemistry and residual maps.  
-4. Refine against your intensities with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
+2. **3D map:** from the `--out` folder, `pymol open_in_pymol.pml` or `sh open_in_coot.sh`.  
+3. Load **`trial.res`** in Olex2 / ShelXle (or `peaks.pdb` in Coot/PyMOL).  
+4. Assign C/N/O/… from chemistry and residual maps.  
+5. Refine against your intensities with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
 
 If the map is uninterpretable: check cell/SG, try `--method ensemble` or `phai_phaseed`, improve resolution/completeness, add a predicted-model or fragment seed (`--predicted-model`), or use classical SHELXD / experimental phasing. Report.md includes free-FOM bootstrap and optional multistart phase uncertainty (v0.5).
 

@@ -120,7 +120,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] GitHub Actions CI (pytest)
 - [x] Math failure documentation
 - [x] Head-to-head harness vs SHELXD/SHELXS (runners + dual_space; binaries external)
-- [ ] PyMOL / web density viewer
+- [x] PyMOL / Coot map handoff (`density.map` + `open_in_pymol.pml`)
 - [x] PyPI release (**0.13.2** — https://pypi.org/project/grok-phase-solver/0.13.2/)
 - [ ] Full public multi-TB dataset mirrors
 - [ ] Grok agent beamline design integration
@@ -227,7 +227,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [ ] True SE(3) / trained XDXD weights (external research)
 - [ ] Optional cctbx backend; OMC25-scale data mirror
 - [x] PyPI 0.13.2 upload — https://pypi.org/project/grok-phase-solver/0.13.2/
-- [ ] Streamlit multi-plane density / PyMOL export helper
+- [x] PyMOL / Coot export helper (`pipeline/map_export.py`; Streamlit multi-plane still optional)
 - [ ] Full agent-style experimental action recommender
 
 
@@ -269,6 +269,8 @@ AI-driven general solver for the X-ray crystallography phase problem.
       GraphPhaseNet v9–v11 recorded as negative; no software bump
 25. [x] **Partial-φ next-action product:** Vol-band + seed-source chooser in
       `report.md` / `solve_summary.json` / GUI banner
+26. [x] **CCP4 map + PyMOL/Coot handoff:** `density.map`, `peaks.pdb`,
+      `open_in_pymol.pml`, `open_in_coot.sh`
 
 ---
 

@@ -86,6 +86,7 @@ gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
 |------|---------|
 | `report.md` | Method used, free FOM, decision hints, SHELXL steps |
 | `density_slice.png` | Quick map check |
+| **`density.map`** | CCP4 map — `pymol open_in_pymol.pml` or `sh open_in_coot.sh` |
 | `peaks.csv` | Strong density maxima (trial atoms) |
 | **`trial.res`** | Load in **Olex2 / ShelXle → assign elements → SHELXL** |
 | `phases.csv` | $h,k,l,\|F\|$, phase (°) |

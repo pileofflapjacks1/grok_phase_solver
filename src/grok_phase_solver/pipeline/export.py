@@ -5,8 +5,10 @@ Writes:
   - phases.csv          h k l |F| phase_deg A B
   - structure_factors.F simple complex F list
   - density.npz         rho grid + cell
+  - density.map         CCP4/MRC map (PyMOL / Coot)
   - density_slice.png   central slice (if matplotlib available)
-  - peaks.xyz / peaks.csv  density peak list
+  - peaks.xyz / peaks.csv / peaks.pdb  density peak list
+  - open_in_pymol.pml / open_in_coot.sh  viewer handoff
   - report.md           human-readable summary + next steps
 """
 
@@ -135,6 +137,13 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         except Exception:
             res_path.write_text(write_shelxl_res(result))
         written.append(res_path)
+
+    try:
+        from grok_phase_solver.pipeline.map_export import write_map_handoff
+
+        written.extend(write_map_handoff(result, out_dir))
+    except Exception as exc:
+        result.warnings.append(f"map export skipped: {exc}")
 
     from grok_phase_solver.pipeline.next_action import recommend_next_action
 
@@ -373,24 +382,28 @@ def _render_report(result: "SolveResult") -> str:
             "| `phases.csv` | hkl, \\|F\\|, phase (°) for downstream tools |",
             "| `structure_factors.F` | Complex F (A, B) |",
             "| `density.npz` | Electron density grid |",
+            "| `density.map` | CCP4 map for **PyMOL / Coot** |",
+            "| `open_in_pymol.pml` | `pymol open_in_pymol.pml` |",
+            "| `open_in_coot.sh` | `sh open_in_coot.sh` |",
             "| `density_slice.png` | Quick visual check |",
-            "| `peaks.csv` / `peaks.xyz` | Strongest density maxima (trial atoms) |",
+            "| `peaks.csv` / `peaks.xyz` / `peaks.pdb` | Strongest density maxima |",
             "| `trial.res` | SHELXL-style trial model (Q peaks) for Olex2/SHELXL |",
             "| `solve_summary.json` | Machine-readable summary |",
             "",
             "## Suggested next steps (crystallography practice)",
             "",
             "1. **Inspect** `density_slice.png` and peak heights in `peaks.csv`.",
-            "2. **Open** `trial.res` in Olex2 / ShelXle — assign element types to Q peaks.",
-            "3. **Refine** with **SHELXL** (local `ShelX/shelxl` if installed):",
+            "2. **3D map:** `pymol open_in_pymol.pml` or `sh open_in_coot.sh` (`density.map`).",
+            "3. **Open** `trial.res` in Olex2 / ShelXle — assign element types to Q peaks.",
+            "4. **Refine** with **SHELXL** (local `ShelX/shelxl` if installed):",
             "   ```bash",
             "   cp trial.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work",
             "   ```",
-            "4. If the map is poor: follow **Next action** above (Vol-band chooser).",
+            "5. If the map is poor: follow **Next action** above (Vol-band chooser).",
             "   Catalog: `--phase-seed-res` / `--predicted-model` / `--phase-seed-csv` /",
             "   `--seed-peaks-csv` / HA pair / `gps-make-seed` / `--method shelxs`.",
-            "5. Free-FOM composite is a **truth-free** ranking score, not proof of solution.",
-            "6. Demo hard + partial-φ: `examples/partial_seed_demo/`.",
+            "6. Free-FOM composite is a **truth-free** ranking score, not proof of solution.",
+            "7. Demo hard + partial-φ: `examples/partial_seed_demo/`.",
             "",
             "## Decision tree",
             "",

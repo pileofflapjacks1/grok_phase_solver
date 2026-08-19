@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### PyMOL / Coot map handoff
+- `gps-solve` writes **`density.map`** (CCP4 MODE-2, unit cell) plus
+  `open_in_pymol.pml`, `open_in_coot.sh`, and `peaks.pdb`
+- Does not replace Olex2/SHELXL; visualization only
+
 ## 0.13.2 — 2026-08
 
 Patch so the **Vol-band next-action chooser** rides PyPI (was on `main` only after 0.13.1).  

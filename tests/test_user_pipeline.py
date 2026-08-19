@@ -63,6 +63,8 @@ def test_solve_and_export(tmp_path: Path):
     assert "report.md" in names
     assert "phases.csv" in names
     assert "density.npz" in names
+    assert "density.map" in names
+    assert "open_in_pymol.pml" in names
     assert "peaks.csv" in names
     # phases.csv has header + data
     lines = (tmp_path / "phases.csv").read_text().strip().splitlines()
