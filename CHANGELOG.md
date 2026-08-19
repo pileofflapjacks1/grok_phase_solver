@@ -1,11 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.13.3 — 2026-08
+
+Patch so the **CCP4 map + PyMOL/Coot handoff** rides PyPI (was on `main` only after 0.13.2).
 
 ### PyMOL / Coot map handoff
 - `gps-solve` writes **`density.map`** (CCP4 MODE-2, unit cell) plus
   `open_in_pymol.pml`, `open_in_coot.sh`, and `peaks.pdb`
 - Does not replace Olex2/SHELXL; visualization only
+- Science claims unchanged (still 0.13.1 freeze)
 
 ## 0.13.2 — 2026-08
 
