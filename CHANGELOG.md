@@ -2,7 +2,8 @@
 
 ## 0.13.4 — 2026-08
 
-Patch so **`--retry-with-peaks`** rides PyPI (was on `main` only after 0.13.3).
+Patch so **`--retry-with-peaks`** rides PyPI (was on `main` only after 0.13.3).  
+Published: https://pypi.org/project/grok-phase-solver/0.13.4/
 
 ### One-command hard retry
 - `gps-solve --retry-with-peaks`: if the first pass looks weak, re-run

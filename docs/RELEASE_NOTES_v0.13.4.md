@@ -23,7 +23,7 @@ is still stronger (COD Vol-band C25). Science freeze unchanged.
 ```bash
 python -m pip install -U "grok-phase-solver>=0.13.4"
 gps-solve --help
-# https://pypi.org/project/grok-phase-solver/0.13.4/
+# live: https://pypi.org/project/grok-phase-solver/0.13.4/
 ```
 
 ## Prior
