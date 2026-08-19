@@ -42,7 +42,7 @@ python -m twine upload dist/grok_phase_solver-0.13.3*
 - [x] Map handoff on main
 - [x] RELEASE_NOTES_v0.13.3
 - [x] Tag + GitHub Release → https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.3
-- [ ] PyPI upload (maintainer token — run twine locally)
+- [x] PyPI upload → https://pypi.org/project/grok-phase-solver/0.13.3/
 - [x] No overclaims; science still 0.13.1 freeze
 
 **This release:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.3  

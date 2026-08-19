@@ -2,7 +2,8 @@
 
 ## 0.13.3 — 2026-08
 
-Patch so the **CCP4 map + PyMOL/Coot handoff** rides PyPI (was on `main` only after 0.13.2).
+Patch so the **CCP4 map + PyMOL/Coot handoff** rides PyPI (was on `main` only after 0.13.2).  
+Published: https://pypi.org/project/grok-phase-solver/0.13.3/
 
 ### PyMOL / Coot map handoff
 - `gps-solve` writes **`density.map`** (CCP4 MODE-2, unit cell) plus

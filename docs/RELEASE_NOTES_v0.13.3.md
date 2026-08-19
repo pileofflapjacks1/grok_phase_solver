@@ -23,7 +23,7 @@ Science freeze unchanged (GraphPhaseNet below the 30% seed bar).
 ```bash
 python -m pip install -U "grok-phase-solver>=0.13.3"
 gps-solve --help
-# https://pypi.org/project/grok-phase-solver/0.13.3/
+# live: https://pypi.org/project/grok-phase-solver/0.13.3/
 ```
 
 ## Prior
