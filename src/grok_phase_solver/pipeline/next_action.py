@@ -228,6 +228,7 @@ def recommend_next_action(
                     "--native-hkl native.hkl --derivative-hkl deriv.hkl --out ./out_ha",
                 ],
                 "alternatives": [
+                    "Cheap first try: gps-solve … --retry-with-peaks (peaks as C; often too thin for Vol > 3500)",
                     "If you only have a small fragment, expect a weak map; enlarge the model.",
                     "External: --method shelxs+shelxe",
                 ],
@@ -258,6 +259,7 @@ def recommend_next_action(
                     "--n-starts 5 --out ./out_ens",
                 ],
                 "alternatives": [
+                    "One-command retry: gps-solve --hkl your.hkl --ins your.ins --retry-with-peaks --out ./solve_out",
                     "Fragment: --method partial_phaseed --phase-seed-res model.res",
                     "Peaks recycle: --seed-peaks-csv peaks.csv",
                 ],
@@ -285,6 +287,7 @@ def recommend_next_action(
                 "--predicted-model model.cif --out ./out_pred",
             ],
             "alternatives": [
+                "No fragment yet: gps-solve --hkl your.hkl --ins your.ins --retry-with-peaks --out ./solve_out",
                 "Known φ CSV: --phase-seed-csv known.csv (aim ≥~30% of strong |E|)",
                 "Build seed only: gps-make-seed --hkl your.hkl --ins your.ins "
                 "--from-res model.res -o seed.csv",

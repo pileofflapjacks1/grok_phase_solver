@@ -117,6 +117,7 @@ Have partial info (φ / fragment / HA)?
             YES → --method auto   (→ ensemble)
             NO  → --method auto   (→ prior/CF; may fail — get partial φ or try shelxs)
 Finish → report.md Next action (Vol-band) → trial.res → SHELXL / Olex2
+Weak auto + no fragment yet → --retry-with-peaks  (writes retry_peaks/)
 ```
 
 | Situation | Flag |
@@ -124,6 +125,7 @@ Finish → report.md Next action (Vol-band) → trial.res → SHELXL / Olex2
 | Default / unsure | `--method auto` |
 | Easy / high resolution | `auto` or `ensemble` |
 | Hard, pure ab initio | `auto` (honest: often unsolved) |
+| Weak auto, no fragment yet | `--retry-with-peaks` |
 | **Hard + known φ / fragment / HA** | **`partial_phaseed` + seed source** (CSV / `.res` / peaks / HA) |
 | Build seed only | `gps-make-seed --from-res model.res -o seed.csv` |
 | External classical solve | `shelxs` or `shelxs+shelxe` (local academic binaries in `ShelX/`) |

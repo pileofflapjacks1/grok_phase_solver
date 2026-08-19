@@ -83,6 +83,7 @@ def workflow_decision_tree_md() -> str:
 | Default | `gps-solve --hkl … --ins … --method auto` |
 | Easy / high-res | `auto` → **ensemble** |
 | Hard, pure ab initio | `auto` → prior/CF; expect struggle |
+| Weak auto, no fragment | `--retry-with-peaks` → `retry_peaks/` |
 | Hard + known φ | `--method partial_phaseed --phase-seed-csv known.csv` |
 | Hard + SHELXS fragment | `--phase-seed-res model.res` (method partial or auto) |
 | Hard + density peaks | `--seed-peaks-csv peaks.csv` |

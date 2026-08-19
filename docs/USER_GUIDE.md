@@ -136,6 +136,7 @@ Finish → read report.md **Next action** (Vol-band chooser) → trial.res → S
 | Default | `gps-solve --hkl … --ins … --method auto` |
 | Easy / high-res | `auto` or `ensemble` |
 | Hard, pure ab initio | `auto` (expect struggle; see free FOM) |
+| Weak auto, no fragment yet | `--retry-with-peaks` → `retry_peaks/` |
 | **Hard + known φ / fragment / HA** | `partial_phaseed` + seed source (below) |
 | External classical | `shelxs` or `shelxs+shelxe` |
 | After any solve | `report.md` **Next action** (Vol-band + seed source) → `trial.res` → **SHELXL** |
@@ -183,6 +184,11 @@ gps-solve --hkl data.hkl --ins data.ins \
 # 4) Isomorphous pair (HA)
 gps-solve --hkl der.hkl --ins data.ins --method ha_phaseed \
   --native-hkl nat.hkl --derivative-hkl der.hkl --ha-element Br --out ./out_ha
+
+# 5) No fragment yet: first pass auto, then recycle this run's peaks
+gps-solve --hkl data.hkl --ins data.ins --retry-with-peaks --out ./solve_out
+# If the first map looks weak → ./solve_out/retry_peaks/ (partial_phaseed from peaks.csv)
+# Cheap fallback (peaks as carbon). A real .res / predicted-model fragment is stronger.
 ```
 
 `report.md` includes a **Partial seed quality** section (strong-|E| coverage vs the 30% bar, free FOM of the raw seed, next-step hints). Size is truth-free; correctness still requires chemistry / refinement.

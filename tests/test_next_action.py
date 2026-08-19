@@ -38,6 +38,7 @@ def test_mid_band_unsolved_points_at_fragment():
     assert rec["map_outlook"] == "likely_unsolved"
     md = format_next_action_md(rec)
     assert "partial_phaseed" in md
+    assert any("retry-with-peaks" in a for a in rec["alternatives"])
     assert "0.71" in rec["why"] or "0.71" in md
 
 

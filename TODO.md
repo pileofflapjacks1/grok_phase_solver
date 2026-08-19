@@ -271,6 +271,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
       `report.md` / `solve_summary.json` / GUI banner
 26. [x] **CCP4 map + PyMOL/Coot handoff:** `density.map`, `peaks.pdb`,
       `open_in_pymol.pml`, `open_in_coot.sh`
+27. [x] **`--retry-with-peaks`:** second-pass partial_phaseed from this run's peaks
 
 ---
 

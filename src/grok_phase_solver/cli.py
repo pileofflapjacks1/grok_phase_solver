@@ -119,9 +119,11 @@ Examples:
   gps-solve --hkl mydata.hkl --ins mydata.ins --out ./solve_out
   gps-solve --hkl mydata.hkl --cell 9.7,8.9,7.6,90,112.7,90 --sg "P 1 21/c 1" --out ./out
   gps-solve --hkl reflections.hkl --ins job.ins --method auto --n-iter 150
+  gps-solve --hkl data.hkl --ins data.ins --retry-with-peaks --out ./solve_out
 
 Outputs (in --out):
   report.md, density.map, open_in_pymol.pml, trial.res, peaks.pdb, density.npz, ...
+  retry_peaks/  (if --retry-with-peaks and the first map looks weak)
 
 Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2.
         """,
@@ -354,6 +356,14 @@ Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2
         default=0.45,
         help="SHELXE -s solvent fraction (default 0.45)",
     )
+    p.add_argument(
+        "--retry-with-peaks",
+        action="store_true",
+        help=(
+            "If the first pass looks weak, re-run partial_phaseed using this "
+            "run's peaks.csv as a light-atom fragment (writes --out/retry_peaks/)"
+        ),
+    )
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", "-o", default="./gps_solve_out", help="Output directory")
     p.add_argument("--quiet", action="store_true")
@@ -430,6 +440,26 @@ Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2
     print(f"Results written to: {out.resolve()}")
     for path in paths:
         print(f"  - {path.name}")
+    if args.retry_with_peaks:
+        from grok_phase_solver.pipeline.retry import run_peaks_retry
+
+        retry_result, retry_dir, reason = run_peaks_retry(
+            hkl_path=args.hkl,
+            first_result=result,
+            first_out=out,
+            cfg=cfg,
+            ins_path=args.ins,
+            cell=args.cell,
+            space_group=args.sg,
+            wavelength=args.wavelength,
+        )
+        if retry_result is None:
+            print(f"\nRetry with peaks skipped: {reason}")
+        else:
+            print(f"\n=== Retry with peaks ({reason}) ===")
+            print(f"Second pass method: {retry_result.method}")
+            print(f"Wrote {retry_dir.resolve()}")
+            print(f"Read {retry_dir / 'report.md'} and compare free-FOM to the first pass.")
     print(f"\nRead {out / 'report.md'} for interpretation and next steps.")
 
 

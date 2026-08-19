@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### One-command hard retry
+- `gps-solve --retry-with-peaks`: if the first pass looks weak, re-run
+  `partial_phaseed` using this run's `peaks.csv` (writes `--out/retry_peaks/`)
+- Same gate as the GUI "Retry with peaks as seed" button
+- Peaks-as-carbon is a cheap fallback, not a substitute for a real fragment/HA
+
 ## 0.13.3 — 2026-08
 
 Patch so the **CCP4 map + PyMOL/Coot handoff** rides PyPI (was on `main` only after 0.13.2).  
