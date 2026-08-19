@@ -41,9 +41,9 @@ python -m twine upload dist/grok_phase_solver-0.13.4*
 - [x] Version aligned → **0.13.4**
 - [x] `--retry-with-peaks` on main
 - [x] RELEASE_NOTES_v0.13.4
-- [ ] Tag + GitHub Release
-- [ ] PyPI upload
+- [x] Tag + GitHub Release → https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.4
+- [ ] PyPI upload (maintainer token — run twine locally)
 - [x] No overclaims; science still 0.13.1 freeze
 
-**This release:** (pending tag)  
+**This release:** https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.4  
 **Prior:** v0.13.3 at https://github.com/pileofflapjacks1/grok_phase_solver/releases/tag/v0.13.3
