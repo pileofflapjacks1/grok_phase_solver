@@ -39,9 +39,11 @@ dependencies = [
 [project.optional-dependencies]
 ml = [
   "torch>=2.0",
+  "einops>=0.6",
 ]
 gpu = [
   "torch>=2.0",
+  "einops>=0.6",
 ]
 gui = [
   "streamlit>=1.28",

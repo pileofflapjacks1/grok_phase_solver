@@ -1,6 +1,6 @@
 # grok-phase-solver — lightweight scientific Python image
-# Build:  docker build -t grok-phase-solver:0.6.0 .
-# Run:    docker run --rm -v "$PWD:/data" grok-phase-solver:0.6.0 \
+# Build:  docker build -t grok-phase-solver:0.13.4 .
+# Run:    docker run --rm -v "$PWD:/data" grok-phase-solver:0.13.4 \
 #           gps-solve --hkl /data/demo.hkl --ins /data/demo.ins --out /data/out
 
 FROM python:3.11-slim-bookworm
