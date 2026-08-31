@@ -10,6 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11"]
     steps:
@@ -21,6 +22,10 @@ jobs:
       - name: Install package
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          # Part of the suite (PhAI amplitude packing) needs torch, which lives
+          # in the optional [ml] extra. Pull the CPU-only build first so the job
+          # does not download the multi-GB CUDA wheels it would never use.
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -e ".[dev,ml]"
       - name: Run tests
         run: pytest -q --tb=short
