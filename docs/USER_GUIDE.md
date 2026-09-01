@@ -100,7 +100,7 @@ gps-solve \
 
 | `--method` | When to use |
 |------------|-------------|
-| **`auto` (default)** | **Easy/high-res → ensemble**; hard → graph/hard-P1 prior or CF; P2₁/c+PhAI → AI-PhaSeed |
+| **`auto` (default)** | **Easy/high-res → ensemble**; P2₁/c+PhAI weights → AI-PhaSeed; else last-resort CF (**not** GraphPhaseNet). Pass a seed for hard data. |
 | `ensemble` | Best open ab initio on easy data (CF+RAAR multistart, free-FOM pick) |
 | `charge_flipping` | Fast classical baseline |
 | **`partial_phaseed`** | **Hard-data path** when you have partial phases (HA/MAD/MR-lite) — see below |
@@ -128,7 +128,7 @@ Have partial phases (HA / MAD / MR / SHELXS fragment)?
    YES →  --method partial_phaseed --phase-seed-csv known.csv
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → auto (ensemble)
-            NO  → auto (prior/CF) — if map fails, get partial φ or try shelxs
+            NO  → auto (last-resort CF, not claimed solved) — get partial φ or try shelxs
 Finish → read report.md **Next action** (Vol-band chooser) → trial.res → SHELXL / Olex2
 ```
 
