@@ -138,7 +138,7 @@ Full table and flags: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 ## 3. What this project is (and is not)
 
 ### It is
-- An **open, modular** implementation of classical phasing (charge flipping, HIO, RAAR, DiffMap, direct methods, Patterson)
+- An **open, modular** implementation of classical phasing (charge flipping, HIO, RAAR, DiffMap, direct methods) plus a Patterson map/peak helper
 - A **scientist CLI** (`gps-solve`) with free figures of merit and strict success metrics
 - A **hybrid research stack**: AI-PhaSeed, GraphPhaseNet prior, partial-φ API, Wilson domain matching
 - **Head-to-head** harnesses vs academic **SHELXS** (and optional SHELXD/E if you install them)
@@ -193,7 +193,8 @@ Pedagogy: [Cowtan ELS notes](docs/cowtan_phase_problem_notes.md) · [Phase probl
 
 | Family | Examples | Modules |
 |--------|----------|---------|
-| Classical ab initio | Charge flipping, HIO, DM, Patterson | `solvers/charge_flipping.py`, `hio.py`, `direct_methods.py`, `patterson.py` |
+| Classical ab initio | Charge flipping, HIO, DM | `solvers/charge_flipping.py`, `hio.py`, `direct_methods.py` |
+| Patterson helper | Map + peaks (not general phases) | `solvers/patterson.py` |
 | Projections | RAAR, DiffMap, ER | `solvers/iterative_retrieval.py` |
 | Ranking / polish | Free FOM, multistart ensemble, conditional hybrid | `free_fom.py`, `ensemble.py`, `conditional_hybrid.py` |
 | Hybrids | AI-PhaSeed, partial-φ, graph prior | `ai_phaseed.py`, `partial_seed.py`, `models/strong_prior.py` |
@@ -333,8 +334,8 @@ gps-download-cod          # helper for COD samples
 
 ```bash
 pytest -q
-python -m build && python -m twine check dist/grok_phase_solver-0.3.0*
-# PyPI (needs API token): python -m twine upload dist/grok_phase_solver-0.3.0*
+python -m build && python -m twine check dist/grok_phase_solver-0.13.4*
+# PyPI (needs API token): python -m twine upload dist/grok_phase_solver-0.13.4*
 ```
 
 PyPI upload is optional (`twine upload dist/*` with your API token). GitHub source install is fully supported.

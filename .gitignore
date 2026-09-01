@@ -25,6 +25,11 @@ data/synthetic/*
 # Keep COD samples under version if small; ignore huge extras
 data/processed/*
 !data/processed/.gitkeep
+# Scoreboards and reports are committed; keep them trackable
+!data/processed/*.md
+!data/processed/*.json
+!data/processed/*.npz
+!data/processed/*.log
 # Junk / incomplete COD pulls (no HKL used in scoreboards)
 data/raw/cod/1500001.cif
 data/raw/cod/2000000.cif

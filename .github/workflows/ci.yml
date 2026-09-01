@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          # Part of the suite (PhAI amplitude packing) needs torch, which lives
+          # in the optional [ml] extra. Pull the CPU-only build first so the job
+          # does not download the multi-GB CUDA wheels it would never use.
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -e ".[dev,ml]"
+      - name: Run tests
+        run: pytest -q --tb=short

@@ -117,7 +117,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Systematic hybrid benchmark JSON output
 - [x] Diagnostic plots script (`scripts/plot_diagnostics.py`)
 - [x] arXiv preprint skeleton (`docs/arxiv_skeleton.md`)
-- [x] GitHub Actions CI (pytest)
+- [x] GitHub Actions CI (pytest) — workflow now lives in `.github/workflows/ci.yml`
 - [x] Math failure documentation
 - [x] Head-to-head harness vs SHELXD/SHELXS (runners + dual_space; binaries external)
 - [x] PyMOL / Coot map handoff (`density.map` + `open_in_pymol.pml`)

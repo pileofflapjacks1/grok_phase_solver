@@ -111,6 +111,7 @@ gps-solve \
 | `strong_prior_phaseed` | GraphPhaseNet prior + PhaSeed (v5 features when trained) |
 | Predicted model seed | `--predicted-model model.cif` → partial_phaseed (AF/OpenFold3/Boltz) |
 | `raar` / `recycle` / `hio` / `direct_methods` | Projection / educational DM |
+| Patterson map / peaks | **Not** a general phase solver. Map + peak helper (`solvers/patterson.py`); `--patterson-ha` for HA search |
 
 Examples:
 
