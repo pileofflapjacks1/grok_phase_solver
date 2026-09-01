@@ -28,6 +28,9 @@ def test_auto_easy_is_ensemble():
 def test_auto_hard_not_ensemble():
     m, r = resolve_method("auto", "P1", data_dmin=1.8, n_refl=150)
     assert m != "ensemble"
+    assert m == "charge_flipping"
+    assert m not in ("strong_prior_phaseed", "hard_p1_phaseed")
+    assert "partial_phaseed" in r
 
 
 def test_partial_seed_demo_files_exist():

@@ -54,26 +54,26 @@ def workflow_decision_tree_md() -> str:
                     │  φ / fragment / HA   │
                     └──────────┬──────────┘
                          yes   │   no
-              ┌────────────────┴────────────────┐
+              ┌───────────────┴───────────────┐
               ▼                                 ▼
      partial_phaseed                    Resolution good?
      seed source:                         (d ≲ 1.1–1.2 Å)
        --phase-seed-csv                  yes╱        ╲no
        --phase-seed-res                   ▼          ▼
        --seed-peaks-csv               ensemble     hard path:
-       --native + --derivative        (auto)     strong_prior /
-       gps-make-seed …                           CF / shelxs
+       --native + --derivative        (auto)     CF last-resort;
+       gps-make-seed …                           prefer partial_phaseed
               │                                       │
-              └───────────────────┬───────────────────┘
+              └──────────────────┬───────────────────┘
                                   ▼
                            Inspect free FOM,
                            seed quality section,
                            density_slice, peaks
                                   │
-                    ┌─────────────┴─────────────┐
+                    ┌────────────┴─────────────┐
                     │ map ugly / unsolved?       │
                     │ enlarge seed or SHELXE     │
-                    └─────────────┬─────────────┘
+                    └────────────┬─────────────┘
                                   ▼
                            trial.res → SHELXL
 ```
@@ -82,7 +82,7 @@ def workflow_decision_tree_md() -> str:
 |-----------|---------|
 | Default | `gps-solve --hkl … --ins … --method auto` |
 | Easy / high-res | `auto` → **ensemble** |
-| Hard, pure ab initio | `auto` → prior/CF; expect struggle |
+| Hard, pure ab initio | `auto` → CF last-resort (~0% strict); prefer `partial_phaseed` + seed |
 | Weak auto, no fragment | `--retry-with-peaks` → `retry_peaks/` |
 | Hard + known φ | `--method partial_phaseed --phase-seed-csv known.csv` |
 | Hard + SHELXS fragment | `--phase-seed-res model.res` (method partial or auto) |
