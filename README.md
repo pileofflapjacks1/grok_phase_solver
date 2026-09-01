@@ -115,7 +115,7 @@ Have partial info (φ / fragment / HA)?
             | --native-hkl + --derivative-hkl | gps-make-seed …
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → --method auto   (→ ensemble)
-            NO  → --method auto   (→ prior/CF; may fail — get partial φ or try shelxs)
+            NO  → --method auto   (→ last-resort CF; not claimed solved — get partial φ)
 Finish → report.md Next action (Vol-band) → trial.res → SHELXL / Olex2
 Weak auto + no fragment yet → --retry-with-peaks  (writes retry_peaks/)
 ```
@@ -186,8 +186,8 @@ Pedagogy: [Cowtan ELS notes](docs/cowtan_phase_problem_notes.md) · [Phase probl
 ### What `auto` does
 1. **Easy / high-res** ($d_{\min} \le 1.15\,\text{Å}$) → **ensemble** (CF+RAAR multistart, free-FOM pick)  
 2. **P2₁/c + PhAI weights** → AI-PhaSeed  
-3. **Harder res** → GraphPhaseNet / hard-P1 prior if available, else charge flipping  
-4. Partial phases are **never auto-detected** — pass `--phase-seed-csv` yourself  
+3. **Harder res / sparse** → last-resort charge flipping (GraphPhaseNet is **not** auto; ~0% strict success). Use `partial_phaseed` + a seed.  
+4. Partial phases are **never auto-detected** unless you pass a seed source (`--phase-seed-csv` / `.res` / `--predicted-model` / HA) — then auto upgrades to `partial_phaseed`  
 
 ### Core algorithms (in-repo)
 
