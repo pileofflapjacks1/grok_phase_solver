@@ -46,7 +46,7 @@ WIZARD_SCENARIOS = {
     "auto": {
         "label": "Not sure (auto)",
         "method": "auto",
-        "help": "Easy/high-res → ensemble; hard → prior/CF. Seeds force partial_phaseed.",
+        "help": "Easy/high-res → ensemble; P21/c + PhAI weights → AI-PhaSeed; else last-resort CF (not GraphPhaseNet). Seeds force partial_phaseed.",
         "n_iter": 80,
         "n_starts": 2,
     },

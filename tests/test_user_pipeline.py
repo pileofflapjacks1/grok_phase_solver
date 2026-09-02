@@ -66,7 +66,6 @@ def test_solve_and_export(tmp_path: Path):
     assert "density.map" in names
     assert "open_in_pymol.pml" in names
     assert "peaks.csv" in names
-    # phases.csv has header + data
     lines = (tmp_path / "phases.csv").read_text().strip().splitlines()
     assert len(lines) == 1 + len(result.hkl)
 
@@ -88,32 +87,46 @@ def test_solve_with_explicit_cell(tmp_path: Path):
 
 
 def test_resolve_method_auto_policy():
-    # Easy / high-res → ensemble (SHELXS H2H policy)
-    m_easy, reason_easy = resolve_method("auto", "P1", data_dmin=0.9, n_refl=500)
+    m_easy, reason_easy = resolve_method("auto", "P1", data_dmin=1.0, n_refl=100)
     assert m_easy == "ensemble"
     assert "ensemble" in reason_easy.lower() or "easy" in reason_easy.lower()
 
-    m, reason = resolve_method("auto", "P 1 21/c 1", data_dmin=0.9, n_refl=500)
-    assert m != "auto"
-    assert m in (
-        "ensemble", "phai_phaseed", "phai+cf_cond", "charge_flipping",
-        "hard_p1_phaseed", "strong_prior_phaseed",
-    )
-    # Hard / very low-res → prior or CF (not ensemble-first)
-    m_hard, reason_hard = resolve_method("auto", "P1", data_dmin=1.7, n_refl=200)
-    assert m_hard in (
-        "strong_prior_phaseed", "hard_p1_phaseed", "charge_flipping",
-    )
+    m_hard, reason_hard = resolve_method("auto", "P1", data_dmin=1.7, n_refl=80)
+    assert m_hard == "charge_flipping"
+    assert m_hard not in ("strong_prior_phaseed", "hard_p1_phaseed")
     r = reason_hard.lower()
-    assert (
-        "hard" in r
-        or "prior" in r
-        or "cf" in r
-        or "low-res" in r
-        or "sparse" in r
-        or "graphphasenet" in r
-        or "partial" in r
-    )
+    assert "partial_phaseed" in r
+    assert "0%" in reason_hard or "not claimed" in r
+
+    m_sp, r_sp = resolve_method("strong_prior_phaseed", "P1", 1.7, 80)
+    assert m_sp == "strong_prior_phaseed"
+    assert r_sp == "user-selected"
+    m_hp, _ = resolve_method("hard_p1_phaseed", "P1", 1.7, 80)
+    assert m_hp == "hard_p1_phaseed"
+
+
+def test_auto_never_selects_graph_or_hard_p1():
+    cases = [
+        ("P1", 1.7, 80),
+        ("P1", 1.7, 200),
+        ("P1", 1.5, 50),
+        ("", 1.8, 90),
+        ("P-1", 1.6, 100),
+        ("P 1 21/c 1", 1.7, 80),
+        ("P1", 1.35, 50),
+    ]
+    for sg, dmin, n in cases:
+        m, _ = resolve_method("auto", sg, data_dmin=dmin, n_refl=n)
+        assert m not in ("strong_prior_phaseed", "hard_p1_phaseed"), (sg, dmin, n, m)
+
+
+def test_auto_p21c_phai(monkeypatch):
+    import grok_phase_solver.pipeline.auto_policy as auto_policy
+
+    monkeypatch.setattr(auto_policy, "_phai_ok", lambda: True)
+    m, reason = resolve_method("auto", "P 1 21/c 1", data_dmin=1.20, n_refl=200)
+    assert m == "phai_phaseed"
+    assert "phai" in reason.lower() or "p21" in reason.lower()
 
 
 def test_export_writes_trial_res(tmp_path: Path):
@@ -130,4 +143,4 @@ def test_export_writes_trial_res(tmp_path: Path):
     assert "TITL" in text
     assert "HKLF 4" in text
     assert "free_fom" in write_shelxl_res(result).lower() or "REM" in text
-    assert "free_fom_composite" in result.diagnostics or True  # may be present
+    assert "free_fom_composite" in result.diagnostics or True
