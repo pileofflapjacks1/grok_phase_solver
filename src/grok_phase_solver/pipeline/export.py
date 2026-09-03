@@ -449,11 +449,15 @@ def write_shelxl_res(
     lattice/symm passthrough). Identity is omitted (SHELX convention).
     """
     from grok_phase_solver.physics.shelx_cards import format_shelx_latt_symm_lines
+    from grok_phase_solver.physics.unique_asu import unique_peaks
 
     a, b, c, al, be, ga = result.cell
     sg = result.space_group_hm or "P1"
     ins_latt = lattice if lattice is not None else getattr(result, "shelx_lattice", None)
     ins_symm = list(symm) if symm is not None else getattr(result, "shelx_symm", None)
+    peaks, umeta = unique_peaks(
+        result.peaks, result.cell, sg, lattice=ins_latt, symm=ins_symm
+    )
     lines = [
         f"TITL gps-solve trial ({result.method})",
         f"CELL 0.71073 {a:.4f} {b:.4f} {c:.4f} {al:.2f} {be:.2f} {ga:.2f}",
@@ -466,12 +470,13 @@ def write_shelxl_res(
             f"UNIT 1 1 1 1",
             f"FVAR 1.0",
             f"REM free_fom_composite={result.diagnostics.get('free_fom_composite', 'n/a')}",
-            f"REM method={result.method} n_peaks={len(result.peaks)}",
+            f"REM method={result.method} n_peaks={len(peaks)}",
+            f"REM unique_asu n_in={umeta.get('n_in')} n_out={umeta.get('n_out')} n_ops={umeta.get('n_ops')}",
             f"REM space_group_hint={sg}",
         ]
     )
     # Element index for SFAC C = 1
-    for i, p in enumerate(result.peaks):
+    for i, p in enumerate(peaks):
         # Q peaks as carbon placeholders (sfac 1); Uiso rough
         label = f"Q{i+1}" if element.upper() == "Q" else f"{element}{i+1}"
         u = max(0.02, 0.08 / max(p.height_sigma / 3.0, 0.5))
