@@ -270,8 +270,12 @@ def typed_atoms_to_shelxl_res(
     space_group: str = "P1",
     wavelength: float = 0.71073,
     free_fom: Optional[float] = None,
+    lattice: Optional[int] = None,
+    symm: Optional[Sequence[str]] = None,
 ) -> str:
     """Write SHELXL-style .res with real SFAC elements from typing."""
+    from grok_phase_solver.physics.shelx_cards import format_shelx_latt_symm_lines
+
     a, b, c, al, be, ga = [float(x) for x in cell]
     # Unique elements for SFAC (H last convention-ish: C H N O then others)
     order_pref = ["C", "H", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
@@ -290,14 +294,18 @@ def typed_atoms_to_shelxl_res(
         f"TITL gps-solve trial ({method})",
         f"CELL {wavelength:.5f} {a:.4f} {b:.4f} {c:.4f} {al:.2f} {be:.2f} {ga:.2f}",
         "ZERR 1 0.001 0.001 0.001 0.01 0.01 0.01",
-        "LATT -1",
-        f"SFAC {' '.join(els_present)}",
-        f"UNIT {unit}",
-        "FVAR 1.0",
-        f"REM free_fom_composite={free_fom if free_fom is not None else 'n/a'}",
-        f"REM method={method} n_atoms={len(typed)} crystalx_typing=1",
-        f"REM space_group_hint={space_group}",
     ]
+    lines.extend(format_shelx_latt_symm_lines(space_group, lattice=lattice, symm=symm))
+    lines.extend(
+        [
+            f"SFAC {' '.join(els_present)}",
+            f"UNIT {unit}",
+            "FVAR 1.0",
+            f"REM free_fom_composite={free_fom if free_fom is not None else 'n/a'}",
+            f"REM method={method} n_atoms={len(typed)} crystalx_typing=1",
+            f"REM space_group_hint={space_group}",
+        ]
+    )
     for t in typed:
         if t.element == "H":
             continue  # write heavies first
