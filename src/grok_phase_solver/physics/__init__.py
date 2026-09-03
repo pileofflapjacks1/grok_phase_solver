@@ -15,6 +15,7 @@ from .symmetry import (
     merge_symmetry_equivalents,
 )
 from .shelx_cards import format_shelx_latt_symm_lines, shelx_latt_symm
+from .unique_asu import unique_asu_fracs, unique_peaks, unique_typed_atoms
 from .device import resolve_device, list_devices, get_device_info
 
 __all__ = [
@@ -39,6 +40,9 @@ __all__ = [
     "merge_symmetry_equivalents",
     "shelx_latt_symm",
     "format_shelx_latt_symm_lines",
+    "unique_asu_fracs",
+    "unique_peaks",
+    "unique_typed_atoms",
     "resolve_device",
     "list_devices",
     "get_device_info",
