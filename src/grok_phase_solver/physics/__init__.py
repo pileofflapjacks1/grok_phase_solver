@@ -14,6 +14,7 @@ from .symmetry import (
     is_centrosymmetric,
     merge_symmetry_equivalents,
 )
+from .shelx_cards import format_shelx_latt_symm_lines, shelx_latt_symm
 from .device import resolve_device, list_devices, get_device_info
 
 __all__ = [
@@ -36,6 +37,8 @@ __all__ = [
     "space_group_diagnostics",
     "is_centrosymmetric",
     "merge_symmetry_equivalents",
+    "shelx_latt_symm",
+    "format_shelx_latt_symm_lines",
     "resolve_device",
     "list_devices",
     "get_device_info",
