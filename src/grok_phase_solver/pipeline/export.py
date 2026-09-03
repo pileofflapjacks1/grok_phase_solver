@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Sequence
 
 import numpy as np
 
@@ -120,6 +120,8 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
                     method=f"{result.method}+crystalx",
                     space_group=result.space_group_hm or "P1",
                     free_fom=result.diagnostics.get("free_fom_composite"),
+                    lattice=getattr(result, "shelx_lattice", None),
+                    symm=getattr(result, "shelx_symm", None),
                 )
             )
             # typed atom list for diagnostics
@@ -230,10 +232,8 @@ def _render_report(result: "SolveResult") -> str:
         else:
             lines.append(f"- **{k}:** {v}")
 
-    # Seed quality: Lane B partial-φ metrics and/or Carrozzini Class 0/1 predictor
     sq = d.get("seed_quality")
     if isinstance(sq, dict):
-        # Carrozzini-style predictor (keys: predicted_class, success_probability, …)
         if "predicted_class" in sq:
             feats = sq.get("features") or {}
             lines.extend(
@@ -268,7 +268,6 @@ def _render_report(result: "SolveResult") -> str:
                         "",
                     ]
                 )
-        # Lane B partial-seed size metrics
         if "frac_strong_seeded" in sq or "size_meets_bar" in sq:
             lines.extend(
                 [
@@ -306,7 +305,6 @@ def _render_report(result: "SolveResult") -> str:
                 ]
             )
 
-    # Space group + device + uncertainty (v0.5)
     sg = d.get("space_group")
     if isinstance(sg, dict):
         lines.extend(
@@ -435,28 +433,43 @@ def _render_report(result: "SolveResult") -> str:
     return "\n".join(lines)
 
 
-def write_shelxl_res(result: "SolveResult", element: str = "C") -> str:
+def write_shelxl_res(
+    result: "SolveResult",
+    element: str = "C",
+    *,
+    lattice: Optional[int] = None,
+    symm: Optional[Sequence[str]] = None,
+) -> str:
     """
     Build a minimal SHELXL-style .res trial model from density peaks.
 
     Peaks are written as Q labels (or ``element`` if specified) so Olex2/SHELXL
     can load them as a starting model. Not a refined structure.
+    LATT / SYMM come from ``result.space_group_hm`` (or an explicit .ins
+    lattice/symm passthrough). Identity is omitted (SHELX convention).
     """
+    from grok_phase_solver.physics.shelx_cards import format_shelx_latt_symm_lines
+
     a, b, c, al, be, ga = result.cell
     sg = result.space_group_hm or "P1"
-    # LATT / SYMM omitted for simplicity — user should paste cell into real .ins
+    ins_latt = lattice if lattice is not None else getattr(result, "shelx_lattice", None)
+    ins_symm = list(symm) if symm is not None else getattr(result, "shelx_symm", None)
     lines = [
         f"TITL gps-solve trial ({result.method})",
         f"CELL 0.71073 {a:.4f} {b:.4f} {c:.4f} {al:.2f} {be:.2f} {ga:.2f}",
         f"ZERR 1 0.001 0.001 0.001 0.01 0.01 0.01",
-        f"LATT -1",
-        f"SFAC C H N O",
-        f"UNIT 1 1 1 1",
-        f"FVAR 1.0",
-        f"REM free_fom_composite={result.diagnostics.get('free_fom_composite', 'n/a')}",
-        f"REM method={result.method} n_peaks={len(result.peaks)}",
-        f"REM space_group_hint={sg}",
     ]
+    lines.extend(format_shelx_latt_symm_lines(sg, lattice=ins_latt, symm=ins_symm))
+    lines.extend(
+        [
+            f"SFAC C H N O",
+            f"UNIT 1 1 1 1",
+            f"FVAR 1.0",
+            f"REM free_fom_composite={result.diagnostics.get('free_fom_composite', 'n/a')}",
+            f"REM method={result.method} n_peaks={len(result.peaks)}",
+            f"REM space_group_hint={sg}",
+        ]
+    )
     # Element index for SFAC C = 1
     for i, p in enumerate(result.peaks):
         # Q peaks as carbon placeholders (sfac 1); Uiso rough
