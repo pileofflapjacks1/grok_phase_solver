@@ -99,7 +99,7 @@ python scripts/run_cod_hard_path_validation.py
 # xattr -dr com.apple.quarantine ShelX && chmod +x ShelX/shelxs
 # python scripts/run_shelxs_h2h.py --quick
 
-# Experimental COD Fobs + Fcalc control scoreboard (Lane C)
+# Experimental COD Fobs + Fcalc scoreboard (Lane C)
 python scripts/run_experimental_scoreboard.py --quick
 
 # COD Vol-band panel (C25; needs local CIF+HKL under data/raw/cod/)
