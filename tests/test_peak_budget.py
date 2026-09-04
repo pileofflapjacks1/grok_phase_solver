@@ -14,7 +14,7 @@ from grok_phase_solver.physics.unique_asu import (
 from grok_phase_solver.pipeline.export import write_shelxl_res
 from grok_phase_solver.pipeline.peaks import DensityPeak
 
-_CELL = np.array([8.920, 16.282, 18.504, 90.0, 90.0, 90.0])
+_CELL = np.array([40.0, 40.0, 40.0, 90.0, 90.0, 90.0])  # large: no accidental ≤1.8 Å contacts
 _BRAGG = (
     "SYMM 0.5-X, -Y, 0.5+Z",
     "SYMM -X, 0.5+Y, 0.5-Z",
