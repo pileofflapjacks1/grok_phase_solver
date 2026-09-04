@@ -171,6 +171,41 @@ def unique_asu_fracs(
     return out, idx, meta
 
 
+
+# Default non-H peak budget for COD 2200001 (C12H18N2O3 × Z′=2).
+DEFAULT_N_NON_H_BUDGET = 34
+
+
+def budget_peaks(
+    peaks: Sequence,
+    n_non_h_budget: int = DEFAULT_N_NON_H_BUDGET,
+) -> Tuple[list, dict]:
+    """
+    Keep the strongest ``n_non_h_budget`` peaks by ``height_sigma``.
+
+    DensityPeak lists have no hydrogens; CrystalX H placement is skipped for
+    the trial.res path that uses this budget. Call after ``unique_peaks``.
+    """
+    peaks = list(peaks)
+    n_in = len(peaks)
+    n_keep = max(0, int(n_non_h_budget))
+    meta = {
+        "n_in": n_in,
+        "n_out": min(n_in, n_keep),
+        "n_budget": n_keep,
+        "budgeted": n_in > n_keep,
+    }
+    if n_in == 0 or n_in <= n_keep:
+        return peaks, meta
+    order = sorted(
+        range(n_in),
+        key=lambda i: -float(getattr(peaks[i], "height_sigma", 0.0) or 0.0),
+    )
+    kept = [peaks[i] for i in order[:n_keep]]
+    meta["n_out"] = len(kept)
+    return kept, meta
+
+
 def unique_typed_atoms(
     typed: Sequence,
     cell: np.ndarray,
