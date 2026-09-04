@@ -80,7 +80,7 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         fig, ax = plt.subplots(figsize=(5, 4))
         im = ax.imshow(rho[:, :, z].T, origin="lower", cmap="magma")
         ax.set_title(f"Density slice z={z} ({result.method})")
-        fig.colorbar(im, ax=ax, fraction=0.046, label="ρ")
+        fig.colorbar(im, ax=ax, fraction=0.046, label="\u03c1")
         fig.tight_layout()
         png = out_dir / "density_slice.png"
         fig.savefig(png, dpi=140)
@@ -107,11 +107,33 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         xyz_path.write_text("\n".join(peaks_to_xyz_lines(result.peaks, result.cell)) + "\n")
         written.append(xyz_path)
 
-        # SHELXL-style trial .res — fold + peak budget, no CrystalX typing.
+        # SHELXL-style trial .res \u2014 fold + peak budget + connectivity/ASU.
         # Mark/Bragg: Q (or C) placeholders only; SFAC C H N O; keep LATT/SYMM.
+        # Fail closed on infinite polymer: GATE printed once by writer; no fake trial.res.
+        from grok_phase_solver.physics.connectivity_asu import (
+            ConnectivityAsuError,
+            format_trial_res_gate,
+        )
+
         res_path = out_dir / "trial.res"
-        res_path.write_text(write_shelxl_res(result, element="Q"))
-        written.append(res_path)
+        try:
+            res_text = write_shelxl_res(result, element="Q")
+            res_path.write_text(res_text)
+            written.append(res_path)
+            for line in res_text.splitlines():
+                if line.startswith("REM gate "):
+                    result.diagnostics["trial_res_gate"] = (
+                        "GATE " + line[len("REM gate ") :]
+                    )
+                    break
+        except ConnectivityAsuError as exc:
+            # Writer already printed the single GATE fail-closed line.
+            sg = result.space_group_hm or "P1"
+            result.diagnostics["trial_res_gate"] = format_trial_res_gate(
+                sg=sg, non_h=0, finite=False, pass_=False
+            )
+            result.warnings.append(str(exc))
+            # do NOT write fake trial.res
 
     try:
         from grok_phase_solver.pipeline.map_export import write_map_handoff
