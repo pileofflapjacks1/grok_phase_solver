@@ -22,6 +22,12 @@ from .unique_asu import (
     unique_peaks,
     unique_typed_atoms,
 )
+from .connectivity_asu import (
+    COVALENT_C_C_CUTOFF_A,
+    ConnectivityAsuError,
+    format_trial_res_gate,
+    pack_discrete_asu,
+)
 from .device import resolve_device, list_devices, get_device_info
 
 __all__ = [
@@ -51,6 +57,10 @@ __all__ = [
     "unique_asu_fracs",
     "unique_peaks",
     "unique_typed_atoms",
+    "COVALENT_C_C_CUTOFF_A",
+    "ConnectivityAsuError",
+    "format_trial_res_gate",
+    "pack_discrete_asu",
     "resolve_device",
     "list_devices",
     "get_device_info",
