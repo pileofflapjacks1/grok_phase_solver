@@ -2,8 +2,8 @@
 Simple peak picking on electron density for a first atom list.
 
 Not a SHELXS peak-search replacement: fractional coords of strongest
-positive density maxima, with basic NMS. Useful as a starting model for
-Olex2/SHELXL refinement after phasing.
+positive density maxima, with basic NMS. Exported as Q peaks for Olex2
+hand-build / peak picking — not a SHELXL starting model.
 """
 
 from __future__ import annotations
