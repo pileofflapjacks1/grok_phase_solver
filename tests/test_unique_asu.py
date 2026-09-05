@@ -134,8 +134,10 @@ def test_write_shelxl_res_folds_peaks():
     for line in _BRAGG:
         assert line in res
     assert len(_atom_lines(res)) == 1
-    assert "SFAC C H N O" in res
-    assert "UNIT 1 1 1 1" in res
+    assert "SFAC C" in res
+    assert "SFAC C H N O" not in res
+    assert "UNIT 1" in res
+    assert "hand-build peaks" in res
 
 
 def test_space_group_ops_p212121_count():

@@ -113,7 +113,13 @@ def test_write_shelxl_res_budgets_after_fold_p212121():
     atoms = _atom_lines(res)
     assert len(atoms) == 34
     assert "REM peak_budget n=34" in res
-    assert "SFAC C H N O" in res
+    assert "REM hand_build_peaks n=34" in res
+    assert "hand-build peaks" in res
+    assert "not a SHELXL start" in res
+    assert "SFAC C" in res
+    assert "SFAC C H N O" not in res
+    assert "UNIT 1" in res
+    assert "UNIT 1 1 1 1" not in res
     # Q labels only — no Br/Cl/S (or H) element typing
     for line in atoms:
         lab = line.split()[0]
