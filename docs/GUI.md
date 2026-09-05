@@ -22,7 +22,7 @@ Opens **http://localhost:8501** by default.
 5. **Packaged demos** — easy ensemble; hard + 30% φ; hard + fragment  
 6. **Inspect** free FOM, density, peaks, report, **quality hints**  
 7. **Retry with peaks as seed** if the first map looks poor  
-8. **SHELXL handoff** — copy-paste shell snippet + download `trial.res`  
+8. **Olex2 hand-build** — download `trial.res` Q peaks (not a SHELXL start) + optional refine snippet  
 9. **Downloads** — individual files or zip; last work dir remembered in the sidebar  
 
 ## Architecture
