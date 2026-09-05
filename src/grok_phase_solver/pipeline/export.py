@@ -107,8 +107,8 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
         xyz_path.write_text("\n".join(peaks_to_xyz_lines(result.peaks, result.cell)) + "\n")
         written.append(xyz_path)
 
-        # SHELXL-style trial .res — fold + peak budget, no CrystalX typing.
-        # Mark/Bragg: Q (or C) placeholders only; SFAC C H N O; keep LATT/SYMM.
+        # Q-peaks .res for Olex2 hand-build — fold + peak budget, no CrystalX.
+        # Mark/Bragg: Q placeholders; SFAC C only; LATT/SYMM; always write Q list.
         res_path = out_dir / "trial.res"
         res_path.write_text(write_shelxl_res(result, element="Q"))
         written.append(res_path)
@@ -166,7 +166,7 @@ def write_shelxl_res(
     symm: Optional[Sequence[str]] = None,
     n_non_h_budget: int = 34,
 ) -> str:
-    """Fold unique-ASU, budget top non-H peaks, write Q with SFAC C H N O."""
+    """Fold unique-ASU, budget top non-H peaks, write Q for Olex2 hand-build."""
     from grok_phase_solver.pipeline.peak_budget_res import write_shelxl_res_budgeted
 
     return write_shelxl_res_budgeted(
