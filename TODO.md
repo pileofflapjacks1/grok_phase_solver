@@ -133,7 +133,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 - [x] Loaders: SHELX hkl/ins, CIF HKL, MTZ
 - [x] Exports: phases, density, peaks, report.md
 - [x] User guide + demo (`docs/USER_GUIDE.md`, `examples/demo_solve/`)
-- [x] SHELXL-style `.res` trial model export (`trial.res`)
+- [x] Q-peaks `.res` for Olex2 hand-build / peak picking (`trial.res`; not a SHELXL start)
 - [x] **Lane B partial-φ UX:** `--phase-seed-res` / `--seed-peaks-csv` /
       `--seed-atoms-csv` / HA pair / `--patterson-ha`; `gps-make-seed`;
       seed-quality section in `report.md` (`solvers/seed_import.py`)
@@ -240,7 +240,7 @@ AI-driven general solver for the X-ray crystallography phase problem.
 4c. [x] AI-PhaSeed (PhAI seed + phase extension + free-FOM polish)  
 4d. [x] Domain-matched hard-P1 prior (OI training + free-FOM origin search)  
 5. [x] Improve auto method + wire AI-PhaSeed / ensemble into `gps-solve`  
-6. [x] Peak → SHELXL `.res` fragment export (`trial.res`)  
+6. [x] Peak → Q-peaks `.res` for Olex2 hand-build (`trial.res`)  
 7. [x] Experimental HKL scoreboard (COD 2017775 + controls)  
 8. [x] External validation vs SHELXD — runner + dual_space baseline + `run_shelxd_h2h.py` (binary optional academic install)  
 8b. [x] SHELXS head-to-head — `shelxs_runner.py` + `run_shelxs_h2h.py` (detect `ShelX/shelxs`, gitignore binaries)  

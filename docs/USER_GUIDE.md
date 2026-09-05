@@ -215,7 +215,7 @@ Place binaries in `ShelX/` (gitignored — do not push):
 # Solve with SHELXS, density-mod with SHELXE
 gps-solve --hkl data.hkl --ins data.ins --method shelxs+shelxe --out out_sx
 
-# Refine trial model with SHELXL (outside gps-solve)
+# After Olex2 hand-build from Q peaks, refine with SHELXL (outside gps-solve)
 cp out_sx/trial.res work.ins
 cp data.hkl work.hkl
 ShelX/shelxl work
@@ -238,7 +238,7 @@ macOS: `xattr -dr com.apple.quarantine ShelX && chmod +x ShelX/*`
 | **`open_in_coot.sh`** | `sh open_in_coot.sh` |
 | **`density_slice.png`** | Quick visual check |
 | **`peaks.csv` / `peaks.xyz` / `peaks.pdb`** | Strongest density maxima (trial atoms) |
-| **`trial.res`** | SHELXL-style trial model (Q/C peaks) for Olex2 |
+| **`trial.res`** | Q peaks for hand build / peak picking in Olex2 (not a SHELXL start) |
 | **`solve_summary.json`** | Machine-readable log |
 
 ---
@@ -255,9 +255,9 @@ This tool **phases** data and suggests **density peaks**. It does **not** replac
 
 1. Open `density_slice.png` and `peaks.csv`.  
 2. **3D map:** from the `--out` folder, `pymol open_in_pymol.pml` or `sh open_in_coot.sh`.  
-3. Load **`trial.res`** in Olex2 / ShelXle (or `peaks.pdb` in Coot/PyMOL).  
-4. Assign C/N/O/… from chemistry and residual maps.  
-5. Refine against your intensities with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
+3. Load **`trial.res`** in Olex2 for hand-build / peak picking (or `peaks.pdb` in Coot/PyMOL).  
+4. Assign C/N/O/… from chemistry and residual maps — Q list is not a refinable start.  
+5. After a real molecule is built, refine with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
 
 If the map is uninterpretable: check cell/SG, try `--method ensemble` or `phai_phaseed`, improve resolution/completeness, add a predicted-model or fragment seed (`--predicted-model`), or use classical SHELXD / experimental phasing. Report.md includes free-FOM bootstrap and optional multistart phase uncertainty (v0.5).
 
