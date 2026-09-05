@@ -11,6 +11,7 @@ mods = [
     "tests.test_unique_asu",
     "tests.test_trial_res_symm",
     "tests.test_peak_budget",
+    "tests.test_q_peaks_handbuild",
 ]
 failed = 0
 passed = 0
