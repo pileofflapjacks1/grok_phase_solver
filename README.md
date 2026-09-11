@@ -3,7 +3,7 @@
 **Open physics / AI phasing assistant for X-ray crystallography**  
 Version **0.13.4** · Python ≥ 3.10 · MIT
 
-Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and a SHELXL-ready trial model, then refine elsewhere (Olex2 / SHELXL).
+Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and Q peaks for hand build in Olex2 (not a SHELXL start).
 
 $$
 \rho(\mathbf{r})
@@ -88,7 +88,7 @@ gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
 | `density_slice.png` | Quick map check |
 | **`density.map`** | CCP4 map — `pymol open_in_pymol.pml` or `sh open_in_coot.sh` |
 | `peaks.csv` | Strong density maxima (trial atoms) |
-| **`trial.res`** | Load in **Olex2 / ShelXle → assign elements → SHELXL** |
+| **`trial.res`** | Q peaks for **Olex2 hand-build** / peak picking (not a SHELXL start) |
 | `phases.csv` | $h,k,l,\|F\|$, phase (°) |
 
 **This tool phases.** It does **not** replace least-squares refinement. Always check chemical sense and refinement R-factors.
@@ -209,7 +209,7 @@ xattr -dr com.apple.quarantine ShelX   # macOS if needed
 chmod +x ShelX/shelxs ShelX/shelxe ShelX/shelxl
 
 gps-solve --hkl data.hkl --ins data.ins --method shelxs+shelxe --out out_sx
-# Refine: cp out_sx/trial.res work.ins && cp data.hkl work.hkl && ShelX/shelxl work
+# After hand-build in Olex2: cp out_sx/trial.res work.ins && cp data.hkl work.hkl && ShelX/shelxl work
 ```
 
 Download: [https://shelx.uni-goettingen.de/](https://shelx.uni-goettingen.de/)
