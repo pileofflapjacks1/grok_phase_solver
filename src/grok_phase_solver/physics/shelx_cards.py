@@ -141,7 +141,6 @@ def shelx_latt_symm(
     if compact in ("P-1", "P1-"):
         return 1, []
     if compact == "P212121":
-    if compact == "P212121":
         return -1, list(_P212121_SYMM)
 
     info = parse_space_group(space_group)
