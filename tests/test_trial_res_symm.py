@@ -108,10 +108,11 @@ def test_shelx_latt_symm_p21n_unique_generator():
     for name in ("P 21/n", "P21/n", "P 1 21/n 1"):
         latt, cards = shelx_latt_symm(name)
         assert latt == 1, name
-        assert cards == ["-X+0.5, Y+0.5, -Z+0.5"], (name, cards)
+        assert cards == ["-X+1/2, Y+1/2, -Z+1/2"], (name, cards)
         lines = "\n".join(f"SYMM {c}" for c in cards)
         assert "SYMM -X, -Y, -Z" not in lines
-        assert "X+0.5, -Y+0.5, Z+0.5" not in "".join(cards)
+        assert "0.5" not in "".join(cards)
+        assert "X+1/2, -Y+1/2, Z+1/2" not in "".join(cards)
 
 
 def test_shelx_latt_symm_p21c_unique_generator():
@@ -121,7 +122,7 @@ def test_shelx_latt_symm_p21c_unique_generator():
         return
     latt, cards = shelx_latt_symm("P 21/c")
     assert latt == 1
-    assert cards == ["-X, Y+0.5, -Z+0.5"]
+    assert cards == ["-X, Y+1/2, -Z+1/2"]
 
 
 def test_format_p21n_olex2_header():
@@ -132,5 +133,5 @@ def test_format_p21n_olex2_header():
         return
     lines = format_shelx_latt_symm_lines("P 21/n")
     assert lines[0] == "LATT 1"
-    assert lines[1:] == ["SYMM -X+0.5, Y+0.5, -Z+0.5"]
+    assert lines[1:] == ["SYMM -X+1/2, Y+1/2, -Z+1/2"]
     assert sum(1 for ln in lines if ln.startswith("SYMM")) == 1

@@ -35,9 +35,10 @@ def _triplet_is_inversion(triplet: str) -> bool:
 
 
 def _triplet_to_shelx(triplet: str) -> str:
+    """Keep gemmi fractions (1/2, 1/4, 3/4). Olex2 rejected -X+0.5 on P21/n."""
     pretty = []
     for p in triplet.split(","):
-        p = p.strip().replace("1/2", "0.5").replace("1/4", "0.25").replace("3/4", "0.75")
+        p = p.strip()
         p = p.replace("x", "X").replace("y", "Y").replace("z", "Z")
         pretty.append(p)
     return ", ".join(pretty)
@@ -139,6 +140,7 @@ def shelx_latt_symm(
         return -1, []
     if compact in ("P-1", "P1-"):
         return 1, []
+    if compact == "P212121":
     if compact == "P212121":
         return -1, list(_P212121_SYMM)
 
