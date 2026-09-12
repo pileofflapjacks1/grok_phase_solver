@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from grok_phase_solver.physics.symmetry import (
     gemmi_available,
@@ -29,6 +29,11 @@ def _triplet_is_identity(triplet: str) -> bool:
     return parts == ["x", "y", "z"]
 
 
+def _triplet_is_inversion(triplet: str) -> bool:
+    parts = [p.strip().replace(" ", "").lower().lstrip("+") for p in triplet.split(",")]
+    return parts == ["-x", "-y", "-z"]
+
+
 def _triplet_to_shelx(triplet: str) -> str:
     pretty = []
     for p in triplet.split(","):
@@ -44,6 +49,70 @@ def _latt_code_from_hm(hm: str, is_centro: bool) -> int:
     return code if is_centro else -code
 
 
+def _is_inversion_op(op: Any) -> bool:
+    """True for inversion (origin or shifted). LATT > 0 already implies it."""
+    if hasattr(op, "rot_type"):
+        try:
+            if int(op.rot_type()) == -1:
+                return True
+        except Exception:
+            pass
+    trip = op.triplet() if hasattr(op, "triplet") else str(op)
+    return _triplet_is_inversion(trip)
+
+
+def _op_key(op: Any) -> Tuple[Any, ...]:
+    wrapped = op.wrap() if hasattr(op, "wrap") else op
+    den = int(getattr(wrapped, "DEN", 24))
+    rot = tuple(tuple(int(x) for x in row) for row in wrapped.rot)
+    tran = tuple(int(t) % den for t in wrapped.tran)
+    return (rot, tran)
+
+
+def _primitive_ops(sg: Any) -> List[Any]:
+    """Centering lives in LATT — do not emit those translations as SYMM."""
+    ops = sg.operations()
+    if hasattr(ops, "sym_ops"):
+        return list(ops.sym_ops)
+    return list(ops)
+
+
+def _unique_shelx_generators(sg: Any, lat: int) -> List[str]:
+    """
+    SHELX SYMM cards: omit identity always.
+
+    When LATT > 0, inversion (and its mates) are already implied, so emit
+    one representative per {op, inversion∘op} pair. gemmi order matches
+    the usual SHELXL generator list (P21/n → one 2₁, not the three-op dump).
+    """
+    cards: List[str] = []
+    if lat > 0:
+        import gemmi
+
+        inv = gemmi.Op("-x,-y,-z")
+        seen = set()
+        for op in _primitive_ops(sg):
+            trip = op.triplet() if hasattr(op, "triplet") else str(op)
+            if _triplet_is_identity(trip) or _is_inversion_op(op):
+                continue
+            key = _op_key(op)
+            mate = inv * op
+            mate_key = _op_key(mate)
+            if key in seen or mate_key in seen:
+                continue
+            seen.add(key)
+            seen.add(mate_key)
+            cards.append(_triplet_to_shelx(trip))
+        return cards
+
+    for op in _primitive_ops(sg):
+        trip = op.triplet() if hasattr(op, "triplet") else str(op)
+        if _triplet_is_identity(trip):
+            continue
+        cards.append(_triplet_to_shelx(trip))
+    return cards
+
+
 def shelx_latt_symm(
     space_group: Optional[str] = None,
     *,
@@ -51,12 +120,14 @@ def shelx_latt_symm(
     symm: Optional[Sequence[str]] = None,
 ) -> Tuple[int, List[str]]:
     """
-    SHELX LATT code + non-identity SYMM cards for a trial.res header.
+    SHELX LATT code + unique-generator SYMM cards for a trial.res header.
 
     If ``symm`` is provided (parsed .ins), those cards and ``lattice`` are used
     unchanged. P2₁2₁2₁ always emits Bragg's three 2₁ strings. P1 → LATT −1
     and no SYMM; P−1 → LATT 1 and no SYMM. Other groups use gemmi ops when
-    available; identity is omitted (SHELX convention).
+    available. Identity is omitted. When LATT > 0, inversion and inversion
+    mates are omitted (SHELX convention: LATT already implies them).
+    Centering translations are omitted (they live in the LATT code).
     """
     if symm:
         lat = -1 if lattice is None else int(lattice)
@@ -81,13 +152,7 @@ def shelx_latt_symm(
 
         sg = gemmi.SpaceGroup(normalize_space_group_name(space_group))
         lat = _latt_code_from_hm(hm, bool(sg.is_centrosymmetric()))
-        cards: List[str] = []
-        for op in sg.operations():
-            trip = op.triplet() if hasattr(op, "triplet") else str(op)
-            if _triplet_is_identity(trip):
-                continue
-            cards.append(_triplet_to_shelx(trip))
-        return lat, cards
+        return lat, _unique_shelx_generators(sg, lat)
     except Exception:
         lat = _latt_code_from_hm(hm, info.is_centrosymmetric)
         return lat, []
