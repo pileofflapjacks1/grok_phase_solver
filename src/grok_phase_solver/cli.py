@@ -125,7 +125,9 @@ Outputs (in --out):
   report.md, density.map, open_in_pymol.pml, trial.res, peaks.pdb, density.npz, ...
   retry_peaks/  (if --retry-with-peaks and the first map looks weak)
 
-Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2.
+Next: pymol open_in_pymol.pml  (or coot); File → Open trial.res in Olex2
+  (View → Work → Info). Do not SHELXL the Q list; after a real molecule:
+  cp built.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work.
         """,
     )
     p.add_argument("--hkl", required=True, help="Reflection file (.hkl SHELX, CIF HKL, or .mtz)")

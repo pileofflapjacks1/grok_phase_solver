@@ -84,11 +84,12 @@ gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
 
 | File | Purpose |
 |------|---------|
-| `report.md` | Method used, free FOM, decision hints, SHELXL steps |
+| `report.md` | Method used, free FOM, decision hints, Olex2 hand-build next action |
 | `density_slice.png` | Quick map check |
 | **`density.map`** | CCP4 map — `pymol open_in_pymol.pml` or `sh open_in_coot.sh` |
 | `peaks.csv` | Strong density maxima (trial atoms) |
 | **`trial.res`** | Q peaks for **Olex2 hand-build** / peak picking (not a SHELXL start) |
+| **`olex2_handbuild.md`** | File → Open + **View → Work → Info** (Z / Z′) |
 | `phases.csv` | $h,k,l,\|F\|$, phase (°) |
 
 **This tool phases.** It does **not** replace least-squares refinement. Always check chemical sense and refinement R-factors.
@@ -116,7 +117,7 @@ Have partial info (φ / fragment / HA)?
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → --method auto   (→ ensemble)
             NO  → --method auto   (→ last-resort CF; not claimed solved — get partial φ)
-Finish → report.md Next action (Vol-band) → trial.res → SHELXL / Olex2
+Finish → report.md Next action (Vol-band) → File → Open trial.res in Olex2 (View → Work → Info) → SHELXL after a real molecule
 Weak auto + no fragment yet → --retry-with-peaks  (writes retry_peaks/)
 ```
 
@@ -172,6 +173,7 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 | Research generative / XDXD-style coordinate proposal (not auto) | [math](docs/math/generative_structure.md) |
 | **COD fragment hard path** — fragment_half mapCC ≈/≥ partial_30 on 2016452 / 2100301 | [`cod_hard_path_validation.md`](data/processed/cod_hard_path_validation.md) |
 | **COD Vol-band panel** — 6 COD sets (lt1000 / **1000–3500** / gt3500); mid-band fragment_half mean mapCC **~0.71** vs auto **~0.27** | [`cod_stratified_bench.md`](data/processed/cod_stratified_bench.md) |
+| **COD 2012000 Fobs fragment → Olex2** — working `gps-solve` + File → Open / View → Work → Info trail (Q peaks, not a SHELXL start) | [`cod_midband_fragment_trail.md`](docs/examples/cod_midband_fragment_trail.md) |
 | Melgalvis large-cell + ring scaffolds (Vol ~1000–3500 Å³ curricula) | [math](docs/math/synthetic_melgalvis.md) |
 | Free FOM v2.1 — positivity residual $R_+$; reduces false “solved” gates | [math](docs/math/free_fom.md) |
 | Failure taxonomy A/B/C — hard failures are basin + degeneracy, not FOM inversion | [math](docs/math/failure_taxonomy.md) |
@@ -210,7 +212,8 @@ xattr -dr com.apple.quarantine ShelX   # macOS if needed
 chmod +x ShelX/shelxs ShelX/shelxe ShelX/shelxl
 
 gps-solve --hkl data.hkl --ins data.ins --method shelxs+shelxe --out out_sx
-# After hand-build in Olex2: cp out_sx/trial.res work.ins && cp data.hkl work.hkl && ShelX/shelxl work
+# After Olex2 hand-build from Q peaks (View → Work → Info):
+# cp built.res work.ins && cp data.hkl work.hkl && ShelX/shelxl work
 ```
 
 Download: [https://shelx.uni-goettingen.de/](https://shelx.uni-goettingen.de/)
@@ -387,4 +390,4 @@ Plan → Code → Test → Analyze math → Refine → Commit
 - **Version notes:** [CHANGELOG.md](CHANGELOG.md)  
 - **Issues / PRs:** GitHub repository above  
 
-**Bottom line for a new reader:** clone → `pip install -e .` → run `gps-solve` on `examples/` → read `report.md` → refine in SHELXL. For hard structures, bring partial phases. For the science, start with §4 and the linked scoreboards.
+**Bottom line for a new reader:** clone → `pip install -e .` → run `gps-solve` on `examples/` → read `report.md` and `olex2_handbuild.md` → File → Open `trial.res` in Olex2 (View → Work → Info) → SHELXL after a real molecule. For hard structures, bring partial phases. Mid-band worked example: [`docs/examples/cod_midband_fragment_trail.md`](docs/examples/cod_midband_fragment_trail.md). For the science, start with §4 and the linked scoreboards.

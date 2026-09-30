@@ -47,6 +47,7 @@ examples/**/out/
 examples/**/out_*/
 gps_solve_out/
 solve_out/
+out_2012000_frag/
 
 # Pandoc intermediate for PDF build
 docs/paper/_arxiv_draft_tex.md

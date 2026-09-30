@@ -217,19 +217,22 @@ def recommend_next_action(
     if outlook == "looks_healthy":
         rec.update(
             {
-                "primary_id": "refine_shelxl",
+                "primary_id": "olex2_handbuild",
                 "primary": (
-                    "Map outlook looks healthy (truth-free). Inspect density_slice.png "
-                    "and assign elements in trial.res, then refine with SHELXL / Olex2."
+                    "Map outlook looks healthy (truth-free). Open trial.res in Olex2 "
+                    "and hand-build from Q peaks (assign elements). Do not SHELXL the Q list."
                 ),
                 "why": (
-                    "Free-FOM composite is a ranking score, not proof. "
-                    "Chemical sense + SHELXL R1 decide."
+                    "trial.res is Q peaks for Olex2 peak picking, not a SHELXL starting "
+                    "model. Free-FOM composite is a ranking score, not proof. "
+                    "Chemical sense + SHELXL R1 decide after a real molecule is built."
                 ),
                 "commands": [
-                    "cp trial.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work",
+                    "olex2 trial.res   # File → Open; then View → Work → Info for Z / Z′",
                 ],
                 "alternatives": [
+                    "After a chemically plausible molecule is built: "
+                    "cp built.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work",
                     "If chemistry looks wrong, treat as unsolved and add a fragment / HA seed.",
                 ],
             }
@@ -251,7 +254,8 @@ def recommend_next_action(
                     "primary_id": "measured_phi_extend",
                     "primary": (
                         "Measured-φ seed meets the ~30% ≤20° bar. "
-                        "Run partial_phaseed, then inspect trial.res in Olex2 / SHELXL."
+                        "Run partial_phaseed, then File → Open trial.res in Olex2 "
+                        "(hand-build; do not SHELXL the Q list)."
                     ),
                     "why": (
                         "C4: ≳~30% of strong-|E| phases correct within ~20° "

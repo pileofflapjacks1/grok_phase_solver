@@ -48,6 +48,16 @@ def test_decision_tree_md():
     md = workflow_decision_tree_md()
     assert "partial_phaseed" in md
     assert "ensemble" in md
+    assert "Olex2 hand-build" in md
+
+
+def test_shelxl_instructions_are_olex2_first():
+    from grok_phase_solver.solvers.workflow import shelxl_refinement_instructions
+
+    md = shelxl_refinement_instructions(Path("."))
+    assert "olex2_handbuild.md" in md
+    assert "View → Work → Info" in md
+    assert "cp built.res" in md
 
 
 def test_write_model_ins(tmp_path):

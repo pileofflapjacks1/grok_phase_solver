@@ -134,6 +134,10 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
 - [x] Exports: phases, density, peaks, report.md
 - [x] User guide + demo (`docs/USER_GUIDE.md`, `examples/demo_solve/`)
 - [x] Q-peaks `.res` for Olex2 hand-build / peak picking (`trial.res`; not a SHELXL start)
+- [x] Olex2 checklist (`olex2_handbuild.md`) + healthy next-action is hand-build
+      (File → Open; **View → Work → Info**). Do not SHELXL the raw Q list.
+- [x] COD 2012000 Fobs fragment → Olex2 trail
+      (`scripts/run_cod_midband_trail.py`, `docs/examples/cod_midband_fragment_trail.md`)
 - [x] **Lane B partial-φ UX:** `--phase-seed-res` / `--seed-peaks-csv` /
       `--seed-atoms-csv` / HA pair / `--patterson-ha`; `gps-make-seed`;
       seed-quality section in `report.md` (`solvers/seed_import.py`)
@@ -255,7 +259,9 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
       (`--scale-xl --wilson-match`). Hold-out frac≤20° still **~21%** (bar 30%);  
       seedOK rate 5–12%; strict hard solves still 0%. Checkpoint `strong_prior.npz`  
       + `strong_prior_v4_xl.npz` / `_ft.npz`. **Mean seed bar not cleared by scale alone.**  
-17. [ ] Further scale (10⁴ cells / torch equivariant) **or** accept ceiling and invest in partial-φ UX  
+17. [~] Further scale (10⁴ cells / torch equivariant) **or** accept ceiling and invest in partial-φ UX
+      Accepted |F|-only GNN ceiling. Partial-φ UX: Olex2 hand-build next-action +
+      `olex2_handbuild.md` + COD 2012000 Fobs fragment trail. Further scale still open.  
 18. [x] **v0.2.1 ship:** version align, tag, `docs/RELEASE.md`; build+twine check  
       PyPI **0.13.4** published — https://pypi.org/project/grok-phase-solver/0.13.4/
 19. [x] **Lane C:** expanded experimental COD Fobs scoreboard (2016452, 2100301,

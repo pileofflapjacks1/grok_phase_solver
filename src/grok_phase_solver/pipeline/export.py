@@ -154,6 +154,25 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
     report.write_text(_render_report(result))
     written.append(report)
 
+    from grok_phase_solver.pipeline.olex2_handoff import write_olex2_handbuild_md
+
+    n_q = len(result.peaks)
+    res_path = out_dir / "trial.res"
+    if res_path.exists():
+        n_q = sum(
+            1
+            for line in res_path.read_text().splitlines()
+            if line.startswith("Q")
+        )
+    written.append(
+        write_olex2_handbuild_md(
+            out_dir,
+            space_group=result.space_group_hm,
+            n_peaks=n_q,
+            diagnostics=result.diagnostics,
+        )
+    )
+
     return written
 
 

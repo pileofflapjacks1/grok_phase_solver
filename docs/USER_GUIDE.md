@@ -129,7 +129,7 @@ Have partial phases (HA / MAD / MR / SHELXS fragment)?
    NO  →  resolution good (d ≲ 1.15 Å)?
             YES → auto (ensemble)
             NO  → auto (last-resort CF, not claimed solved) — get partial φ or try shelxs
-Finish → read report.md **Next action** (Vol-band chooser) → trial.res → SHELXL / Olex2
+Finish → read report.md **Next action** (Vol-band chooser) → File → Open trial.res in Olex2 (View → Work → Info) → SHELXL after a real molecule
 ```
 
 | Situation | Command |
@@ -231,7 +231,8 @@ Place binaries in `ShelX/` (gitignored — do not push):
 gps-solve --hkl data.hkl --ins data.ins --method shelxs+shelxe --out out_sx
 
 # After Olex2 hand-build from Q peaks, refine with SHELXL (outside gps-solve)
-cp out_sx/trial.res work.ins
+# Do not SHELXL the raw Q-peak trial.res.
+cp built.res work.ins
 cp data.hkl work.hkl
 ShelX/shelxl work
 ```
@@ -254,6 +255,7 @@ macOS: `xattr -dr com.apple.quarantine ShelX && chmod +x ShelX/*`
 | **`density_slice.png`** | Quick visual check |
 | **`peaks.csv` / `peaks.xyz` / `peaks.pdb`** | Strongest density maxima (trial atoms) |
 | **`trial.res`** | Q peaks for hand build / peak picking in Olex2 (not a SHELXL start) |
+| **`olex2_handbuild.md`** | File → Open + **View → Work → Info** checklist (Z / Z′) |
 | **`solve_summary.json`** | Machine-readable log |
 
 ---
@@ -270,9 +272,14 @@ This tool **phases** data and suggests **density peaks**. It does **not** replac
 
 1. Open `density_slice.png` and `peaks.csv`.  
 2. **3D map:** from the `--out` folder, `pymol open_in_pymol.pml` or `sh open_in_coot.sh`.  
-3. Load **`trial.res`** in Olex2 for hand-build / peak picking (or `peaks.pdb` in Coot/PyMOL).  
-4. Assign C/N/O/… from chemistry and residual maps — Q list is not a refinable start.  
-5. After a real molecule is built, refine with SHELXL (`ACTA`, anisotropic ADPs, H-atoms, etc.).
+3. Read **`olex2_handbuild.md`**, then **File → Open** `trial.res` in Olex2.  
+4. **View → Work → Info** for formula / **Z** / **Z′** / polymeric packing (there is no big polymeric banner). `UNIT 1` is a dummy.  
+5. Assign C/N/O/… from chemistry and residual maps — do **not** SHELXL the raw Q list.  
+6. After a chemically plausible molecule is built: `cp built.res work.ins && cp your.hkl work.hkl && ShelX/shelxl work`.
+
+Worked mid-band example (in-repo COD **2012000** Fobs + half-fragment):
+[`docs/examples/cod_midband_fragment_trail.md`](examples/cod_midband_fragment_trail.md)
+(`python scripts/run_cod_midband_trail.py`).
 
 If the map is uninterpretable: check cell/SG, try `--method ensemble` or `phai_phaseed`, improve resolution/completeness, add a predicted-model or fragment seed (`--predicted-model`), or use classical SHELXD / experimental phasing. Report.md includes free-FOM bootstrap and optional multistart phase uncertainty (v0.5).
 

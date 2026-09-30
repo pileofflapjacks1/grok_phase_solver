@@ -16,32 +16,25 @@ def shelxl_refinement_instructions(
     shelxl_path: Optional[str] = None,
     hkl_name: str = "job.hkl",
 ) -> str:
-    """Markdown snippet for report.md: refine trial.res with SHELXL."""
+    """Markdown snippet for report.md: Olex2 hand-build, then SHELXL."""
     out_dir = Path(out_dir)
     bin_hint = shelxl_path or "ShelX/shelxl  # or shelxl on PATH"
     return f"""### Refine with SHELXL (after gps-solve)
 
-gps-solve writes **`trial.res`** (peak list). Refinement is done externally:
+gps-solve writes **`trial.res`** as Q peaks for **Olex2 hand-build** (not a
+SHELXL start). Open `olex2_handbuild.md` in this folder. Refinement is external
+and comes **after** element assignment:
 
 ```bash
-# 1) Copy experimental intensities next to a working name
-cp /path/to/your.hkl {out_dir / hkl_name}
-
-# 2) Edit trial.res: assign real elements to Q peaks, fix composition (SFAC/UNIT)
-
-# 3) Run SHELXL (academic binary; not redistributed)
-{bin_hint} trial   # reads trial.ins/res + trial.hkl — rename as needed
-```
-
-Typical rename pattern:
-
-```bash
-cp {out_dir}/trial.res ./work.ins
+# 1) File → Open trial.res in Olex2; View → Work → Info for Z / Z′
+# 2) Assign C/N/O from chemistry; delete junk Q peaks
+# 3) Only then copy a built molecule and refine (academic SHELXL; not redistributed)
+cp built.res ./work.ins
 cp /path/to/experiment.hkl ./work.hkl
-ShelX/shelxl work
+{bin_hint} work
 ```
 
-Open `work.res` / CIF in Olex2. gps-solve does **not** replace SHELXL R-factor refinement.
+gps-solve does **not** replace SHELXL R-factor refinement.
 """
 
 
@@ -75,7 +68,7 @@ def workflow_decision_tree_md() -> str:
                     │ enlarge seed or SHELXE     │
                     └────────────┬─────────────┘
                                   ▼
-                           trial.res → SHELXL
+                           trial.res → Olex2 hand-build → SHELXL
 ```
 
 | Situation | Command |
@@ -90,5 +83,5 @@ def workflow_decision_tree_md() -> str:
 | Hard + isomorphous HA | `--native-hkl … --derivative-hkl … --method ha_phaseed` |
 | Build seed only | `gps-make-seed --hkl … --from-res model.res -o seed.csv` |
 | External classical solve | `--method shelxs` or `shelxs+shelxe` |
-| After any solve | Read `report.md` **Next action** → `trial.res` → **SHELXL** / Olex2 |
+| After any solve | Read `report.md` **Next action** → `trial.res` → **Olex2 hand-build** → SHELXL |
 """

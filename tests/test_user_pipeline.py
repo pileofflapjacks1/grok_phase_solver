@@ -69,6 +69,8 @@ def test_solve_and_export(tmp_path: Path):
     assert "density.map" in names
     assert "open_in_pymol.pml" in names
     assert "peaks.csv" in names
+    assert "olex2_handbuild.md" in names
+    assert "View → Work → Info" in (tmp_path / "olex2_handbuild.md").read_text()
     lines = (tmp_path / "phases.csv").read_text().strip().splitlines()
     assert len(lines) == 1 + len(result.hkl)
 

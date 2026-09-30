@@ -31,6 +31,17 @@ def test_shelx_latt_symm_p212121_bragg_spec():
     assert (latt2, cards2) == (latt, cards)
 
 
+def test_quoted_cif_p21_emits_21_symm():
+    """COD HKL CIF often quotes HM names ('P 1 21 1'). Quotes must not drop SYMM."""
+    latt, cards = shelx_latt_symm("'P 1 21 1'")
+    assert latt == -1
+    assert len(cards) == 1
+    blob = cards[0].replace(" ", "").upper()
+    assert "-X" in blob and "Y" in blob and "-Z" in blob
+    latt2, cards2 = shelx_latt_symm("P 1 21 1")
+    assert (latt2, cards2) == (latt, cards)
+
+
 def test_shelx_latt_symm_p1_and_pminus1():
     latt, cards = shelx_latt_symm("P 1")
     assert latt == -1
