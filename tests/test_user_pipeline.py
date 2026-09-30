@@ -61,6 +61,9 @@ def test_solve_and_export(tmp_path: Path):
     paths = export_solution(result, tmp_path)
     names = {p.name for p in paths}
     assert "report.md" in names
+    report_txt = (tmp_path / "report.md").read_text()
+    assert "Information source" in report_txt
+    assert "Vol-band" in report_txt or "Volume band" in report_txt
     assert "phases.csv" in names
     assert "density.npz" in names
     assert "density.map" in names

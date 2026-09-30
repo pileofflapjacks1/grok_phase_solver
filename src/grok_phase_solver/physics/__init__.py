@@ -23,6 +23,14 @@ from .unique_asu import (
     unique_typed_atoms,
 )
 from .device import resolve_device, list_devices, get_device_info
+from .measured_phase_noise import (
+    add_measured_phase_noise,
+    apply_measured_phase_to_seed,
+    make_measured_phase_mask,
+    seed_quality_from_noisy_phases,
+    sigma_phi_from_E,
+    wrap_angle_deg,
+)
 
 __all__ = [
     "atomic_form_factor",
@@ -54,4 +62,10 @@ __all__ = [
     "resolve_device",
     "list_devices",
     "get_device_info",
+    "wrap_angle_deg",
+    "add_measured_phase_noise",
+    "sigma_phi_from_E",
+    "make_measured_phase_mask",
+    "seed_quality_from_noisy_phases",
+    "apply_measured_phase_to_seed",
 ]

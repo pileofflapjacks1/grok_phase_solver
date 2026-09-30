@@ -26,6 +26,7 @@ Code: `solvers/partial_seed.py`
 | `seed_from_fragment_atoms` / `seed_from_predicted_model` | Scientist path: SG expand + full $F_\mathrm{calc}$ soft prior + strong-\|E\| hard mask |
 | `load_phase_seed_csv` / `write_phase_seed_csv` | File I/O: `h,k,l,phase_deg` |
 | `partial_phaseed_solve` | Generic full-length seed → AI-PhaSeed |
+| `measured_partial_seed` | Simulator: noisy measured φ on a strong-\|E\| mask (see [measured_phase_budget.md](measured_phase_budget.md)) |
 
 **Fragment soft prior (v0.7.1):** predicted / fragment models set $F_\mathrm{calc}$ phases on
 *all* reflections as the soft prior; the boolean mask only hard-reimposes reliable

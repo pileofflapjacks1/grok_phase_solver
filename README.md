@@ -166,6 +166,7 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 | **Ensemble** best open ab initio on **easy** cells (vs CF / SHELXS in-repo H2H) | [`shelxs_h2h.md`](data/processed/shelxs_h2h.md) |
 | **Hard ab initio** ~0% strict for CF, priors, dual-space, SHELXS (our panels) | same + [`strong_prior.md`](data/processed/strong_prior.md) |
 | **Partial-φ bar** — ≥30% strong φ within 20° → hard strict solves | [`partial_seed_benchmark.md`](data/processed/partial_seed_benchmark.md), [math](docs/math/partial_seed.md) |
+| **Measured-φ budget** (simulator; hardware does not exist) — σ_φ × strong-|E| fraction vs C4 30%/20° | [math](docs/math/measured_phase_budget.md), [`measured_phase_budget.md`](data/processed/measured_phase_budget.md) |
 | Graph prior strong-seed quality ~**21–24%** ≤20° (below 30% bar) through **v11** pilots | [`strong_prior_v11.md`](data/processed/strong_prior_v11.md) |
 | CrystalX-inspired peak→atom typing improves `trial.res` (heuristic) | [math](docs/math/crystalx_typing.md) |
 | Research generative / XDXD-style coordinate proposal (not auto) | [math](docs/math/generative_structure.md) |

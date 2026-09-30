@@ -67,6 +67,59 @@ def test_small_highres_cf_suggests_ensemble():
     assert rec["primary_id"] == "try_ensemble"
 
 
+def test_measured_phi_above_bar_extends():
+    rec = recommend_next_action(
+        cell=[12.0, 12.0, 12.0, 90.0, 90.0, 90.0],
+        d_min=1.5,
+        method="partial_phaseed",
+        n_peaks=4,
+        diagnostics={
+            "free_fom_composite": 0.40,
+            "information_source": "measured-φ",
+            "seed_quality": {
+                "frac_le_20_all_strong": 0.42,
+                "frac_strong_seeded": 0.42,
+                "size_meets_bar": True,
+            },
+        },
+    )
+    assert rec["information_source"] == "measured-φ"
+    assert rec["primary_id"] == "measured_phi_extend"
+    assert "partial_phaseed" in rec["primary"]
+
+
+def test_measured_phi_below_bar_does_not_polish():
+    rec = recommend_next_action(
+        cell=[12.0, 12.0, 12.0, 90.0, 90.0, 90.0],
+        d_min=1.5,
+        method="partial_phaseed",
+        n_peaks=3,
+        diagnostics={
+            "free_fom_composite": 0.30,
+            "information_source": "measured-φ",
+            "seed_quality": {
+                "frac_le_20_all_strong": 0.12,
+                "frac_strong_seeded": 0.10,
+                "size_meets_bar": False,
+            },
+        },
+    )
+    assert rec["primary_id"] == "measured_phi_improve"
+    assert "do not polish" in rec["primary"].lower()
+
+
+def test_retry_with_peaks_labeled_not_a_fragment():
+    rec = recommend_next_action(
+        cell=[12.0, 12.0, 12.0, 90.0, 90.0, 90.0],
+        d_min=1.2,
+        method="ensemble",
+        n_peaks=6,
+        diagnostics={"free_fom_composite": 0.32},
+    )
+    blob = " ".join(rec.get("alternatives") or [])
+    assert "peaks-as-carbon, not a fragment" in blob
+
+
 def test_healthy_outlook_is_refine():
     rec = recommend_next_action(
         cell=[8.0, 8.0, 8.0, 90.0, 90.0, 90.0],

@@ -166,6 +166,83 @@ def oracle_partial_seed(
     return seed_ph, mask, meta
 
 
+def measured_partial_seed(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    phases_true: np.ndarray,
+    *,
+    frac_strong: float = 0.30,
+    sigma_phi_deg: float = 20.0,
+    model: str = "von_mises",
+    seed: int = 0,
+    e_min: Optional[float] = None,
+    use_E_dependent_sigma: bool = False,
+    sigma0_deg: Optional[float] = None,
+    fill: str = "random",
+) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    """
+    Simulated measured-φ seed: noisy true phases on a strong-|E| mask.
+
+    Same return object as :func:`oracle_partial_seed` — consume with
+    :func:`partial_phaseed_solve` or :func:`write_phase_seed_csv`.
+    This is a **simulator**. A phase-sensitive detector does not exist here.
+    """
+    from grok_phase_solver.physics.measured_phase_noise import (
+        add_measured_phase_noise,
+        make_measured_phase_mask,
+        seed_quality_from_noisy_phases,
+        sigma_phi_from_E,
+    )
+
+    hkl = np.asarray(hkl)
+    amp = np.asarray(amplitudes, dtype=np.float64)
+    ph_t = np.asarray(phases_true, dtype=np.float64)
+    E = normalize_E(hkl, amp, cell)
+    rng = np.random.default_rng(seed)
+    mask = make_measured_phase_mask(
+        E, float(frac_strong), rng, e_min=e_min
+    )
+    phi_true_deg = np.rad2deg(ph_t)
+    if use_E_dependent_sigma:
+        sig = sigma_phi_from_E(E, float(sigma0_deg if sigma0_deg is not None else sigma_phi_deg))
+        sig_use = sig[mask] if mask.any() else sig
+    else:
+        sig_use = float(sigma_phi_deg)
+    phi_meas_deg = np.array(phi_true_deg, copy=True)
+    if mask.any():
+        phi_meas_deg[mask] = add_measured_phase_noise(
+            phi_true_deg[mask], sig_use, rng, model=model
+        )
+    idx = np.where(mask)[0]
+    seed_ph = build_partial_phase_vector(
+        len(amp), idx, np.deg2rad(phi_meas_deg[idx]) if len(idx) else np.array([]),
+        fill=fill, seed=seed + 2,
+    )
+    if mask.any():
+        seed_ph[mask] = np.deg2rad(phi_meas_deg[mask])
+    qual = seed_quality_from_noisy_phases(
+        phi_true_deg, phi_meas_deg, E, mask=mask
+    )
+    meta = {
+        "kind": "measured_phase",
+        "source": "measured_phi_simulator",
+        "information_source": "measured-φ",
+        "model": model,
+        "sigma_phi_deg": float(sigma_phi_deg),
+        "frac_strong_requested": float(frac_strong),
+        "use_E_dependent_sigma": bool(use_E_dependent_sigma),
+        "n_known": int(mask.sum()),
+        "fraction": float(mask.mean()) if len(amp) else 0.0,
+        "seed_quality": qual,
+        "note": (
+            "Simulated measured phases. A phase-sensitive detector does not "
+            "exist in this repository."
+        ),
+    }
+    return seed_ph, mask, meta
+
+
 def fragment_seed_phases(
     hkl: np.ndarray,
     fracs: np.ndarray,

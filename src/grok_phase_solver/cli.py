@@ -197,6 +197,24 @@ Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2
         help="Partial-φ CSV (h,k,l,phase_deg) for partial_phaseed",
     )
     p.add_argument(
+        "--measured-phase-sigma-deg",
+        type=float,
+        default=None,
+        help=(
+            "Simulator only: add wrapped noise with circular std σ_φ (degrees) "
+            "to an existing seed. Default off. Hardware does not exist in this repo."
+        ),
+    )
+    p.add_argument(
+        "--measured-phase-frac",
+        type=float,
+        default=None,
+        help=(
+            "Simulator only: fraction of the strong-|E| seed set treated as measured "
+            "(default off). Use with --phase-seed-csv / fragment seed."
+        ),
+    )
+    p.add_argument(
         "--phase-seed-res",
         default=None,
         help="SHELXS/SHELXL .res atoms → Fcalc phase seed (fragment path)",
@@ -361,7 +379,8 @@ Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2
         action="store_true",
         help=(
             "If the first pass looks weak, re-run partial_phaseed using this "
-            "run's peaks.csv as a light-atom fragment (writes --out/retry_peaks/)"
+            "run's peaks.csv as peaks-as-carbon, not a fragment "
+            "(writes --out/retry_peaks/)"
         ),
     )
     p.add_argument("--seed", type=int, default=0)
@@ -412,6 +431,8 @@ Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2
         shelxe_polish=args.shelxe_polish,
         shelxe_cycles=args.shelxe_cycles,
         shelxe_solvent=args.shelxe_solvent,
+        measured_phase_sigma_deg=args.measured_phase_sigma_deg,
+        measured_phase_frac=args.measured_phase_frac,
     )
     # --diffusion forces method unless user already set a diffusion method
     if args.diffusion and args.method in ("auto", "charge_flipping", "ensemble"):
@@ -437,6 +458,11 @@ Next: pymol open_in_pymol.pml  (or coot) then refine trial.res in SHELXL / Olex2
     paths = export_solution(result, out)
     print("\n=== Done ===")
     print(f"Method used: {result.method}")
+    na = result.diagnostics.get("next_action")
+    if isinstance(na, dict):
+        from grok_phase_solver.pipeline.next_action import format_solve_banner
+
+        print(format_solve_banner(na))
     print(f"Results written to: {out.resolve()}")
     for path in paths:
         print(f"  - {path.name}")
