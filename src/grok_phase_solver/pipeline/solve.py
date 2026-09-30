@@ -109,6 +109,10 @@ class SolveConfig:
     ha_element: str = "Br"
     patterson_ha: bool = False
     export_seed_csv: Optional[str] = None  # write mapped seed for reuse
+    # Measured-φ simulator (default off). Requires an existing seed source.
+    # A phase-sensitive detector does not exist in this repository.
+    measured_phase_sigma_deg: Optional[float] = None
+    measured_phase_frac: Optional[float] = None
     # Optional SHELXE density-mod polish after shelxs / when method=shelxs+shelxe
     shelxe_polish: bool = False
     shelxe_cycles: int = 15
@@ -552,6 +556,40 @@ def _run_phasing(
                 )
         except ValueError as e:
             raise ValueError(str(e)) from e
+
+        if cfg.measured_phase_sigma_deg is not None or cfg.measured_phase_frac is not None:
+            from grok_phase_solver.physics.measured_phase_noise import apply_measured_phase_to_seed
+            from grok_phase_solver.solvers.direct_methods import normalize_E as _normalize_E
+
+            E_m = _normalize_E(hkl, amp, cell_arr)
+            rng_m = np.random.default_rng(int(cfg.seed) + 17)
+            sigma_m = (
+                0.0
+                if cfg.measured_phase_sigma_deg is None
+                else float(cfg.measured_phase_sigma_deg)
+            )
+            frac_m = (
+                1.0 if cfg.measured_phase_frac is None else float(cfg.measured_phase_frac)
+            )
+            seed_ph, mask, extra_m = apply_measured_phase_to_seed(
+                seed_ph,
+                mask,
+                E_m,
+                sigma_phi_deg=sigma_m,
+                frac_strong=frac_m,
+                rng=rng_m,
+            )
+            meta = {**meta, **extra_m}
+            warnings.append(
+                "Measured-φ simulator applied "
+                f"(σ_φ={sigma_m:g}°, frac={frac_m:g}). "
+                "A phase-sensitive detector does not exist in this repository."
+            )
+            if cfg.verbose:
+                print(
+                    f"  measured-φ simulator: σ={sigma_m:g}° frac={frac_m:g} "
+                    f"n_seed={int(mask.sum())}"
+                )
 
         qual = assess_seed_quality(hkl, amp, cell_arr, seed_ph, mask)
         meta = {**meta, "seed_quality": qual}
@@ -1027,10 +1065,25 @@ def solve_structure(
     if history.get("seed_meta"):
         sm = history["seed_meta"]
         diagnostics["seed_kind"] = sm.get("kind") or sm.get("source")
+        if sm.get("information_source"):
+            diagnostics["information_source"] = sm.get("information_source")
         if sm.get("n_atoms") is not None:
             diagnostics["seed_n_atoms"] = sm.get("n_atoms")
         if sm.get("path"):
             diagnostics["seed_path"] = sm.get("path")
+        sq_m = sm.get("seed_quality")
+        if isinstance(sq_m, dict) and isinstance(diagnostics.get("seed_quality"), dict):
+            for k in (
+                "frac_le_20",
+                "frac_le_20_all_strong",
+                "circular_mean_error_deg",
+                "meets_c4_bar",
+                "n_measured",
+                "n_measured_strong",
+                "n_strong",
+            ):
+                if k in sq_m and k not in diagnostics["seed_quality"]:
+                    diagnostics["seed_quality"][k] = sq_m[k]
     if history.get("accepted_polish") is not None:
         diagnostics["accepted_polish"] = history.get("accepted_polish")
     if history.get("best_trial"):

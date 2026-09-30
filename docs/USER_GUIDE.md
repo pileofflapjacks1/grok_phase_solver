@@ -194,6 +194,21 @@ gps-solve --hkl data.hkl --ins data.ins --retry-with-peaks --out ./solve_out
 
 `report.md` includes a **Partial seed quality** section (strong-|E| coverage vs the 30% bar, free FOM of the raw seed, next-step hints). Size is truth-free; correctness still requires chemistry / refinement.
 
+### Simulated measured-φ seed (research / budget)
+
+A phase-sensitive detector **does not exist** in this package. For information-budget experiments you can *simulate* noisy measured phases on top of an existing seed CSV (oracle / fragment / predicted-model φ):
+
+```bash
+gps-solve --hkl data.hkl --ins data.ins --method partial_phaseed \
+  --phase-seed-csv clean_or_oracle.csv \
+  --measured-phase-frac 0.30 --measured-phase-sigma-deg 20 \
+  --out ./out_meas_sim
+```
+
+`--measured-phase-frac` is the fraction of the **strong-|E|** set treated as measured. `--measured-phase-sigma-deg` is the circular std of wrapped noise (von Mises). Both default **off**. If frac≤20° among all strong |E| is ≳ ~30% (C4 bar), next-action is `partial_phaseed` then Olex2 / SHELXL inspect; below the bar, measure more strong |E| or lower σ_φ — do not polish.
+
+Sweep / math: `python scripts/run_measured_phase_budget.py --quick` and [docs/math/measured_phase_budget.md](math/measured_phase_budget.md).
+
 **Packaged demo** (synthetic hard-ish + 30% oracle seed):
 
 ```bash

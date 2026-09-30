@@ -1,6 +1,6 @@
 # TODO — grok_phase_solver
 
-AI-driven general solver for the X-ray crystallography phase problem.
+Open physics / AI phasing assistant for the X-ray crystallography phase problem.
 
 **Repo:** https://github.com/pileofflapjacks1/grok_phase_solver  
 **Physics core:** \(\rho(\mathbf{r}) = \frac{1}{V}\sum |F| e^{i\varphi} e^{-2\pi i \mathbf{h}\cdot\mathbf{r}}\) — recover \(\varphi\) under positivity, atomicity, symmetry, Parseval.

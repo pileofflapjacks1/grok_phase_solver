@@ -187,6 +187,7 @@ def export_solution(result: "SolveResult", out_dir: Path) -> List[Path]:
 def _render_report(result: "SolveResult") -> str:
     from grok_phase_solver.pipeline.next_action import (
         format_next_action_md,
+        format_solve_banner,
         next_action_banner,
         recommend_next_action,
     )
@@ -203,6 +204,7 @@ def _render_report(result: "SolveResult") -> str:
             diagnostics=d,
             space_group=result.space_group_hm,
         )
+    banner = format_solve_banner(next_act)
     lines = [
         f"# gps-solve report",
         "",
@@ -211,6 +213,10 @@ def _render_report(result: "SolveResult") -> str:
         f"**Space group:** {result.space_group_hm or 'unknown'}  ",
         f"**d_min (Å):** {result.d_min if result.d_min else 'auto'}  ",
         f"**{next_action_banner(next_act)}**",
+        "",
+        "```",
+        banner,
+        "```",
         "",
         format_next_action_md(next_act),
         "",

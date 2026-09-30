@@ -25,6 +25,64 @@ _SEED_METHODS = frozenset(
     }
 )
 
+# Scientist-facing information-source labels (report / GUI / solve_summary)
+INFORMATION_SOURCES = (
+    "amplitudes only",
+    "fragment",
+    "HA",
+    "measured-φ",
+    "predicted-model",
+)
+
+
+def classify_information_source(
+    method: str,
+    diagnostics: Optional[Mapping[str, Any]] = None,
+) -> str:
+    """Map seed meta / method onto a short information-source label."""
+    d = dict(diagnostics or {})
+    explicit = d.get("information_source")
+    if explicit:
+        raw = str(explicit).strip()
+        aliases = {
+            "measured_phi": "measured-φ",
+            "measured_phase": "measured-φ",
+            "measured-phi": "measured-φ",
+            "measured-φ": "measured-φ",
+            "predicted_model": "predicted-model",
+            "predicted-model": "predicted-model",
+            "amplitudes_only": "amplitudes only",
+            "amplitudes only": "amplitudes only",
+            "ha": "HA",
+            "HA": "HA",
+            "fragment": "fragment",
+        }
+        return aliases.get(raw, raw)
+    kind = str(d.get("seed_kind") or d.get("seed_source") or "").lower()
+    if "measured" in kind:
+        return "measured-φ"
+    if "predicted" in kind:
+        return "predicted-model"
+    if "ha" in kind or "patterson" in kind or "isomorphous" in kind:
+        return "HA"
+    if any(
+        tok in kind
+        for tok in (
+            "fragment",
+            "res",
+            "peaks",
+            "atoms",
+            "oracle",
+            "file",
+            "partial",
+            "phase_seed",
+        )
+    ):
+        return "fragment"
+    if (method or "").lower() in _SEED_METHODS:
+        return "fragment"
+    return "amplitudes only"
+
 
 def classify_vol_band(volume: float) -> str:
     """Return ``vol_lt_1000`` / ``vol_1000_3500`` / ``vol_gt_3500``."""
@@ -118,6 +176,22 @@ def recommend_next_action(
     seed_class = sq.get("predicted_class")
     dmin = float(d_min) if d_min is not None else None
 
+    info_src = classify_information_source(method, d)
+    n_asym = None
+    feats = sq.get("features") if isinstance(sq.get("features"), dict) else {}
+    if feats.get("N_asym") is not None:
+        try:
+            n_asym = float(feats["N_asym"])
+        except (TypeError, ValueError):
+            n_asym = None
+    if n_asym is None and vol is not None:
+        try:
+            from grok_phase_solver.metrics.seed_quality import estimate_n_asym
+
+            n_asym = float(estimate_n_asym(np.asarray(cell, dtype=np.float64)))
+        except Exception:
+            n_asym = None
+
     rec: Dict[str, Any] = {
         "vol": None if vol is None else round(vol, 1),
         "vol_band": band,
@@ -132,6 +206,11 @@ def recommend_next_action(
         "space_group": space_group,
         "seed_size_meets_bar": size_ok,
         "seed_predicted_class": seed_class,
+        "information_source": info_src,
+        "n_asym": None if n_asym is None else round(n_asym, 1),
+        "frac_le_20": sq.get("frac_le_20_all_strong", sq.get("frac_le_20")),
+        "circular_mean_error_deg": sq.get("circular_mean_error_deg"),
+        "frac_strong_seeded": sq.get("frac_strong_seeded"),
         "evidence": "COD Vol-band panel (6 local structures; C25) + partial-φ 30%/20° bar",
     }
 
@@ -155,6 +234,66 @@ def recommend_next_action(
                 ],
             }
         )
+        return rec
+
+    if info_src == "measured-φ":
+        frac20 = rec.get("frac_le_20")
+        try:
+            frac20_f = None if frac20 is None else float(frac20)
+        except (TypeError, ValueError):
+            frac20_f = None
+        above = (frac20_f is not None and frac20_f >= 0.30) or (
+            frac20_f is None and size_ok is True
+        )
+        if above:
+            rec.update(
+                {
+                    "primary_id": "measured_phi_extend",
+                    "primary": (
+                        "Measured-φ seed meets the ~30% ≤20° bar. "
+                        "Run partial_phaseed, then inspect trial.res in Olex2 / SHELXL."
+                    ),
+                    "why": (
+                        "C4: ≳~30% of strong-|E| phases correct within ~20° "
+                        "(non-centro TREF window) lets partial_phaseed strict-solve "
+                        "hard cells on the in-repo oracle curves. Free FOM ranks only."
+                    ),
+                    "commands": [
+                        "gps-solve --hkl your.hkl --ins your.ins --method partial_phaseed "
+                        "--phase-seed-csv measured.csv --out ./out_meas",
+                    ],
+                    "alternatives": [
+                        "If the map is still weak, the seed is coherent but incomplete — "
+                        "measure more strong |E| rather than more polish.",
+                    ],
+                }
+            )
+        else:
+            rec.update(
+                {
+                    "primary_id": "measured_phi_improve",
+                    "primary": (
+                        "Measured-φ seed is below the ~30% ≤20° bar. "
+                        "Measure more strong |E| or lower σ_φ; do not polish."
+                    ),
+                    "why": (
+                        "Size and correctness both matter. Measuring 10% of strong |E| "
+                        "perfectly, or 100% with large σ_φ, stays under the C4 line. "
+                        "Polish on a thin measured-φ seed does not invent the missing phases."
+                    ),
+                    "commands": [
+                        "gps-solve --hkl your.hkl --ins your.ins --method partial_phaseed "
+                        "--phase-seed-csv measured.csv "
+                        "--measured-phase-frac 0.30 --measured-phase-sigma-deg 10 "
+                        "--out ./out_meas_sim",
+                    ],
+                    "alternatives": [
+                        "Simulator flags need an existing seed CSV of clean φ; "
+                        "hardware does not exist in this repo.",
+                        "Fragment / predicted-model path if you cannot measure more φ.",
+                    ],
+                }
+            )
         return rec
 
     if seeded and size_ok is False:
@@ -228,7 +367,7 @@ def recommend_next_action(
                     "--native-hkl native.hkl --derivative-hkl deriv.hkl --out ./out_ha",
                 ],
                 "alternatives": [
-                    "Cheap first try: gps-solve … --retry-with-peaks (peaks as C; often too thin for Vol > 3500)",
+                    "Cheap first try: gps-solve … --retry-with-peaks (peaks-as-carbon, not a fragment; often too thin for Vol > 3500)",
                     "If you only have a small fragment, expect a weak map; enlarge the model.",
                     "External: --method shelxs+shelxe",
                 ],
@@ -259,7 +398,7 @@ def recommend_next_action(
                     "--n-starts 5 --out ./out_ens",
                 ],
                 "alternatives": [
-                    "One-command retry: gps-solve --hkl your.hkl --ins your.ins --retry-with-peaks --out ./solve_out",
+                    "One-command retry: gps-solve --hkl your.hkl --ins your.ins --retry-with-peaks --out ./solve_out (peaks-as-carbon, not a fragment)",
                     "Fragment: --method partial_phaseed --phase-seed-res model.res",
                     "Peaks recycle: --seed-peaks-csv peaks.csv",
                 ],
@@ -287,7 +426,7 @@ def recommend_next_action(
                 "--predicted-model model.cif --out ./out_pred",
             ],
             "alternatives": [
-                "No fragment yet: gps-solve --hkl your.hkl --ins your.ins --retry-with-peaks --out ./solve_out",
+                "No fragment yet: gps-solve --hkl your.hkl --ins your.ins --retry-with-peaks --out ./solve_out (peaks-as-carbon, not a fragment)",
                 "Known φ CSV: --phase-seed-csv known.csv (aim ≥~30% of strong |E|)",
                 "Build seed only: gps-make-seed --hkl your.hkl --ins your.ins "
                 "--from-res model.res -o seed.csv",
@@ -304,10 +443,16 @@ def format_next_action_md(rec: Mapping[str, Any]) -> str:
     vol_s = "—" if vol is None else f"{vol:.0f} Å³"
     fom = rec.get("free_fom_composite")
     fom_s = "—" if fom is None else f"{float(fom):.3f}"
+    n_asym = rec.get("n_asym")
+    n_asym_s = "—" if n_asym is None else str(n_asym)
+    dmin = rec.get("d_min")
+    dmin_s = "—" if dmin is None else f"{float(dmin):.2f} Å"
     lines: List[str] = [
         "## Next action",
         "",
         f"- **Volume band:** {rec.get('vol_band_label')} (V = {vol_s})",
+        f"- **N_asym (est.):** {n_asym_s}   **d_min:** {dmin_s}",
+        f"- **Information source:** {rec.get('information_source') or 'amplitudes only'}",
         f"- **Map outlook:** `{rec.get('map_outlook')}` "
         f"(free-FOM {fom_s}; {rec.get('n_peaks')} peaks) — ranking only",
         f"- **Do this:** {rec.get('primary')}",
@@ -333,3 +478,43 @@ def format_next_action_md(rec: Mapping[str, Any]) -> str:
 def next_action_banner(rec: Mapping[str, Any]) -> str:
     """One-line banner for report header / GUI."""
     return f"Next action ({rec.get('vol_band_label')}): {rec.get('primary')}"
+
+
+def format_solve_banner(rec: Mapping[str, Any]) -> str:
+    """Multi-line status block for report.md / CLI / GUI (Ticket B)."""
+    n_asym = rec.get("n_asym")
+    dmin = rec.get("d_min")
+    frac = rec.get("frac_strong_seeded")
+    frac20 = rec.get("frac_le_20")
+    circ = rec.get("circular_mean_error_deg")
+    cls = rec.get("seed_predicted_class")
+    info = rec.get("information_source") or "amplitudes only"
+
+    def _pct(x: Any) -> str:
+        if x is None:
+            return "—"
+        try:
+            return f"{100 * float(x):.0f}%"
+        except (TypeError, ValueError):
+            return "—"
+
+    def _num(x: Any, unit: str = "") -> str:
+        if x is None:
+            return "—"
+        try:
+            return f"{float(x):.2g}{unit}"
+        except (TypeError, ValueError):
+            return "—"
+
+    lines = [
+        f"Vol-band: {rec.get('vol_band_label')}   "
+        f"N_asym: {_num(n_asym)}   "
+        f"d_min: {_num(dmin, ' Å')}",
+        f"Information source: {info}",
+        f"Seed quality: strong-|E| frac={_pct(frac)}   "
+        f"frac≤20°={_pct(frac20) if frac20 is not None else 'n/a'}   "
+        f"circular error={_num(circ, '°')}   "
+        f"Class={cls if cls is not None else '—'}",
+        f"Next action: {rec.get('primary')}",
+    ]
+    return "\n".join(lines)

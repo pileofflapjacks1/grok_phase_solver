@@ -264,6 +264,15 @@ def map_quality_hints(summary: Dict[str, Any]) -> List[str]:
                 space_group=summary.get("space_group"),
             )
         hints.append(next_action_banner(rec))
+        info = rec.get("information_source")
+        if info:
+            hints.insert(
+                0,
+                f"Information source: {info}  "
+                f"{rec.get('vol_band_label')}  "
+                f"N_asym={rec.get('n_asym')}  "
+                f"d_min={rec.get('d_min')}",
+            )
     except Exception:
         pass
 
