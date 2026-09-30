@@ -1,0 +1,60 @@
+{
+  "cod_id": "2012000",
+  "hkl": "data/raw/cod/2012000.hkl",
+  "deposited_cif": "data/raw/cod/2012000.cif",
+  "fragment_cif": "out_2012000_frag/2012000_half.cif",
+  "out_dir": "out_2012000_frag",
+  "gps_solve_command": "gps-solve --hkl data/raw/cod/2012000.hkl \\\n  --predicted-model out_2012000_frag/2012000_half.cif \\\n  --method partial_phaseed --dmin 1.0 \\\n  --n-iter 90 --n-extend 26 --n-starts 1 \\\n  --prior-weight 0.52 --dm-ai-weight 0.42 --no-uncertainty \\\n  --out out_2012000_frag",
+  "committed_scoreboard": {
+    "source": "data/processed/cod_stratified_bench.md",
+    "dataset": "2012000",
+    "amp_mode": "fobs",
+    "run": "fragment_half",
+    "mapcc_oi": 0.675,
+    "free_fom": 0.776,
+    "r1": 0.53,
+    "strict_success": false,
+    "vol_band": "vol_1000_3500",
+    "d_min": 1.0,
+    "note": "Strict success = mapCC_OI \u2265 0.7 AND peak recovery \u2265 0.5 AND R1 \u2264 0.45. This Fobs fragment_half row is not a strict solve (mapCC 0.675, R1 0.53). Mid-band mean fragment_half mapCC ~0.71 vs auto ~0.27 (C25)."
+  },
+  "n_nonh": 27,
+  "n_frag": 13,
+  "space_group": "P1211",
+  "cell": [
+    7.595,
+    9.9731,
+    13.7266,
+    90.0,
+    98.967,
+    90.0
+  ],
+  "vol": 1027.0,
+  "this_run": {
+    "method": "partial_phaseed",
+    "free_fom_composite": 0.7858738213594242,
+    "n_peaks": 40,
+    "n_q_written": 26,
+    "space_group": "P 1 21 1",
+    "next_action_id": "olex2_handbuild",
+    "information_source": "fragment",
+    "written": [
+      "phases.csv",
+      "structure_factors.F",
+      "density.npz",
+      "density_slice.png",
+      "peaks.csv",
+      "peaks.xyz",
+      "trial.res",
+      "density.map",
+      "peaks.pdb",
+      "open_in_pymol.pml",
+      "open_in_coot.sh",
+      "solve_summary.json",
+      "report.md",
+      "olex2_handbuild.md"
+    ]
+  },
+  "seconds": 2.6,
+  "dry_run": false
+}

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — main
+
+### Olex2 hand-build trail
+- Healthy next-action is `olex2_handbuild`: File → Open `trial.res`, then
+  **View → Work → Info** for Z / Z′. Do not SHELXL the raw Q list.
+- `gps-solve` writes `olex2_handbuild.md` next to `trial.res`
+- COD 2012000 Fobs fragment trail: `python scripts/run_cod_midband_trail.py`
+  ([docs/examples/cod_midband_fragment_trail.md](docs/examples/cod_midband_fragment_trail.md))
+- Science claims unchanged (0.13.1 freeze); version stays **0.13.4**
+
 ## 0.13.4 — 2026-08
 
 Patch so **`--retry-with-peaks`** rides PyPI (was on `main` only after 0.13.3).  
