@@ -120,7 +120,7 @@ def test_retry_with_peaks_labeled_not_a_fragment():
     assert "peaks-as-carbon, not a fragment" in blob
 
 
-def test_healthy_outlook_is_refine():
+def test_healthy_outlook_is_olex2_handbuild():
     rec = recommend_next_action(
         cell=[8.0, 8.0, 8.0, 90.0, 90.0, 90.0],
         d_min=0.9,
@@ -128,8 +128,11 @@ def test_healthy_outlook_is_refine():
         n_peaks=12,
         diagnostics={"free_fom_composite": 0.82},
     )
-    assert rec["primary_id"] == "refine_shelxl"
+    assert rec["primary_id"] == "olex2_handbuild"
     assert rec["map_outlook"] == "looks_healthy"
+    assert "Do not SHELXL" in rec["primary"]
+    assert any("View → Work → Info" in c for c in rec["commands"])
+    assert any("built.res" in a for a in rec["alternatives"])
 
 
 def test_undersized_seed_says_enlarge():
@@ -196,6 +199,10 @@ def test_report_includes_next_action_section(tmp_path: Path):
     names = {p.name for p in written}
     assert "report.md" in names
     assert "solve_summary.json" in names
+    assert "olex2_handbuild.md" in names
+    hand = (tmp_path / "olex2_handbuild.md").read_text()
+    assert "View → Work → Info" in hand
+    assert "Do **not** run SHELXL on the raw Q list" in hand
     import json
 
     summary = json.loads((tmp_path / "solve_summary.json").read_text())

@@ -146,6 +146,8 @@ def test_export_always_writes_trial_res_no_packing_gate(tmp_path=None):
         written = export_solution(result, out)
         names = {p.name for p in written}
         assert "trial.res" in names
+        assert "olex2_handbuild.md" in names
+        assert "View → Work → Info" in (out / "olex2_handbuild.md").read_text()
         text = (out / "trial.res").read_text()
         assert "hand-build peaks" in text
         assert "SFAC C" in text
