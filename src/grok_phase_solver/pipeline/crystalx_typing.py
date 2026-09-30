@@ -275,7 +275,11 @@ def typed_atoms_to_shelxl_res(
 ) -> str:
     """Write SHELXL-style .res with real SFAC elements from typing."""
     from grok_phase_solver.physics.shelx_cards import format_shelx_latt_symm_lines
+    from grok_phase_solver.physics.unique_asu import unique_typed_atoms
 
+    typed, umeta = unique_typed_atoms(
+        typed, cell, space_group, lattice=lattice, symm=symm
+    )
     a, b, c, al, be, ga = [float(x) for x in cell]
     # Unique elements for SFAC (H last convention-ish: C H N O then others)
     order_pref = ["C", "H", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
@@ -303,6 +307,7 @@ def typed_atoms_to_shelxl_res(
             "FVAR 1.0",
             f"REM free_fom_composite={free_fom if free_fom is not None else 'n/a'}",
             f"REM method={method} n_atoms={len(typed)} crystalx_typing=1",
+            f"REM unique_asu n_in={umeta.get('n_in')} n_out={umeta.get('n_out')} n_ops={umeta.get('n_ops')}",
             f"REM space_group_hint={space_group}",
         ]
     )

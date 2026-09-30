@@ -13,7 +13,7 @@ An **open, Python-first framework** for the crystallographic phase problem:
 - Classical solvers (charge flipping, HIO, RAAR, DiffMap, direct methods, Patterson)
 - Hybrid pipelines (ensemble free-FOM ranking, AI-PhaSeed, partial-φ / fragment seeding)
 - Learned priors (GraphPhaseNet v3–**v11**, hard-P1 PhaseMLP) with **honest hard-region metrics**
-- Scientist CLI (`gps-solve`) exporting density + **SHELXL-style `trial.res`**
+- Scientist CLI (`gps-solve`) exporting density + Q-peak `trial.res` for Olex2 hand-build (not a SHELXL start)
 - Optional head-to-head vs academic **SHELXS** (binaries not redistributed)
 
 It is a **correct modular testbed and hybrid assistant**, not a claim of a general closed-form solution of the phase problem.
@@ -46,7 +46,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C20 | GraphPhaseNet **v10** (d_in=30 hop3 multipath + Wilson B proxy) + Melgalvis B-inflate/amp-noise hooks; hold-out frac≤20° remains **below 30% bar** on pilots | [math/graph_phase_net_v10.md](math/graph_phase_net_v10.md), [`strong_prior_v10.md`](../data/processed/strong_prior_v10.md) |
 | C21 | Research **generative_structure** method (CF-peak→Fcalc seed; optional Langevin polish) — **not** auto; no trained generative weights redistributed | [math/generative_structure.md](math/generative_structure.md) |
 | C22 | GraphPhaseNet **v11** (d_in=34 intensity moments / centro cues) + Melgalvis contact packing / `xdxd` curriculum; pilots remain **below 30%** strong-seed bar unless scoreboard says YES | [math/graph_phase_net_v11.md](math/graph_phase_net_v11.md), [`strong_prior_v11.md`](../data/processed/strong_prior_v11.md) |
-| C23 | CrystalX-inspired **peak→atom typing** (+ optional H) improves `trial.res` labels via geometry/height heuristics — not trained CrystalX weights | [math/crystalx_typing.md](math/crystalx_typing.md) |
+| C23 | CrystalX-inspired **peak→atom typing** exists as a research/optional helper — **not** the `gps-solve` `trial.res` product path (that file is Q peaks + `SFAC C` for Olex2 hand-build, not typed SHELXL labels) | [math/crystalx_typing.md](math/crystalx_typing.md) |
 | C24 | XDXD-inspired **coordinate proposal** multi-start CF→atoms; optional GraPhAI **external** H2H skeleton (`GRAPHAI_HOME`) — weights never redistributed | [math/generative_structure.md](math/generative_structure.md), [`third_party/graphai/README.md`](../third_party/graphai/README.md) |
 | C25 | **COD Vol-band stratified panel** (6 local COD with Fobs+Fcalc): auto weak across bands; **Vol 1000–3500** fragment_half mean mapCC **~0.71** (matches/beats partial_30 mean ~0.70); partial_15 under-seeds; not a 1505-structure Carrozzini panel | [`cod_stratified_bench.md`](../data/processed/cod_stratified_bench.md) |
 
@@ -72,7 +72,7 @@ See also: [math/uniqueness_and_bounds.md](math/uniqueness_and_bounds.md).
 
 1. **Integrated open stack** — classical + hybrid + metrics + CLI in one reproducible package.  
 2. **Honest hard-region science** — seed-quality bar (30% / 20°) separates “extension works” from “prior insufficient.” GraphPhaseNet **v3–v11** is a documented negative.  
-3. **Product path** — `auto` → ensemble (easy); `partial_phaseed` / fragment / predicted model (hard + partial info); optional SHELXS±E → `trial.res` → SHELXL.  
+3. **Product path** — `auto` → ensemble (easy); `partial_phaseed` / fragment / predicted model (hard + partial info); optional SHELXS±E; `trial.res` is Q peaks for Olex2 hand-build, not a SHELXL starting model.  
 4. **External calibration** — SHELXS H2H; COD Fobs; two-cell fragment hard path (C16); **Vol-band panel** (C25).  
 
 ---

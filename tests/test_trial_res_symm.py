@@ -97,3 +97,41 @@ def test_write_shelxl_res_p212121_symm():
     for line in _BRAGG:
         assert line in res
     assert "REM space_group_hint=P 21 21 21" in res
+
+
+def test_shelx_latt_symm_p21n_unique_generator():
+    """COD 2230859: LATT 1 + one 2₁. Full gemmi dump fails Olex2 lattice centering."""
+    from grok_phase_solver.physics.symmetry import gemmi_available
+
+    if not gemmi_available():
+        return
+    for name in ("P 21/n", "P21/n", "P 1 21/n 1"):
+        latt, cards = shelx_latt_symm(name)
+        assert latt == 1, name
+        assert cards == ["-X+1/2, Y+1/2, -Z+1/2"], (name, cards)
+        lines = "\n".join(f"SYMM {c}" for c in cards)
+        assert "SYMM -X, -Y, -Z" not in lines
+        assert "0.5" not in "".join(cards)
+        assert "X+1/2, -Y+1/2, Z+1/2" not in "".join(cards)
+
+
+def test_shelx_latt_symm_p21c_unique_generator():
+    from grok_phase_solver.physics.symmetry import gemmi_available
+
+    if not gemmi_available():
+        return
+    latt, cards = shelx_latt_symm("P 21/c")
+    assert latt == 1
+    assert cards == ["-X, Y+1/2, -Z+1/2"]
+
+
+def test_format_p21n_olex2_header():
+    from grok_phase_solver.physics.shelx_cards import format_shelx_latt_symm_lines
+    from grok_phase_solver.physics.symmetry import gemmi_available
+
+    if not gemmi_available():
+        return
+    lines = format_shelx_latt_symm_lines("P 21/n")
+    assert lines[0] == "LATT 1"
+    assert lines[1:] == ["SYMM -X+1/2, Y+1/2, -Z+1/2"]
+    assert sum(1 for ln in lines if ln.startswith("SYMM")) == 1
