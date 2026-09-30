@@ -96,6 +96,8 @@ _SG_ALIASES = {
 def normalize_space_group_name(name: Optional[str]) -> str:
     """Normalize common short SG names to gemmi-friendly HM strings."""
     raw = (name or "P 1").strip() or "P 1"
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
+        raw = raw[1:-1].strip() or "P 1"
     key = raw.replace(" ", "").upper().replace("−", "-")
     if key in _SG_ALIASES:
         return _SG_ALIASES[key]

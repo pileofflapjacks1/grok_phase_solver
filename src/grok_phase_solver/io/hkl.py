@@ -212,6 +212,10 @@ def load_hkl_cif(path: PathLike) -> ReflectionTable:
         cell = None
 
     sg = block.find_value("_symmetry_space_group_name_H-M")
+    if isinstance(sg, str):
+        sg = sg.strip()
+        if len(sg) >= 2 and sg[0] == sg[-1] and sg[0] in ("'", '"'):
+            sg = sg[1:-1].strip()
     wl = block.find_value("_diffrn_radiation_wavelength")
     wavelength = float(wl) if wl not in (None, "?", ".") else None
 
