@@ -284,6 +284,11 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
       `cod_stratified_bench` (16 datasets, 12 in Vol 1000–3500). Pooled
       fragment_half mapCC ~0.72, partial_30 ~0.74, auto ~0.16. v0.13.1
       n=4 freeze left as written. Version stays 0.13.4.
+29. [x] **R1 gate diagnostic** on those 12 Fobs fragment_half rows: mapCC 8/12,
+      peak recovery 11/12, carbon-peak R1 0/12. Typed-peak side R1 also stays
+      above 0.45 (minimum 0.477). COD 1544230 R1 is missing because one cutoff
+      reflection makes the phase list one shorter than the amplitude list.
+      `data/processed/r1_gate_diagnostic.md`. Strict bar unchanged.
 
 ---
 
