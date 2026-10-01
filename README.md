@@ -172,7 +172,7 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 | CrystalX-inspired peak→atom typing improves `trial.res` (heuristic) | [math](docs/math/crystalx_typing.md) |
 | Research generative / XDXD-style coordinate proposal (not auto) | [math](docs/math/generative_structure.md) |
 | **COD fragment hard path** — fragment_half mapCC ≈/≥ partial_30 on 2016452 / 2100301 | [`cod_hard_path_validation.md`](data/processed/cod_hard_path_validation.md) |
-| **COD Vol-band panel** — 6 COD sets (lt1000 / **1000–3500** / gt3500); mid-band fragment_half mean mapCC **~0.71** vs auto **~0.27** | [`cod_stratified_bench.md`](data/processed/cod_stratified_bench.md) |
+| **COD Vol-band panel** — 16 COD sets (12 in **1000–3500**); pooled mid-band fragment_half mean mapCC **~0.72**, partial_30 **~0.74**, auto **~0.16** (Fobs-only fragment_half **~0.72** vs partial_30 **~0.71**). v0.13.1 freeze was the n=4 pilot (~0.71 vs ~0.27) | [`cod_stratified_bench.md`](data/processed/cod_stratified_bench.md) |
 | **COD 2012000 Fobs fragment → Olex2** — working `gps-solve` + File → Open / View → Work → Info trail (Q peaks, not a SHELXL start) | [`cod_midband_fragment_trail.md`](docs/examples/cod_midband_fragment_trail.md) |
 | Melgalvis large-cell + ring scaffolds (Vol ~1000–3500 Å³ curricula) | [math](docs/math/synthetic_melgalvis.md) |
 | Free FOM v2.1 — positivity residual $R_+$; reduces false “solved” gates | [math](docs/math/free_fom.md) |

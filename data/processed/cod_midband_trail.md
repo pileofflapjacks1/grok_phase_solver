@@ -30,7 +30,7 @@ Source: `data/processed/cod_stratified_bench.md`.
 |-----|-----|----------|----------|----|--------|
 | fobs | fragment_half | **0.675** | 0.776 | 0.53 | **False** |
 
-Strict success = mapCC_OI ≥ 0.7 AND peak recovery ≥ 0.5 AND R1 ≤ 0.45. This Fobs fragment_half row is not a strict solve (mapCC 0.675, R1 0.53). Mid-band mean fragment_half mapCC ~0.71 vs auto ~0.27 (C25).
+Strict success = mapCC_OI ≥ 0.7 AND peak recovery ≥ 0.5 AND R1 ≤ 0.45. This Fobs fragment_half row is not a strict solve (mapCC 0.675, R1 0.53). Living mid-band panel (12 structures, Fobs+Fcalc pooled n=24): fragment_half mean mapCC ~0.72, partial_30 ~0.74, auto ~0.16. Fobs-only n=12: fragment_half ~0.72, partial_30 ~0.71, auto ~0.18. The v0.13.1 freeze was the n=4 pilot (~0.71 vs auto ~0.27).
 
 ## gps-solve equivalent
 

@@ -58,7 +58,7 @@
 - [ ] Millions-scale dataset pipeline (HDF5 / LMDB)
 - [ ] Trained equivariant / XDXD weights (external)
 - [ ] Cluster scale-xl clear of 30% seed bar
-- [x] Expanded COD Vol 1000–3500 experimental panel (local 6-structure / 48-run; not 1505-COD)
+- [x] Expanded COD Vol 1000–3500 experimental panel (living: 16 structures / 128 runs, 12 mid-band; not 1505-COD)
 - [x] Paper / claim freeze to v0.13.1 (Figs. 1–6; Vol-band headline; v3–v11 negative)
 
 ## Phase 3 — Hybrid solvers & new mathematics

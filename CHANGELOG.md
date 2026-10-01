@@ -8,7 +8,20 @@
 - `gps-solve` writes `olex2_handbuild.md` next to `trial.res`
 - COD 2012000 Fobs fragment trail: `python scripts/run_cod_midband_trail.py`
   ([docs/examples/cod_midband_fragment_trail.md](docs/examples/cod_midband_fragment_trail.md))
-- Science claims unchanged (0.13.1 freeze); version stays **0.13.4**
+- Science freeze stays v0.13.1; version stays **0.13.4**
+
+### COD mid-band panel (16 structures)
+- Ten additional light-atom CHNOF Fobs cells in Vol 1000–3500 Å³
+  (`src/grok_phase_solver/data/cod.py`; CIF+HKL under `data/raw/cod/`).
+- Living scoreboard `cod_stratified_bench`: 16 datasets, 128 OK rows.
+  Mid-band pooled (n=24): fragment_half mean mapCC **~0.72**, partial_30
+  **~0.74**, auto **~0.16**. Fobs-only (n=12): fragment_half **~0.72**,
+  partial_30 **~0.71**, auto **~0.18**. fragment_half does not beat
+  partial_30 on the pooled table. No Fobs fragment_half row is a strict
+  solve. COD 1544230 R1 and peak recovery did not score (mapCC kept).
+- The v0.13.1 paper freeze (n=4 mid-band pilot, ~0.71 vs ~0.27) is
+  unchanged in `docs/arxiv_draft.md` and the v0.13.1 release notes.
+- No solver or strict-metric change. Version stays **0.13.4**.
 
 ## 0.13.4 — 2026-08
 
