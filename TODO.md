@@ -229,6 +229,7 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
 - [ ] Cluster **scale-xl** retrain (5k–10k) toward 30% seed bar
 - [ ] Wire real GraPhAI local API when user installs Zenodo package
 - [x] Expand experimental COD Vol 1000–3500 Å³ panel (`cod_stratified_bench`: 16 COD, 12 mid-band; not a 1505 Carrozzini panel)
+- [x] `gps-generate` coordinate denoiser plus random-clash baseline and experimental `diffusion_hybrid` row (research, not default). Scoreboard `data/processed/generate_scoreboard.md`. No energy model.
 - [ ] True SE(3) / trained XDXD weights (external research)
 - [ ] Optional cctbx backend; OMC25-scale data mirror
 - [x] PyPI 0.13.4 upload — https://pypi.org/project/grok-phase-solver/0.13.4/
