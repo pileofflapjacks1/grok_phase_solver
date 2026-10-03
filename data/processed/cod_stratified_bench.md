@@ -196,7 +196,8 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 - Strict multi-criterion *solved* can fail on R1 under short budgets.
 - Mid-band expansion (2026-09): ten additional light-atom CHNOF Fobs cells (~26 non-H). Original six rows are unchanged.
 - Pooled Vol 1000–3500 (n=24): fragment_half mean mapCC 0.724, partial_30 0.742, auto 0.162. Fobs-only (n=12): fragment_half 0.720, partial_30 0.711, auto 0.180. fragment_half does not beat partial_30 on the pooled table. No Fobs fragment_half row is a strict solve (R1 stays above 0.45 where scored).
-- COD **1544230**: mapCC is finite and kept in the mean; R1 and peak recovery did not score on any of the eight runs, so it is not a strict solve.
+- COD **1544230**: mapCC is finite and kept in the mean. R1 and peak recovery are missing because the bench keeps reflection (1 9 6) at d just below 1.0 Å and the solver drops it, so evaluation sees 1968 amplitudes and 1967 phases. See `r1_gate_diagnostic.md`.
+- Fobs `fragment_half` gates on this mid-band: mapCC ≥ 0.7 on 8/12, peak recovery ≥ 0.5 on 11/12, carbon-peak R1 ≤ 0.45 on 0/12. A side R1 with deposited element types on those peaks stays above 0.45 (minimum 0.477) and does not change `solved`.
 
 Regenerate:
 ```bash

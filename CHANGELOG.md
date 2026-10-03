@@ -29,6 +29,12 @@
   unchanged in `docs/arxiv_draft.md` and the v0.13.1 release notes.
 - No solver or strict-metric change. Version stays **0.13.4**.
 
+### R1 gate on the mid-band Fobs fragment rows
+- Per-gate counts on the 12 Fobs `fragment_half` rows: mapCC ≥ 0.7 on **8/12**, peak recovery ≥ 0.5 on **11/12**, carbon-peak R1 ≤ 0.45 on **0/12**. Strict bar unchanged.
+- Side R1, same peaks with deposited element types where a peak matches a true site: mean **0.553**, minimum **0.477**, none ≤ 0.45. Does not flip `solved`. Table: [`r1_gate_diagnostic.md`](data/processed/r1_gate_diagnostic.md).
+- COD **1544230** stays in the mapCC mean. Scoreboard R1 and peak recovery are missing because the bench keeps reflection (1 9 6) at d just below 1.0 Å (|F| = 0) and `evaluate_success` then sees 1968 amplitudes against 1967 phases.
+- Version stays **0.13.4**. No solver change.
+
 ## 0.13.4 — 2026-08
 
 Patch so **`--retry-with-peaks`** rides PyPI (was on `main` only after 0.13.3).  
