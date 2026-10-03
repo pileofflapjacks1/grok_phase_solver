@@ -198,6 +198,7 @@ def test_report_includes_next_action_section(tmp_path: Path):
     assert "## Next action" in md
     assert "Vol 1000" in md
     assert "partial_phaseed" in md
+    assert "carbon-peak R1" not in md
     written = export_solution(result, tmp_path)
     names = {p.name for p in written}
     assert "report.md" in names
@@ -211,3 +212,46 @@ def test_report_includes_next_action_section(tmp_path: Path):
     summary = json.loads((tmp_path / "solve_summary.json").read_text())
     assert summary["next_action"]["primary_id"] == "fragment_or_predicted"
     assert summary["next_action"]["vol_band"] == "vol_1000_3500"
+
+
+def test_fragment_report_names_the_three_gates_separately():
+    hkl = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]], dtype=float)
+    result = SolveResult(
+        hkl=hkl,
+        amplitudes=np.ones(4),
+        phases=np.zeros(4),
+        density=np.zeros((8, 8, 8)),
+        cell=np.array([12.0, 12.0, 12.0, 90.0, 90.0, 90.0]),
+        space_group_hm="P 1 21 1",
+        method="partial_phaseed",
+        d_min=1.0,
+        peaks=[],
+        diagnostics={
+            "free_fom_composite": 0.77,
+            "seed_kind": "fragment_fcalc",
+            "seed_source": "predicted_model",
+            "information_source": "fragment",
+        },
+    )
+    md = _render_report(result)
+    map_at = md.index("**mapCC_OI**")
+    peak_at = md.index("**peak recovery**")
+    r1_at = md.index("**carbon-peak R1**")
+    assert map_at < peak_at < r1_at
+    assert "not a SHELXL residual" in md
+    assert "B = 5" in md
+    assert "does not compute them" in md
+
+    peaks_only = SolveResult(
+        hkl=hkl,
+        amplitudes=np.ones(4),
+        phases=np.zeros(4),
+        density=np.zeros((8, 8, 8)),
+        cell=np.array([12.0, 12.0, 12.0, 90.0, 90.0, 90.0]),
+        space_group_hm="P 1",
+        method="partial_phaseed",
+        d_min=1.0,
+        peaks=[],
+        diagnostics={"seed_kind": "seed_peaks_csv", "seed_source": "seed_peaks_csv"},
+    )
+    assert "carbon-peak R1" not in _render_report(peaks_only)

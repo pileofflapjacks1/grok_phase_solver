@@ -73,6 +73,8 @@ def generate_hkl(
         hkl = hkl[~((hkl[:, 0] == 0) & (hkl[:, 1] == 0) & (hkl[:, 2] == 0))]
 
     d = d_spacing(hkl, cell)
+    # Wider than io.hkl.D_MIN_SLACK_A (1e-9), which the solver reload and the
+    # COD benches share. Do not copy this 1e-8 into filter_resolution.
     hkl = hkl[d >= d_min - 1e-8]
 
     if not expand_friedel:

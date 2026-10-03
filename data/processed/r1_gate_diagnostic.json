@@ -107,37 +107,27 @@
     },
     {
       "dataset": "1544230",
-      "scoreboard_mapcc": 0.6687627118108962,
-      "scoreboard_peak_recovery": NaN,
-      "scoreboard_r1": NaN,
+      "scoreboard_mapcc": 0.6675667557859216,
+      "scoreboard_peak_recovery": 1.0,
+      "scoreboard_r1": 0.5623991888810108,
       "scoreboard_solved": false,
       "pass_mapcc": false,
-      "pass_peak": false,
+      "pass_peak": true,
       "pass_r1": false,
       "n_bench_reflections": 1968,
-      "n_solver_reflections": 1967,
-      "n_reload_reflections": 1967,
-      "dropped_reflections": [
-        {
-          "hkl": [
-            1,
-            9,
-            6
-          ],
-          "d": 0.9999999996941449,
-          "amplitude": 0.0
-        }
-      ],
+      "n_solver_reflections": 1968,
+      "n_reload_reflections": 1968,
+      "dropped_reflections": [],
       "diag_r1_carbon": 0.5636436952214233,
       "carbon_minus_scoreboard": null,
       "diag_r1_typed": 0.5524436492155267,
       "n_typed_matched": 73,
       "n_peaks_used": 104,
-      "eval_error": "ValueError: operands could not be broadcast together with shapes (1968,) (1967,) ",
-      "eval_r1_on_bench_list": null,
-      "eval_peak_on_bench_list": null,
+      "eval_error": null,
+      "eval_r1_on_bench_list": 0.5623991888810108,
+      "eval_peak_on_bench_list": 1.0,
       "seconds": 2.550502061843872,
-      "note": "COD 1544230 stays in the mapCC mean. Scoreboard R1 and peak recovery are missing because of a reflection-list mismatch, not an empty density. The bench keeps d \u2265 d_min \u2212 1e-9. solve_structure reloads the same file and keeps d \u2265 d_min, dropping (1 9 6) d=0.999999999694 \u00c5 |F|=0. The solver returns 1967 phases and the bench list has 1968 amplitudes. evaluate_success raises `ValueError: operands could not be broadcast together with shapes (1968,) (1967,) `. The bench stores that failure as missing R1 and peak recovery. The typed R1 in this table uses original |F| on the reflections the solver kept. It is not a scoreboard R1 and it does not set solved."
+      "note": "The bench and solve_structure share d_min_keep_mask (d >= d_min - 1e-9), so (1 9 6) d=0.999999999694 A |F|=0 stays in both lists (1968 amplitudes and 1968 phases). Fobs fragment_half mapCC moved from 0.669 to 0.668. Scoreboard carbon-peak R1 is 0.562 and peak recovery is 1.000. The row is not a strict solve. Typed R1 0.552 is the earlier side measurement on the 1967 reflections the solver used to drop. It is not the scoreboard R1 and it does not set solved."
     },
     {
       "dataset": "1544651",
@@ -311,11 +301,11 @@
   "gate_counts": {
     "n": 12,
     "mapcc": 8,
-    "peak": 11,
+    "peak": 12,
     "r1": 0,
     "solved": 0
   },
   "n_typed_r1_le_0.45": 0,
-  "typed_summary": "Typed-peak R1 was computed for 12 of 12 rows (mean 0.553, minimum 0.477). 0 of those side values are \u2264 0.45. Unmatched peaks stay carbon, so the side residual stays close to the frozen carbon-peak R1. That count does not change `solved`. Scoreboard carbon-peak R1, where it exists (n=11), has mean 0.563 and minimum 0.473.",
-  "cell_1544230": "COD 1544230 stays in the mapCC mean. Scoreboard R1 and peak recovery are missing because of a reflection-list mismatch, not an empty density. The bench keeps d \u2265 d_min \u2212 1e-9. solve_structure reloads the same file and keeps d \u2265 d_min, dropping (1 9 6) d=0.999999999694 \u00c5 |F|=0. The solver returns 1967 phases and the bench list has 1968 amplitudes. evaluate_success raises `ValueError: operands could not be broadcast together with shapes (1968,) (1967,) `. The bench stores that failure as missing R1 and peak recovery. The typed R1 in this table uses original |F| on the reflections the solver kept. It is not a scoreboard R1 and it does not set solved."
+  "typed_summary": "Typed-peak R1 was computed for 12 of 12 rows (mean 0.553, minimum 0.477). 0 of those side values are \u2264 0.45. Unmatched peaks stay carbon, so the side residual stays close to the frozen carbon-peak R1. That count does not change `solved`. Scoreboard carbon-peak R1 (n=12) has mean 0.563 and minimum 0.473.",
+  "cell_1544230": "The bench and solve_structure share d_min_keep_mask (d >= d_min - 1e-9), so (1 9 6) d=0.999999999694 A |F|=0 stays in both lists (1968 amplitudes and 1968 phases). Fobs fragment_half mapCC moved from 0.669 to 0.668. Scoreboard carbon-peak R1 is 0.562 and peak recovery is 1.000. The row is not a strict solve. Typed R1 0.552 is the earlier side measurement on the 1967 reflections the solver used to drop. It is not the scoreboard R1 and it does not set solved."
 }

@@ -10,9 +10,10 @@ The side residual places the same strongest peaks used by ``r1_from_peaks``
 and assigns deposited non-H elements where a peak matches a true site.
 Unmatched peaks stay carbon. B = 5, same scaled R1.
 
-COD 1544230 is kept. Its scoreboard R1 and peak recovery are missing because
-``evaluate_success`` raises when the bench reflection list is one row longer
-than the phases ``solve_structure`` returns.
+COD 1544230 is kept. The bench and ``solve_structure`` share
+``d_min_keep_mask`` (d ≥ d_min − 1e-9). A re-run should score R1 and peak
+recovery on that cell. The committed diagnostic note from before that
+alignment described the one-reflection mismatch.
 
 Usage (from repo root)::
 
@@ -35,7 +36,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from grok_phase_solver.io.cif import CrystalStructure, load_cif
 from grok_phase_solver.io.experiment import load_experiment
-from grok_phase_solver.io.hkl import ReflectionTable, write_hkl_simple
+from grok_phase_solver.io.hkl import ReflectionTable, d_min_keep_mask, write_hkl_simple
 from grok_phase_solver.metrics.r1_diagnostic import r1_from_typed_peaks
 from grok_phase_solver.metrics.success import (
     SuccessThresholds,
@@ -128,7 +129,7 @@ def _bench_reflections(st: CrystalStructure, hkl_path: Path):
         space_group=st.space_group_hm,
     )
     d = d_spacing(table.hkl, table.cell)
-    keep = d >= (D_MIN - 1e-9)
+    keep = d_min_keep_mask(d, D_MIN)
     return table.hkl[keep], table.amplitudes[keep], d[keep]
 
 

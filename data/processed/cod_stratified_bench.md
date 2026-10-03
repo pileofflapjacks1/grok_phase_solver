@@ -93,14 +93,14 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 | 1543227 | fobs | partial_15 | **0.535** | 0.719 | 0.55 | False | `vol_1000_3500` | 8 | 11.4 |
 | 1543227 | fobs | partial_30 | **0.730** | 0.757 | 0.41 | True | `vol_1000_3500` | 8 | 12.2 |
 | 1543227 | fobs | fragment_half | **0.762** | 0.782 | 0.47 | False | `vol_1000_3500` | 8 | 12.4 |
-| 1544230 | fcalc | auto | **0.110** | 0.701 | — | False | `vol_1000_3500` | 8 | 9.9 |
-| 1544230 | fcalc | partial_15 | **0.588** | 0.784 | — | False | `vol_1000_3500` | 8 | 5.5 |
-| 1544230 | fcalc | partial_30 | **0.782** | 0.776 | — | False | `vol_1000_3500` | 8 | 5.5 |
-| 1544230 | fcalc | fragment_half | **0.672** | 0.691 | — | False | `vol_1000_3500` | 8 | 6.9 |
-| 1544230 | fobs | auto | **0.175** | 0.731 | — | False | `vol_1000_3500` | 8 | 3.6 |
-| 1544230 | fobs | partial_15 | **0.487** | 0.714 | — | False | `vol_1000_3500` | 8 | 2.2 |
-| 1544230 | fobs | partial_30 | **0.703** | 0.742 | — | False | `vol_1000_3500` | 8 | 2.1 |
-| 1544230 | fobs | fragment_half | **0.669** | 0.777 | — | False | `vol_1000_3500` | 8 | 2.8 |
+| 1544230 | fcalc | auto | **0.171** | 0.592 | 0.63 | False | `vol_1000_3500` | 8 | 16.8 |
+| 1544230 | fcalc | partial_15 | **0.568** | 0.786 | 0.55 | False | `vol_1000_3500` | 8 | 14.5 |
+| 1544230 | fcalc | partial_30 | **0.779** | 0.780 | 0.45 | True | `vol_1000_3500` | 8 | 14.5 |
+| 1544230 | fcalc | fragment_half | **0.671** | 0.692 | 0.53 | False | `vol_1000_3500` | 8 | 17.3 |
+| 1544230 | fobs | auto | **0.165** | 0.686 | 0.63 | False | `vol_1000_3500` | 8 | 15.2 |
+| 1544230 | fobs | partial_15 | **0.491** | 0.717 | 0.58 | False | `vol_1000_3500` | 8 | 12.3 |
+| 1544230 | fobs | partial_30 | **0.707** | 0.743 | 0.47 | False | `vol_1000_3500` | 8 | 12.5 |
+| 1544230 | fobs | fragment_half | **0.668** | 0.777 | 0.56 | False | `vol_1000_3500` | 8 | 15.6 |
 | 1544651 | fcalc | auto | **0.101** | 0.715 | 0.67 | False | `vol_1000_3500` | 8 | 18.6 |
 | 1544651 | fcalc | partial_15 | **0.617** | 0.782 | 0.52 | False | `vol_1000_3500` | 8 | 15.2 |
 | 1544651 | fcalc | partial_30 | **0.809** | 0.774 | 0.39 | True | `vol_1000_3500` | 8 | 14.9 |
@@ -160,10 +160,10 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 
 ## Summary by Vol band × run
 
-- `vol_1000_3500/auto`: n=24 mean mapCC=**0.162** (median 0.151)
+- `vol_1000_3500/auto`: n=24 mean mapCC=**0.164** (median 0.159)
 - `vol_1000_3500/fragment_half`: n=24 mean mapCC=**0.724** (median 0.723)
-- `vol_1000_3500/partial_15`: n=24 mean mapCC=**0.561** (median 0.570)
-- `vol_1000_3500/partial_30`: n=24 mean mapCC=**0.742** (median 0.745)
+- `vol_1000_3500/partial_15`: n=24 mean mapCC=**0.560** (median 0.568)
+- `vol_1000_3500/partial_30`: n=24 mean mapCC=**0.743** (median 0.745)
 - `vol_gt_3500/auto`: n=2 mean mapCC=**0.075** (median 0.075)
 - `vol_gt_3500/fragment_half`: n=2 mean mapCC=**0.493** (median 0.493)
 - `vol_gt_3500/partial_15`: n=2 mean mapCC=**0.447** (median 0.447)
@@ -177,14 +177,14 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 
 | Run/amp | n | mean mapCC | median |
 |---------|---|------------|--------|
-| `auto/fcalc` | 12 | **0.143** | 0.108 |
-| `auto/fobs` | 12 | **0.180** | 0.168 |
+| `auto/fcalc` | 12 | **0.148** | 0.108 |
+| `auto/fobs` | 12 | **0.180** | 0.163 |
 | `fragment_half/fcalc` | 12 | **0.729** | 0.723 |
 | `fragment_half/fobs` | 12 | **0.720** | 0.727 |
-| `partial_15/fcalc` | 12 | **0.592** | 0.588 |
+| `partial_15/fcalc` | 12 | **0.590** | 0.587 |
 | `partial_15/fobs` | 12 | **0.530** | 0.530 |
-| `partial_30/fcalc` | 12 | **0.774** | 0.775 |
-| `partial_30/fobs` | 12 | **0.711** | 0.713 |
+| `partial_30/fcalc` | 12 | **0.773** | 0.775 |
+| `partial_30/fobs` | 12 | **0.712** | 0.713 |
 
 ## Takeaways
 
@@ -195,9 +195,9 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 - Vol **1000–3500 Å³** is the Carrozzini / AI-PhaSeed hybrid-friendly band.
 - Strict multi-criterion *solved* can fail on R1 under short budgets.
 - Mid-band expansion (2026-09): ten additional light-atom CHNOF Fobs cells (~26 non-H). Original six rows are unchanged.
-- Pooled Vol 1000–3500 (n=24): fragment_half mean mapCC 0.724, partial_30 0.742, auto 0.162. Fobs-only (n=12): fragment_half 0.720, partial_30 0.711, auto 0.180. fragment_half does not beat partial_30 on the pooled table. No Fobs fragment_half row is a strict solve (R1 stays above 0.45 where scored).
-- COD **1544230**: mapCC is finite and kept in the mean. R1 and peak recovery are missing because the bench keeps reflection (1 9 6) at d just below 1.0 Å and the solver drops it, so evaluation sees 1968 amplitudes and 1967 phases. See `r1_gate_diagnostic.md`.
-- Fobs `fragment_half` gates on this mid-band: mapCC ≥ 0.7 on 8/12, peak recovery ≥ 0.5 on 11/12, carbon-peak R1 ≤ 0.45 on 0/12. A side R1 with deposited element types on those peaks stays above 0.45 (minimum 0.477) and does not change `solved`.
+- Pooled Vol 1000–3500 (n=24): fragment_half mean mapCC 0.724, partial_30 0.743, auto 0.164. Fobs-only (n=12): fragment_half 0.720, partial_30 0.712, auto 0.180. fragment_half does not beat partial_30 on the pooled table. No Fobs fragment_half row is a strict solve (carbon-peak R1 stays above 0.45).
+- COD **1544230** was rescored after the bench and `solve_structure` shared `d_min_keep_mask` (d ≥ d_min − 1e-9). Other panel cells have no reflection in that window, so their rows were not rerun. Fobs fragment_half mapCC moved from 0.669 to 0.668; carbon-peak R1 is 0.562 and peak recovery is 1.000. That row is still not a strict solve. Fcalc partial_30 on this cell now scores solved (mapCC 0.779, peak recovery 1.000, R1 0.447). See `r1_gate_diagnostic.md`.
+- Fobs `fragment_half` gates on this mid-band: mapCC ≥ 0.7 on 8/12, peak recovery ≥ 0.5 on 12/12, carbon-peak R1 ≤ 0.45 on 0/12. A side R1 with deposited element types on those peaks stays above 0.45 (minimum 0.477) and does not change `solved`.
 
 Regenerate:
 ```bash

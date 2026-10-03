@@ -39,7 +39,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from grok_phase_solver.io.cif import AtomSite, CrystalStructure, load_cif
 from grok_phase_solver.io.experiment import load_experiment
-from grok_phase_solver.io.hkl import ReflectionTable, write_hkl_simple
+from grok_phase_solver.io.hkl import ReflectionTable, d_min_keep_mask, write_hkl_simple
 from grok_phase_solver.metrics.map_cc import map_correlation_origin_invariant
 from grok_phase_solver.metrics.stratified_prior import is_ha_bearing, max_Z_from_elements
 from grok_phase_solver.metrics.success import SuccessThresholds, evaluate_success
@@ -426,7 +426,7 @@ def main():
                     space_group=st.space_group_hm,
                 )
                 d = d_spacing(table.hkl, table.cell)
-                keep = d >= (d_min - 1e-9)
+                keep = d_min_keep_mask(d, d_min)
                 hkl_o = table.hkl[keep]
                 amp_o = table.amplitudes[keep]
                 ph_t, frac_m, fdata = match_truth_phases(hkl_o, st, d_min)
@@ -565,6 +565,10 @@ def main():
             "approach partial_30 mapCC (see also `cod_hard_path_validation.md`).",
             "- Vol **1000–3500 Å³** is the Carrozzini / AI-PhaSeed hybrid-friendly band.",
             "- Strict multi-criterion *solved* can fail on R1 under short budgets.",
+            "- Mid-band expansion (2026-09): ten additional light-atom CHNOF Fobs cells (~26 non-H). Original six rows are unchanged.",
+            "- Pooled Vol 1000–3500 (n=24): fragment_half mean mapCC 0.724, partial_30 0.743, auto 0.164. Fobs-only (n=12): fragment_half 0.720, partial_30 0.712, auto 0.180. fragment_half does not beat partial_30 on the pooled table. No Fobs fragment_half row is a strict solve (carbon-peak R1 stays above 0.45).",
+            "- COD **1544230** was rescored after the bench and `solve_structure` shared `d_min_keep_mask` (d ≥ d_min − 1e-9). Other panel cells have no reflection in that window, so their rows were not rerun. Fobs fragment_half mapCC moved from 0.669 to 0.668; carbon-peak R1 is 0.562 and peak recovery is 1.000. That row is still not a strict solve. Fcalc partial_30 on this cell now scores solved (mapCC 0.779, peak recovery 1.000, R1 0.447). See `r1_gate_diagnostic.md`.",
+            "- Fobs `fragment_half` gates on this mid-band: mapCC ≥ 0.7 on 8/12, peak recovery ≥ 0.5 on 12/12, carbon-peak R1 ≤ 0.45 on 0/12. A side R1 with deposited element types on those peaks stays above 0.45 (minimum 0.477) and does not change `solved`.",
             "",
             "Regenerate:",
             "```bash",
