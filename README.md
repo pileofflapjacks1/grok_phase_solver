@@ -155,6 +155,26 @@ Full table and flags: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 
 ---
 
+## Generative track (research, not default)
+
+`gps-generate` proposes fractional coordinates for a **known** composition, cell, and space group, then scores them. It does not design materials for AR or VR. It does not replace `gps-solve` or phasing. `gps-solve --method diffusion_hybrid` is a different flag: experimental Langevin phase completion, not this coordinate model, and not the production default.
+
+The model is a small coordinate denoiser (minimum-image squared error on fractional coordinates, no $|F|$ term). The scoreboard always includes a random-plus-clash baseline. If the denoiser is clash-free less often than that baseline, the written scoreboard says so. Novelty is not measured. Stability and synthesizability are not measured, because there is no energy model. There is no DFT, VASP, LAMMPS, flow-matching result, or foundation model.
+
+Rates are only those in [`data/processed/generate_scoreboard.md`](data/processed/generate_scoreboard.md), which the script writes. Do not copy a rate from anywhere else.
+
+```bash
+python -m pip install -e ".[generate]"   # torch; not in the base install
+gps-generate --cif examples/generate/minimal.cif --n 8 --out ./gen_out
+python scripts/run_generate_scoreboard.py
+```
+
+`gps-generate --cif examples/generate/minimal.cif --n 8` took 3.2 s on CPU here (20 training steps, seed 0, trained on that CIF only). The run that wrote the current scoreboard took 9.0 s on CPU (seed 0, three COD cells with 4–20 non-hydrogen atoms, 40 denoiser steps, one experimental diffusion sample per cell). Re-running either command replaces the wall time it records.
+
+Math: [`docs/math/generative_structure.md`](docs/math/generative_structure.md). Non-claims for reviewers: [`docs/FOR_REVIEWERS.md`](docs/FOR_REVIEWERS.md) (N6–N9).
+
+---
+
 ## 4. Key scientific findings (start here if reviewing the work)
 
 **One-pager for referees:** [`docs/FOR_REVIEWERS.md`](docs/FOR_REVIEWERS.md) (claims C1–C8, non-claims, reproduce steps).
@@ -201,6 +221,8 @@ Pedagogy: [Cowtan ELS notes](docs/cowtan_phase_problem_notes.md) · [Phase probl
 | Projections | RAAR, DiffMap, ER | `solvers/iterative_retrieval.py` |
 | Ranking / polish | Free FOM, multistart ensemble, conditional hybrid | `free_fom.py`, `ensemble.py`, `conditional_hybrid.py` |
 | Hybrids | AI-PhaSeed, partial-φ, graph prior | `ai_phaseed.py`, `partial_seed.py`, `models/strong_prior.py` |
+| Coordinate proposal (research) | `gps-generate` denoiser; not phasing | `generate/` |
+| Experimental phase diffusion | Langevin `diffusion_hybrid` (not the coordinate model) | `models/diffusion_phase.py` |
 | External SHELX | SHELXS solve, SHELXE density mod | `shelxs_runner.py`, `shelxe_runner.py` (binaries **not** in git) |
 
 ### External SHELX (optional)
@@ -261,6 +283,7 @@ python scripts/run_wilson_domain_gap.py
 python scripts/train_strong_prior.py --scale-xl --wilson-match
 python scripts/run_experimental_scoreboard.py
 python scripts/run_failure_taxonomy.py
+python scripts/run_generate_scoreboard.py   # coordinate track; needs .[generate]
 ```
 
 | Report | Output |
@@ -273,6 +296,7 @@ python scripts/run_failure_taxonomy.py
 | Free-FOM calibration | [`data/processed/free_fom_calibration.md`](data/processed/free_fom_calibration.md) |
 | Solvability diagram | [`data/processed/solvability_diagram.md`](data/processed/solvability_diagram.md) |
 | Experimental HKL | [`data/processed/experimental_scoreboard.md`](data/processed/experimental_scoreboard.md) |
+| Coordinate generation | [`data/processed/generate_scoreboard.md`](data/processed/generate_scoreboard.md) |
 | Full script list | [`scripts/`](scripts/) · [`TODO.md`](TODO.md) |
 
 ---
@@ -286,6 +310,7 @@ src/grok_phase_solver/
   physics/    # Fcalc, density FFT, Patterson, form factors
   metrics/    # mapCC_OI, R1, success thresholds, strong-seed bar
   models/     # GraphPhaseNet, hard_p1, PhAI fair packing
+  generate/   # gps-generate coordinate denoiser (research, not default)
   data/       # synthetic, Wilson match, MIR/MAD/MR simulators
   io/         # HKL, INS, CIF, MTZ, SHELX writers
 docs/         # USER_GUIDE + math/ + Cowtan notes
@@ -328,6 +353,7 @@ gps-download-cod          # helper for COD samples
 | SHELXS H2H notes | [docs/math/shelxs_h2h.md](docs/math/shelxs_h2h.md) |
 | Wilson matching | [docs/math/wilson_domain_gap.md](docs/math/wilson_domain_gap.md) |
 | Uniqueness / non-claims | [docs/math/uniqueness_and_bounds.md](docs/math/uniqueness_and_bounds.md) |
+| Coordinate denoiser (research) | [docs/math/generative_structure.md](docs/math/generative_structure.md) |
 | Cowtan overview | [docs/cowtan_phase_problem_notes.md](docs/cowtan_phase_problem_notes.md) |
 | Paper / arXiv draft | [docs/paper/README.md](docs/paper/README.md) · [arxiv_draft.md](docs/arxiv_draft.md) · [figures](docs/figures/paper_figure_captions.md) (claim freeze **v0.13.1**; Figs. 1–6) |
 | Notebooks | [01](notebooks/01_math_and_baseline.md) · [02](notebooks/02_patterson_and_triplets.md) · [03](notebooks/03_uniqueness_parseval_friedel.md) |

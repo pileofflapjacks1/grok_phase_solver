@@ -4,7 +4,8 @@ scipy>=1.10
 matplotlib>=3.7
 gemmi>=0.6
 
-# Optional ML (Phase 2+)
+# Optional ML (Phase 2+). Not part of the base install.
+# Coordinate track: python -m pip install -e ".[generate]"
 # torch>=2.0
 
 # Dev / notebooks

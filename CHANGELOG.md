@@ -2,6 +2,12 @@
 
 ## Unreleased — main
 
+### Generative track (research, not default)
+- `gps-generate` proposes fractional coordinates for a known composition and cell. It does not replace `gps-solve`.
+- Optional extra `.[generate]` installs torch. The base install is unchanged.
+- Scoreboard: `python scripts/run_generate_scoreboard.py` writes `data/processed/generate_scoreboard.md` (random baseline, coordinate denoiser, experimental `diffusion_hybrid`).
+- No DFT, VASP, LAMMPS, flow-matching result, foundation model, or synthesizability claim. Version stays **0.13.4**.
+
 ### Olex2 hand-build trail
 - Healthy next-action is `olex2_handbuild`: File → Open `trial.res`, then
   **View → Work → Info** for Z / Z′. Do not SHELXL the raw Q list.
