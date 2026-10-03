@@ -49,6 +49,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C23 | CrystalX-inspired **peak→atom typing** exists as a research/optional helper — **not** the `gps-solve` `trial.res` product path (that file is Q peaks + `SFAC C` for Olex2 hand-build, not typed SHELXL labels) | [math/crystalx_typing.md](math/crystalx_typing.md) |
 | C24 | XDXD-inspired **coordinate proposal** multi-start CF→atoms; optional GraPhAI **external** H2H skeleton (`GRAPHAI_HOME`) — weights never redistributed | [math/generative_structure.md](math/generative_structure.md), [`third_party/graphai/README.md`](../third_party/graphai/README.md) |
 | C25 | **COD Vol-band stratified panel** (6 local COD with Fobs+Fcalc): auto weak across bands; **Vol 1000–3500** fragment_half mean mapCC **~0.71** (matches/beats partial_30 mean ~0.70); partial_15 under-seeds; not a 1505-structure Carrozzini panel | [`cod_stratified_bench.md`](../data/processed/cod_stratified_bench.md) |
+| C26 | `gps-generate` scores a random-plus-clash baseline, a small coordinate denoiser, and the existing experimental `diffusion_hybrid` flag on a frozen in-repo COD subset. The rates are whatever the scoreboard script wrote. Novelty and stability are not measured | [`generate_scoreboard.md`](../data/processed/generate_scoreboard.md) |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 
@@ -64,7 +65,20 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | N4 | That free FOM proves a correct structure (it is a **truth-free ranking** score) |
 | N5 | Redistribution or equivalence of official SHELX, PhAI, or GraPhAI binaries/weights |
 
-See also: [math/uniqueness_and_bounds.md](math/uniqueness_and_bounds.md).
+### Generative track (research, not default)
+
+`gps-generate` proposes fractional coordinates for a known composition and cell, then scores them. It is not the `gps-solve` default. Rates, when quoted, come only from [`generate_scoreboard.md`](../data/processed/generate_scoreboard.md).
+
+| # | We do **not** claim |
+|---|---------------------|
+| N6 | DFT, VASP, or LAMMPS energies, or any stability or synthesizability score |
+| N7 | A flow-matching paper result, a foundation model, or a production generative materials model |
+| N8 | Materials design for AR/VR, or that coordinate generation solves the phase problem |
+| N9 | Novelty of the samples (the column is “not measured”). Reconstruction is held-out coordinate recovery only |
+
+`gps-solve --method diffusion_hybrid` remains an experimental Langevin phase flag. It is not this coordinate model.
+
+See also: [math/uniqueness_and_bounds.md](math/uniqueness_and_bounds.md), [math/generative_structure.md](math/generative_structure.md).
 
 ---
 
