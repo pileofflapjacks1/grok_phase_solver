@@ -39,3 +39,18 @@ mapCC uses deposited-model Fcalc phases as proxy truth.
 - Small local set — **not** a 1505-COD Carrozzini replication.
 - Short budgets: strict multi-criterion “solved” may fail on R1 even when mapCC is high.
 - fragment_half uses deposited-structure fragment knowledge (realistic for MR-like / predicted-model workflows, not pure ab initio).
+
+## Living scoreboard (2026-09)
+
+`data/processed/cod_stratified_bench.md` is the current panel: 16 local COD
+structures (12 in Vol 1000–3500 Å³), d_min = 1.0 Å, 128 OK rows.
+
+Pooled Fobs+Fcalc mid-band means (n=24): fragment_half mapCC **~0.72**,
+partial_30 **~0.74**, auto **~0.16**. Fobs-only (n=12): fragment_half
+**~0.72**, partial_30 **~0.71**, auto **~0.18**. fragment_half does not
+beat partial_30 on the pooled table. No Fobs fragment_half row is a strict
+solve. COD **1544230** has finite mapCC; R1 and peak recovery did not score.
+
+Figure 6 and `docs/arxiv_draft.md` stay the v0.13.1 freeze: the earlier n=4
+mid-band pilot (fragment_half ~0.71 vs auto ~0.27). That table is not the
+living scoreboard.

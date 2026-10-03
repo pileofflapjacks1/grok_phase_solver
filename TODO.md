@@ -153,7 +153,8 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
 - [x] Expanded COD AI-PhaSeed subset bench (`run_ai_phaseed_extended_benchmark.py`)
 - [x] Docs + CHANGELOG 0.4.0 + CLI/GUI flags
 - [x] Optional: train/persist seed Class 0/1 model on synthetic oracle labels (v0.8)
-- [ ] Optional: download larger COD Vol 1000–3500 Å³ subset for stratified bench
+- [x] Optional: download larger COD Vol 1000–3500 Å³ subset for stratified bench
+      (2026-09: +10 light-atom CHNOF cells; panel is 16 structures / 12 mid-band, not 1505)
 
 ### v0.5.0 hybrid / SG / UQ track
 - [x] Physics Langevin **diffusion hybrid** (`models/diffusion_phase.py`, methods + CLI)
@@ -227,7 +228,7 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
 - [x] Docs + tests; version 0.13.0
 - [ ] Cluster **scale-xl** retrain (5k–10k) toward 30% seed bar
 - [ ] Wire real GraPhAI local API when user installs Zenodo package
-- [x] Expand experimental COD Vol 1000–3500 Å³ panel (`cod_stratified_bench` 6 COD, mid-band filled)
+- [x] Expand experimental COD Vol 1000–3500 Å³ panel (`cod_stratified_bench`: 16 COD, 12 mid-band; not a 1505 Carrozzini panel)
 - [x] `gps-generate` coordinate denoiser plus random-clash baseline and experimental `diffusion_hybrid` row (research, not default). Scoreboard `data/processed/generate_scoreboard.md`. No energy model.
 - [ ] True SE(3) / trained XDXD weights (external research)
 - [ ] Optional cctbx backend; OMC25-scale data mirror
@@ -279,6 +280,10 @@ Open physics / AI phasing assistant for the X-ray crystallography phase problem.
 26. [x] **CCP4 map + PyMOL/Coot handoff:** `density.map`, `peaks.pdb`,
       `open_in_pymol.pml`, `open_in_coot.sh`
 27. [x] **`--retry-with-peaks`:** second-pass partial_phaseed from this run's peaks
+28. [x] **COD mid-band expansion:** 10 light-atom CHNOF Fobs cells added to
+      `cod_stratified_bench` (16 datasets, 12 in Vol 1000–3500). Pooled
+      fragment_half mapCC ~0.72, partial_30 ~0.74, auto ~0.16. v0.13.1
+      n=4 freeze left as written. Version stays 0.13.4.
 
 ---
 

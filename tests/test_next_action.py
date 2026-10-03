@@ -39,7 +39,10 @@ def test_mid_band_unsolved_points_at_fragment():
     md = format_next_action_md(rec)
     assert "partial_phaseed" in md
     assert any("retry-with-peaks" in a for a in rec["alternatives"])
-    assert "0.71" in rec["why"] or "0.71" in md
+    assert "fragment_half mean mapCC ~0.72" in rec["why"]
+    assert "auto ~0.16" in rec["why"]
+    assert "n=4" in rec["why"]
+    assert "0.72" in md
 
 
 def test_large_cell_wants_ha_or_big_fragment():

@@ -211,7 +211,11 @@ def recommend_next_action(
         "frac_le_20": sq.get("frac_le_20_all_strong", sq.get("frac_le_20")),
         "circular_mean_error_deg": sq.get("circular_mean_error_deg"),
         "frac_strong_seeded": sq.get("frac_strong_seeded"),
-        "evidence": "COD Vol-band panel (6 local structures; C25) + partial-φ 30%/20° bar",
+        "evidence": (
+            "COD Vol-band panel (16 local structures, 12 in Vol 1000–3500; "
+            "living scoreboard) + partial-φ 30%/20° bar. "
+            "v0.13.1 C25 freeze was the n=4 mid-band pilot."
+        ),
     }
 
     if outlook == "looks_healthy":
@@ -419,9 +423,11 @@ def recommend_next_action(
                 "`partial_phaseed`. Pure ab initio is the weak path here."
             ),
             "why": (
-                "Local COD Vol 1000–3500 Å³ panel: fragment_half mean mapCC ~0.71, "
-                "oracle partial_30 ~0.70, auto ~0.27 (Fobs+Fcalc pooled; C25). "
-                "Small-cell fragment_half is similarly strong (~0.74)."
+                "Local COD Vol 1000–3500 Å³ panel (12 structures; Fobs+Fcalc "
+                "pooled n=24): fragment_half mean mapCC ~0.72, oracle partial_30 "
+                "~0.74, auto ~0.16. Fobs-only (n=12): fragment_half ~0.72, "
+                "partial_30 ~0.71, auto ~0.18. The v0.13.1 freeze was the n=4 "
+                "pilot (~0.71 vs auto ~0.27). Small-cell fragment_half remains ~0.74."
             ),
             "commands": [
                 "gps-solve --hkl your.hkl --ins your.ins --method partial_phaseed "

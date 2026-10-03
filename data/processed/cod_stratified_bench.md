@@ -2,7 +2,7 @@
 
 Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. partial_30 = oracle control; fragment_half = no-oracle scientist path; auto = ab initio. Strict success = mapCC_OI≥0.7 AND peak_recovery≥0.5 AND R1≤0.45.
 
-**d_min** = 1.0 Å · **datasets** = 6 · **rows OK** = 48
+**d_min** = 1.0 Å · **datasets** = 16 · **rows OK** = 128
 
 ## Catalog
 
@@ -14,6 +14,16 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 | 2017775 | 4676 | `vol_gt_3500` | 6 | 137 | P212121 | yes |
 | 2100301 | 660 | `vol_lt_1000` | 8 | 12 | P121/c1 | yes |
 | 2200000 | 665 | `vol_lt_1000` | 8 | 18 | P1211 | yes |
+| 1543089 | 1638 | `vol_1000_3500` | 8 | 26 | P121/c1 | yes |
+| 1543227 | 1786 | `vol_1000_3500` | 8 | 26 | P121/n1 | yes |
+| 1544230 | 1878 | `vol_1000_3500` | 8 | 26 | P121/c1 | yes |
+| 1544651 | 1752 | `vol_1000_3500` | 8 | 26 | P121/c1 | yes |
+| 1549607 | 1628 | `vol_1000_3500` | 9 | 26 | P121/c1 | yes |
+| 1550274 | 1689 | `vol_1000_3500` | 8 | 26 | P121/c1 | yes |
+| 2016430 | 2611 | `vol_1000_3500` | 8 | 26 | Pbca | yes |
+| 2221836 | 3176 | `vol_1000_3500` | 8 | 26 | Pbca | yes |
+| 2227862 | 3077 | `vol_1000_3500` | 8 | 26 | Pbca | yes |
+| 2233297 | 3160 | `vol_1000_3500` | 8 | 26 | C12/c1 | yes |
 
 ## Results (all runs)
 
@@ -67,13 +77,93 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 | 2200000 | fobs | partial_15 | **0.505** | 0.749 | 0.48 | False | `vol_lt_1000` | 8 | 6.0 |
 | 2200000 | fobs | partial_30 | **0.661** | 0.775 | 0.46 | False | `vol_lt_1000` | 8 | 5.9 |
 | 2200000 | fobs | fragment_half | **0.674** | 0.760 | 0.50 | False | `vol_lt_1000` | 8 | 6.7 |
+| 1543089 | fcalc | auto | **0.164** | 0.676 | 0.62 | False | `vol_1000_3500` | 8 | 15.6 |
+| 1543089 | fcalc | partial_15 | **0.620** | 0.782 | 0.55 | False | `vol_1000_3500` | 8 | 13.4 |
+| 1543089 | fcalc | partial_30 | **0.784** | 0.793 | 0.48 | False | `vol_1000_3500` | 8 | 13.6 |
+| 1543089 | fcalc | fragment_half | **0.724** | 0.717 | 0.57 | False | `vol_1000_3500` | 8 | 16.4 |
+| 1543089 | fobs | auto | **0.188** | 0.707 | 0.63 | False | `vol_1000_3500` | 8 | 15.4 |
+| 1543089 | fobs | partial_15 | **0.538** | 0.717 | 0.61 | False | `vol_1000_3500` | 8 | 16.5 |
+| 1543089 | fobs | partial_30 | **0.730** | 0.743 | 0.55 | False | `vol_1000_3500` | 8 | 28.6 |
+| 1543089 | fobs | fragment_half | **0.744** | 0.774 | 0.59 | False | `vol_1000_3500` | 8 | 21.4 |
+| 1543227 | fcalc | auto | **0.093** | 0.679 | 0.66 | False | `vol_1000_3500` | 8 | 19.0 |
+| 1543227 | fcalc | partial_15 | **0.586** | 0.785 | 0.51 | False | `vol_1000_3500` | 8 | 15.0 |
+| 1543227 | fcalc | partial_30 | **0.759** | 0.773 | 0.39 | True | `vol_1000_3500` | 8 | 14.8 |
+| 1543227 | fcalc | fragment_half | **0.771** | 0.703 | 0.42 | True | `vol_1000_3500` | 8 | 15.9 |
+| 1543227 | fobs | auto | **0.215** | 0.730 | 0.60 | False | `vol_1000_3500` | 8 | 13.3 |
+| 1543227 | fobs | partial_15 | **0.535** | 0.719 | 0.55 | False | `vol_1000_3500` | 8 | 11.4 |
+| 1543227 | fobs | partial_30 | **0.730** | 0.757 | 0.41 | True | `vol_1000_3500` | 8 | 12.2 |
+| 1543227 | fobs | fragment_half | **0.762** | 0.782 | 0.47 | False | `vol_1000_3500` | 8 | 12.4 |
+| 1544230 | fcalc | auto | **0.110** | 0.701 | — | False | `vol_1000_3500` | 8 | 9.9 |
+| 1544230 | fcalc | partial_15 | **0.588** | 0.784 | — | False | `vol_1000_3500` | 8 | 5.5 |
+| 1544230 | fcalc | partial_30 | **0.782** | 0.776 | — | False | `vol_1000_3500` | 8 | 5.5 |
+| 1544230 | fcalc | fragment_half | **0.672** | 0.691 | — | False | `vol_1000_3500` | 8 | 6.9 |
+| 1544230 | fobs | auto | **0.175** | 0.731 | — | False | `vol_1000_3500` | 8 | 3.6 |
+| 1544230 | fobs | partial_15 | **0.487** | 0.714 | — | False | `vol_1000_3500` | 8 | 2.2 |
+| 1544230 | fobs | partial_30 | **0.703** | 0.742 | — | False | `vol_1000_3500` | 8 | 2.1 |
+| 1544230 | fobs | fragment_half | **0.669** | 0.777 | — | False | `vol_1000_3500` | 8 | 2.8 |
+| 1544651 | fcalc | auto | **0.101** | 0.715 | 0.67 | False | `vol_1000_3500` | 8 | 18.6 |
+| 1544651 | fcalc | partial_15 | **0.617** | 0.782 | 0.52 | False | `vol_1000_3500` | 8 | 15.2 |
+| 1544651 | fcalc | partial_30 | **0.809** | 0.774 | 0.39 | True | `vol_1000_3500` | 8 | 14.9 |
+| 1544651 | fcalc | fragment_half | **0.759** | 0.698 | 0.46 | False | `vol_1000_3500` | 8 | 15.9 |
+| 1544651 | fobs | auto | **0.160** | 0.681 | 0.63 | False | `vol_1000_3500` | 8 | 15.1 |
+| 1544651 | fobs | partial_15 | **0.572** | 0.726 | 0.56 | False | `vol_1000_3500` | 8 | 11.9 |
+| 1544651 | fobs | partial_30 | **0.723** | 0.747 | 0.46 | False | `vol_1000_3500` | 8 | 12.6 |
+| 1544651 | fobs | fragment_half | **0.737** | 0.780 | 0.57 | False | `vol_1000_3500` | 8 | 13.4 |
+| 1549607 | fcalc | auto | **0.106** | 0.717 | 0.64 | False | `vol_1000_3500` | 9 | 18.4 |
+| 1549607 | fcalc | partial_15 | **0.567** | 0.768 | 0.52 | False | `vol_1000_3500` | 9 | 14.5 |
+| 1549607 | fcalc | partial_30 | **0.785** | 0.791 | 0.37 | True | `vol_1000_3500` | 9 | 14.4 |
+| 1549607 | fcalc | fragment_half | **0.698** | 0.698 | 0.51 | False | `vol_1000_3500` | 9 | 16.3 |
+| 1549607 | fobs | auto | **0.087** | 0.699 | 0.62 | False | `vol_1000_3500` | 9 | 22.6 |
+| 1549607 | fobs | partial_15 | **0.620** | 0.768 | 0.52 | False | `vol_1000_3500` | 9 | 16.1 |
+| 1549607 | fobs | partial_30 | **0.797** | 0.783 | 0.42 | True | `vol_1000_3500` | 9 | 16.3 |
+| 1549607 | fobs | fragment_half | **0.663** | 0.703 | 0.54 | False | `vol_1000_3500` | 9 | 19.3 |
+| 1550274 | fcalc | auto | **0.241** | 0.631 | 0.60 | False | `vol_1000_3500` | 8 | 17.0 |
+| 1550274 | fcalc | partial_15 | **0.588** | 0.780 | 0.53 | False | `vol_1000_3500` | 8 | 13.9 |
+| 1550274 | fcalc | partial_30 | **0.772** | 0.787 | 0.45 | False | `vol_1000_3500` | 8 | 14.6 |
+| 1550274 | fcalc | fragment_half | **0.713** | 0.706 | 0.50 | False | `vol_1000_3500` | 8 | 15.8 |
+| 1550274 | fobs | auto | **0.113** | 0.761 | 0.61 | False | `vol_1000_3500` | 8 | 12.4 |
+| 1550274 | fobs | partial_15 | **0.470** | 0.692 | 0.60 | False | `vol_1000_3500` | 8 | 10.6 |
+| 1550274 | fobs | partial_30 | **0.712** | 0.712 | 0.59 | False | `vol_1000_3500` | 8 | 10.7 |
+| 1550274 | fobs | fragment_half | **0.685** | 0.768 | 0.61 | False | `vol_1000_3500` | 8 | 13.2 |
+| 2016430 | fcalc | auto | **0.079** | 0.650 | 0.66 | False | `vol_1000_3500` | 8 | 31.4 |
+| 2016430 | fcalc | partial_15 | **0.568** | 0.761 | 0.57 | False | `vol_1000_3500` | 8 | 24.1 |
+| 2016430 | fcalc | partial_30 | **0.779** | 0.791 | 0.49 | False | `vol_1000_3500` | 8 | 23.4 |
+| 2016430 | fcalc | fragment_half | **0.722** | 0.752 | 0.54 | False | `vol_1000_3500` | 8 | 28.4 |
+| 2016430 | fobs | auto | **0.143** | 0.701 | 0.60 | False | `vol_1000_3500` | 8 | 24.7 |
+| 2016430 | fobs | partial_15 | **0.486** | 0.679 | 0.56 | False | `vol_1000_3500` | 8 | 20.4 |
+| 2016430 | fobs | partial_30 | **0.692** | 0.685 | 0.53 | False | `vol_1000_3500` | 8 | 19.5 |
+| 2016430 | fobs | fragment_half | **0.708** | 0.723 | 0.56 | False | `vol_1000_3500` | 8 | 24.1 |
+| 2221836 | fcalc | auto | **0.104** | 0.649 | 0.71 | False | `vol_1000_3500` | 8 | 35.4 |
+| 2221836 | fcalc | partial_15 | **0.617** | 0.784 | 0.66 | False | `vol_1000_3500` | 8 | 29.9 |
+| 2221836 | fcalc | partial_30 | **0.766** | 0.793 | 0.62 | False | `vol_1000_3500` | 8 | 31.3 |
+| 2221836 | fcalc | fragment_half | **0.720** | 0.719 | 0.62 | False | `vol_1000_3500` | 8 | 36.3 |
+| 2221836 | fobs | auto | **0.159** | 0.702 | 0.65 | False | `vol_1000_3500` | 8 | 30.5 |
+| 2221836 | fobs | partial_15 | **0.545** | 0.682 | 0.62 | False | `vol_1000_3500` | 8 | 24.2 |
+| 2221836 | fobs | partial_30 | **0.714** | 0.702 | 0.58 | False | `vol_1000_3500` | 8 | 25.3 |
+| 2221836 | fobs | fragment_half | **0.717** | 0.758 | 0.62 | False | `vol_1000_3500` | 8 | 31.2 |
+| 2227862 | fcalc | auto | **0.078** | 0.643 | 0.68 | False | `vol_1000_3500` | 8 | 33.0 |
+| 2227862 | fcalc | partial_15 | **0.602** | 0.784 | 0.57 | False | `vol_1000_3500` | 8 | 25.3 |
+| 2227862 | fcalc | partial_30 | **0.800** | 0.790 | 0.49 | False | `vol_1000_3500` | 8 | 26.8 |
+| 2227862 | fcalc | fragment_half | **0.788** | 0.721 | 0.53 | False | `vol_1000_3500` | 8 | 29.4 |
+| 2227862 | fobs | auto | **0.143** | 0.720 | 0.61 | False | `vol_1000_3500` | 8 | 25.2 |
+| 2227862 | fobs | partial_15 | **0.526** | 0.694 | 0.57 | False | `vol_1000_3500` | 8 | 20.1 |
+| 2227862 | fobs | partial_30 | **0.710** | 0.696 | 0.53 | False | `vol_1000_3500` | 8 | 20.0 |
+| 2227862 | fobs | fragment_half | **0.765** | 0.745 | 0.56 | False | `vol_1000_3500` | 8 | 24.5 |
+| 2233297 | fcalc | auto | **0.111** | 0.647 | 0.68 | False | `vol_1000_3500` | 8 | 24.4 |
+| 2233297 | fcalc | partial_15 | **0.632** | 0.789 | 0.58 | False | `vol_1000_3500` | 8 | 20.7 |
+| 2233297 | fcalc | partial_30 | **0.769** | 0.800 | 0.56 | False | `vol_1000_3500` | 8 | 20.0 |
+| 2233297 | fcalc | fragment_half | **0.753** | 0.718 | 0.59 | False | `vol_1000_3500` | 8 | 22.3 |
+| 2233297 | fobs | auto | **0.231** | 0.730 | 0.64 | False | `vol_1000_3500` | 8 | 21.6 |
+| 2233297 | fobs | partial_15 | **0.523** | 0.719 | 0.62 | False | `vol_1000_3500` | 8 | 18.7 |
+| 2233297 | fobs | partial_30 | **0.714** | 0.757 | 0.57 | False | `vol_1000_3500` | 8 | 17.5 |
+| 2233297 | fobs | fragment_half | **0.763** | 0.782 | 0.59 | False | `vol_1000_3500` | 8 | 20.6 |
 
 ## Summary by Vol band × run
 
-- `vol_1000_3500/auto`: n=4 mean mapCC=**0.269** (median 0.263)
-- `vol_1000_3500/fragment_half`: n=4 mean mapCC=**0.714** (median 0.714)
-- `vol_1000_3500/partial_15`: n=4 mean mapCC=**0.542** (median 0.557)
-- `vol_1000_3500/partial_30`: n=4 mean mapCC=**0.698** (median 0.692)
+- `vol_1000_3500/auto`: n=24 mean mapCC=**0.162** (median 0.151)
+- `vol_1000_3500/fragment_half`: n=24 mean mapCC=**0.724** (median 0.723)
+- `vol_1000_3500/partial_15`: n=24 mean mapCC=**0.561** (median 0.570)
+- `vol_1000_3500/partial_30`: n=24 mean mapCC=**0.742** (median 0.745)
 - `vol_gt_3500/auto`: n=2 mean mapCC=**0.075** (median 0.075)
 - `vol_gt_3500/fragment_half`: n=2 mean mapCC=**0.493** (median 0.493)
 - `vol_gt_3500/partial_15`: n=2 mean mapCC=**0.447** (median 0.447)
@@ -87,14 +177,14 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 
 | Run/amp | n | mean mapCC | median |
 |---------|---|------------|--------|
-| `auto/fcalc` | 2 | **0.263** | 0.263 |
-| `auto/fobs` | 2 | **0.275** | 0.275 |
-| `fragment_half/fcalc` | 2 | **0.715** | 0.715 |
-| `fragment_half/fobs` | 2 | **0.713** | 0.713 |
-| `partial_15/fcalc` | 2 | **0.557** | 0.557 |
-| `partial_15/fobs` | 2 | **0.527** | 0.527 |
-| `partial_30/fcalc` | 2 | **0.739** | 0.739 |
-| `partial_30/fobs` | 2 | **0.657** | 0.657 |
+| `auto/fcalc` | 12 | **0.143** | 0.108 |
+| `auto/fobs` | 12 | **0.180** | 0.168 |
+| `fragment_half/fcalc` | 12 | **0.729** | 0.723 |
+| `fragment_half/fobs` | 12 | **0.720** | 0.727 |
+| `partial_15/fcalc` | 12 | **0.592** | 0.588 |
+| `partial_15/fobs` | 12 | **0.530** | 0.530 |
+| `partial_30/fcalc` | 12 | **0.774** | 0.775 |
+| `partial_30/fobs` | 12 | **0.711** | 0.713 |
 
 ## Takeaways
 
@@ -104,6 +194,9 @@ Local COD Vol-band panel (Fobs + Fcalc). Not a 1505-structure Carrozzini panel. 
 - **fragment_half** is the no-oracle path; on coherent half-models it should approach partial_30 mapCC (see also `cod_hard_path_validation.md`).
 - Vol **1000–3500 Å³** is the Carrozzini / AI-PhaSeed hybrid-friendly band.
 - Strict multi-criterion *solved* can fail on R1 under short budgets.
+- Mid-band expansion (2026-09): ten additional light-atom CHNOF Fobs cells (~26 non-H). Original six rows are unchanged.
+- Pooled Vol 1000–3500 (n=24): fragment_half mean mapCC 0.724, partial_30 0.742, auto 0.162. Fobs-only (n=12): fragment_half 0.720, partial_30 0.711, auto 0.180. fragment_half does not beat partial_30 on the pooled table. No Fobs fragment_half row is a strict solve (R1 stays above 0.45 where scored).
+- COD **1544230**: mapCC is finite and kept in the mean; R1 and peak recovery did not score on any of the eight runs, so it is not a strict solve.
 
 Regenerate:
 ```bash

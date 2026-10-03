@@ -21,8 +21,8 @@ fragment.**
 |-----|----------|------|-------|---------|----|-----|
 | 2012000 | 1027 | `vol_1000_3500` | 8 | 27 | P 1 21 1 | yes |
 
-(2016452 / 2100301 are in the same catalog but `vol_lt_1000`. Mid-band on this
-panel is 2012000 and 2013000.)
+(2016452 / 2100301 / 2200000 are `vol_lt_1000`; 2017775 is `vol_gt_3500`.
+The living mid-band is 12 structures. This trail stays on 2012000.)
 
 ## Commands (working)
 
@@ -93,8 +93,11 @@ From `data/processed/cod_stratified_bench.md` (d_min = 1.0 Å):
 Peak recovery is not a column on that markdown table; do not invent it.
 Strict success remains mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and**
 R1 ≤ 0.45. fragment_half on this Fobs row is **not** a strict solve
-(mapCC 0.675, R1 0.53). Mid-band **mean** fragment_half mapCC across the
-pooled Fobs+Fcalc rows is **~0.71** vs auto **~0.27** (C25).
+(mapCC 0.675, R1 0.53). On the living 12-structure mid-band
+(Fobs+Fcalc pooled, n=24) fragment_half mean mapCC is **~0.72**,
+partial_30 **~0.74**, and auto **~0.16**. Fobs-only (n=12): fragment_half
+**~0.72**, partial_30 **~0.71**, auto **~0.18**. The v0.13.1 freeze was
+the n=4 pilot (~0.71 vs auto ~0.27). This 2012000 row is unchanged.
 
 Fcalc control on the same cell: fragment_half mapCC 0.677 (R1 0.50, False);
 partial_30 mapCC 0.714 (R1 0.36, True).
