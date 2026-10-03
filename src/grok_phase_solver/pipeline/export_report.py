@@ -7,6 +7,48 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from grok_phase_solver.pipeline.solve import SolveResult
 
+def fragment_seed_for_gates(diagnostics: dict, method: str) -> bool:
+    """True for a fragment / predicted-model seed, not peaks-as-carbon."""
+    kind = str(diagnostics.get("seed_kind") or "").lower()
+    source = str(diagnostics.get("seed_source") or "").lower()
+    info = str(diagnostics.get("information_source") or "").lower()
+    method_l = str(method or "").lower()
+    if any(tok in f"{kind} {source}" for tok in ("seed_peaks", "peaks_csv", "peaks-as-carbon")):
+        return False
+    if method_l == "fragment_phaseed":
+        return True
+    blob = " ".join((kind, source, info))
+    return any(
+        tok in blob
+        for tok in ("fragment", "predicted", "phase_seed_res", "seed_atoms")
+    )
+
+
+def format_fragment_strict_gates(diagnostics: dict, method: str) -> str:
+    """Name mapCC, peak recovery, and carbon-peak R1 as separate gates.
+
+    This R1 places peaks as carbon (B = 5 Å²). It is not a SHELXL residual.
+    The scientist path has no deposited structure, so the three numbers are
+    not computed here.
+    """
+    if not fragment_seed_for_gates(diagnostics, method):
+        return ""
+    return "\n".join(
+        [
+            "## Strict gates",
+            "",
+            "- **mapCC_OI** ≥ 0.7",
+            "- **peak recovery** ≥ 0.5",
+            "- **carbon-peak R1** ≤ 0.45. This residual places the strongest "
+            "peaks as carbon with B = 5 Å². It is not a SHELXL residual.",
+            "",
+            "Strict success needs all three. This run does not compute them. "
+            "Free FOM ranks trials only. A useful map can still be hand-built "
+            "from `trial.res`.",
+        ]
+    )
+
+
 def _render_report(result: "SolveResult") -> str:
     from grok_phase_solver.pipeline.next_action import (
         format_next_action_md,
@@ -42,6 +84,12 @@ def _render_report(result: "SolveResult") -> str:
         "",
         format_next_action_md(next_act),
         "",
+    ]
+    gates = format_fragment_strict_gates(d, result.method)
+    if gates:
+        lines.extend([gates, ""])
+    lines.extend(
+        [
         "## Cell",
         "",
         "```",
@@ -50,7 +98,8 @@ def _render_report(result: "SolveResult") -> str:
         "",
         "## Diagnostics",
         "",
-    ]
+        ]
+    )
     # Flatten nested dicts for readability
     for k, v in d.items():
         if k in ("seed_quality",) and isinstance(v, dict):

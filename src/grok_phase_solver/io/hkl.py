@@ -12,6 +12,16 @@ import numpy as np
 
 PathLike = Union[str, Path]
 
+# Shared with the COD benches. A reflection a fraction of an ulp under d_min
+# stays in the list on reload. generate_hkl uses a wider 1e-8 index window
+# and is intentionally not this constant.
+D_MIN_SLACK_A = 1e-9
+
+
+def d_min_keep_mask(d: np.ndarray, d_min: float) -> np.ndarray:
+    """True where ``d >= d_min - D_MIN_SLACK_A`` (Å)."""
+    return np.asarray(d, dtype=np.float64) >= (float(d_min) - D_MIN_SLACK_A)
+
 
 @dataclass
 class ReflectionTable:
@@ -73,11 +83,15 @@ class ReflectionTable:
         d_min: Optional[float] = None,
         d_max: Optional[float] = None,
     ) -> "ReflectionTable":
-        """Keep reflections with d_min ≤ d ≤ d_max (Å)."""
+        """Keep reflections with d_min ≤ d ≤ d_max (Å).
+
+        The high-resolution edge uses ``D_MIN_SLACK_A`` so a reflection a
+        fraction of an ulp under ``d_min`` is not dropped on reload.
+        """
         d = self.resolution_d()
         mask = np.ones(len(self), dtype=bool)
         if d_min is not None:
-            mask &= d >= d_min
+            mask &= d_min_keep_mask(d, d_min)
         if d_max is not None:
             mask &= d <= d_max
         return self.subset(mask)

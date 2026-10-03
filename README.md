@@ -193,7 +193,7 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 | Research generative / XDXD-style coordinate proposal (not auto) | [math](docs/math/generative_structure.md) |
 | **COD fragment hard path** — fragment_half mapCC ≈/≥ partial_30 on 2016452 / 2100301 | [`cod_hard_path_validation.md`](data/processed/cod_hard_path_validation.md) |
 | **COD Vol-band panel** — 16 COD sets (12 in **1000–3500**); pooled mid-band fragment_half mean mapCC **~0.72**, partial_30 **~0.74**, auto **~0.16** (Fobs-only fragment_half **~0.72** vs partial_30 **~0.71**). v0.13.1 freeze was the n=4 pilot (~0.71 vs ~0.27) | [`cod_stratified_bench.md`](data/processed/cod_stratified_bench.md) |
-| **R1 gate on that Fobs fragment panel** — mapCC passes 8/12, peak recovery 11/12, carbon-peak R1 0/12. Deposited element types on the same peaks stay above 0.45 (minimum 0.477) | [`r1_gate_diagnostic.md`](data/processed/r1_gate_diagnostic.md) |
+| **R1 gate on that Fobs fragment panel** — mapCC passes 8/12, peak recovery 12/12, carbon-peak R1 0/12. COD 1544230 Fobs fragment_half is mapCC 0.668, peak recovery 1.000, R1 0.562 (not a strict solve). Deposited element types on the same peaks stay above 0.45 (minimum 0.477) | [`r1_gate_diagnostic.md`](data/processed/r1_gate_diagnostic.md) |
 | **COD 2012000 Fobs fragment → Olex2** — working `gps-solve` + File → Open / View → Work → Info trail (Q peaks, not a SHELXL start) | [`cod_midband_fragment_trail.md`](docs/examples/cod_midband_fragment_trail.md) |
 | Melgalvis large-cell + ring scaffolds (Vol ~1000–3500 Å³ curricula) | [math](docs/math/synthetic_melgalvis.md) |
 | Free FOM v2.1 — positivity residual $R_+$; reduces false “solved” gates | [math](docs/math/free_fom.md) |

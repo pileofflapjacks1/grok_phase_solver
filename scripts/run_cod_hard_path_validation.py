@@ -99,17 +99,17 @@ def run_one(label, hkl_path, cell, sg, cif_path, d_min, methods_cfg):
     rows = []
     st = load_cif(str(cif_path))
     table, _ = load_experiment(str(hkl_path), cell=cell, space_group=sg)
-    # apply d_min cut
+    # apply d_min cut (same slack as solve_structure's reload)
+    from grok_phase_solver.io.hkl import ReflectionTable, d_min_keep_mask, write_hkl_simple
     from grok_phase_solver.physics.reciprocal import d_spacing
 
     d = d_spacing(table.hkl, table.cell)
-    keep = d >= (d_min - 1e-9)
+    keep = d_min_keep_mask(d, d_min)
     hkl = table.hkl[keep]
     amp = table.amplitudes[keep]
     # write temp hkl for pipeline
     proc = ROOT / "data" / "processed"
     proc.mkdir(parents=True, exist_ok=True)
-    from grok_phase_solver.io.hkl import ReflectionTable, write_hkl_simple
 
     tmp_hkl = proc / f"_tmp_hardpath_{label.replace(' ', '_')}.hkl"
     write_hkl_simple(

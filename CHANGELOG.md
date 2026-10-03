@@ -24,16 +24,23 @@
   **~0.74**, auto **~0.16**. Fobs-only (n=12): fragment_half **~0.72**,
   partial_30 **~0.71**, auto **~0.18**. fragment_half does not beat
   partial_30 on the pooled table. No Fobs fragment_half row is a strict
-  solve. COD 1544230 R1 and peak recovery did not score (mapCC kept).
+  solve. COD 1544230 Fobs fragment_half scores mapCC 0.668, peak recovery
+  1.000, carbon-peak R1 0.562 (not a strict solve) after the shared d_min slack.
 - The v0.13.1 paper freeze (n=4 mid-band pilot, ~0.71 vs ~0.27) is
   unchanged in `docs/arxiv_draft.md` and the v0.13.1 release notes.
-- No solver or strict-metric change. Version stays **0.13.4**.
+- Version stays **0.13.4**. The d_min slack below is the only solver-side change, and it does not move the strict bar.
 
 ### R1 gate on the mid-band Fobs fragment rows
-- Per-gate counts on the 12 Fobs `fragment_half` rows: mapCC ≥ 0.7 on **8/12**, peak recovery ≥ 0.5 on **11/12**, carbon-peak R1 ≤ 0.45 on **0/12**. Strict bar unchanged.
+- Per-gate counts on the 12 Fobs `fragment_half` rows: mapCC ≥ 0.7 on **8/12**, peak recovery ≥ 0.5 on **12/12**, carbon-peak R1 ≤ 0.45 on **0/12**. Strict bar unchanged.
 - Side R1, same peaks with deposited element types where a peak matches a true site: mean **0.553**, minimum **0.477**, none ≤ 0.45. Does not flip `solved`. Table: [`r1_gate_diagnostic.md`](data/processed/r1_gate_diagnostic.md).
-- COD **1544230** stays in the mapCC mean. Scoreboard R1 and peak recovery are missing because the bench keeps reflection (1 9 6) at d just below 1.0 Å (|F| = 0) and `evaluate_success` then sees 1968 amplitudes against 1967 phases.
-- Version stays **0.13.4**. No solver change.
+- COD **1544230** Fobs fragment_half: mapCC 0.668 (was 0.669), peak recovery 1.000, carbon-peak R1 0.562. Still not a strict solve. Typed-peak side R1 0.552 is the earlier 1967-reflection measurement and is not the scoreboard R1.
+- Version stays **0.13.4**.
+
+### d_min slack and fragment report gates
+- `filter_resolution` and the COD benches share `d_min_keep_mask` (d ≥ d_min − 1e-9). `generate_hkl` keeps its own 1e-8 index window.
+- Only COD 1544230 had a reflection in that slack. Its eight scoreboard rows were rescored. Other panel rows were not rerun. Fcalc partial_30 on 1544230 now scores solved (R1 0.447).
+- A fragment or predicted-model `report.md` lists mapCC, peak recovery, and carbon-peak R1 as separate gates, and says that R1 is peaks-as-carbon (B = 5 Å²), not a SHELXL residual. The scientist path does not compute the three numbers.
+- Version stays **0.13.4**. Strict bar unchanged.
 
 ## 0.13.4 — 2026-08
 

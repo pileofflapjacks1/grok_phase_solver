@@ -92,7 +92,9 @@ From `data/processed/cod_stratified_bench.md` (d_min = 1.0 Å):
 
 Peak recovery is not a column on that markdown table; do not invent it.
 Strict success remains mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and**
-R1 ≤ 0.45. fragment_half on this Fobs row is **not** a strict solve
+R1 ≤ 0.45. `report.md` names those three gates separately. The R1 gate
+places peaks as carbon with B = 5 Å² and is not a SHELXL residual.
+fragment_half on this Fobs row is **not** a strict solve
 (mapCC 0.675, R1 0.53). On the living 12-structure mid-band
 (Fobs+Fcalc pooled, n=24) fragment_half mean mapCC is **~0.72**,
 partial_30 **~0.74**, and auto **~0.16**. Fobs-only (n=12): fragment_half

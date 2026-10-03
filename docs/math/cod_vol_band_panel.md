@@ -49,7 +49,9 @@ Pooled Fobs+Fcalc mid-band means (n=24): fragment_half mapCC **~0.72**,
 partial_30 **~0.74**, auto **~0.16**. Fobs-only (n=12): fragment_half
 **~0.72**, partial_30 **~0.71**, auto **~0.18**. fragment_half does not
 beat partial_30 on the pooled table. No Fobs fragment_half row is a strict
-solve. COD **1544230** has finite mapCC; R1 and peak recovery did not score.
+solve. COD **1544230** Fobs fragment_half scores mapCC 0.668, peak recovery
+1.000, and carbon-peak R1 0.562 after the shared d_min slack. It is not a
+strict solve.
 
 Figure 6 and `docs/arxiv_draft.md` stay the v0.13.1 freeze: the earlier n=4
 mid-band pilot (fragment_half ~0.71 vs auto ~0.27). That table is not the
@@ -59,10 +61,12 @@ living scoreboard.
 
 `data/processed/r1_gate_diagnostic.md` splits the 12 mid-band Fobs
 `fragment_half` rows by gate. mapCC ≥ 0.7 on 8/12. Peak recovery ≥ 0.5 on
-11/12. Carbon-peak R1 ≤ 0.45 on 0/12. Assigning deposited element types to
+12/12. Carbon-peak R1 ≤ 0.45 on 0/12. Assigning deposited element types to
 those same peaks leaves every side R1 above 0.45 (minimum 0.477). `solved`
 is still the carbon-peak definition.
 
-COD 1544230 stays in the mapCC mean. Its scoreboard R1 and peak recovery are
-missing because the bench keeps one reflection with d just under 1.0 Å and
-the solver drops it, so `evaluate_success` sees 1968 amplitudes and 1967 phases.
+COD 1544230 stays in the mapCC mean. The bench and the solver share
+`d_min_keep_mask` (d ≥ d_min − 1e-9). Fobs fragment_half mapCC moved from
+0.669 to 0.668 when that cell was rescored; carbon-peak R1 is 0.562 and
+peak recovery is 1.000. Other panel cells have no reflection in the slack,
+so their rows were not rerun.

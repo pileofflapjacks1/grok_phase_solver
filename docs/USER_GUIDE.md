@@ -154,7 +154,11 @@ Validated on synthetic hard demo (`examples/partial_seed_demo/HARD_PATH_VALIDATI
 and experimental COD Fobs (`data/processed/cod_hard_path_validation.md`,
 `cod_stratified_bench.md`). After every solve, `report.md` opens with a
 **Next action** block: volume band + one concrete seed command (fragment /
-predicted model / HA / enlarge seed), not a generic flag dump.
+predicted model / HA / enlarge seed), not a generic flag dump. A fragment
+or predicted-model run also lists the three strict gates separately
+(mapCC_OI ≥ 0.7, peak recovery ≥ 0.5, carbon-peak R1 ≤ 0.45). That R1
+places the strongest peaks as carbon with B = 5 Å². It is not a SHELXL
+residual, and this run does not compute the three numbers.
 
 **Any seed source works** — if you pass one of these with `--method auto`, gps-solve switches to `partial_phaseed`:
 
