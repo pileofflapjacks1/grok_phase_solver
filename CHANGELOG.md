@@ -2,6 +2,11 @@
 
 ## Unreleased — main
 
+### Q-peak benchmark (real data, negative result)
+- `gps-solve` does not currently recover phases on real data. README and FOR_REVIEWERS now say so (C27, N10).
+- `python scripts/run_qpeak_benchmark.py` runs `gps-solve` on COD 2200239 / 2200001 / 2230859 (CC0, in `data/raw/cod_qpeak/`) and scores `trial.res` Q peaks against the deposited atoms: pre-registered bar, seeded 1000-draw random baseline, planted-atom self-test. Writes `data/processed/qpeak_benchmark.md`.
+- Baseline: all three FAIL (3/22, 3/34, 0/17 within 0.5 Å vs random 1.85 / 2.73 / 1.45; ghosts 71–88%). Phasing code unchanged.
+
 ### Generative track (research, not default)
 - `gps-generate` proposes fractional coordinates for a known composition and cell. It does not replace `gps-solve`.
 - Optional extra `.[generate]` installs torch. The base install is unchanged.

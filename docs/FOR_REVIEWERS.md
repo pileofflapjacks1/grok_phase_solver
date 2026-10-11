@@ -16,7 +16,9 @@ An **open, Python-first framework** for the crystallographic phase problem:
 - Scientist CLI (`gps-solve`) exporting density + Q-peak `trial.res` for Olex2 hand-build (not a SHELXL start)
 - Optional head-to-head vs academic **SHELXS** (binaries not redistributed)
 
-It is a **correct modular testbed and hybrid assistant**, not a claim of a general closed-form solution of the phase problem.
+It is a **modular research testbed**, not a claim of a general closed-form solution of the phase problem.
+
+**Status:** `gps-solve` writes correctly formatted SHELX Q-peak files that load in Olex2, but it does **not** currently recover phases on real data. On three COD Fobs sets the Q peaks score at chance against the deposited atoms (C27, [`qpeak_benchmark.md`](../data/processed/qpeak_benchmark.md)).
 
 ---
 
@@ -50,6 +52,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | C24 | XDXD-inspired **coordinate proposal** multi-start CF→atoms; optional GraPhAI **external** H2H skeleton (`GRAPHAI_HOME`) — weights never redistributed | [math/generative_structure.md](math/generative_structure.md), [`third_party/graphai/README.md`](../third_party/graphai/README.md) |
 | C25 | **COD Vol-band stratified panel**, living scoreboard (16 local COD, 12 in Vol 1000–3500, Fobs+Fcalc): auto is weak (pooled mid-band mean mapCC **~0.16**). **fragment_half ~0.72** does not beat pooled **partial_30 ~0.74**. Fobs-only (n=12): fragment_half **~0.72**, partial_30 **~0.71**, auto **~0.18**. No Fobs fragment_half row is a strict solve. COD **1544230** Fobs fragment_half scores mapCC 0.668, peak recovery 1.000, carbon-peak R1 0.562 (not a strict solve). The v0.13.1 paper freeze remains the n=4 mid-band pilot (~0.71 vs auto ~0.27) in `arxiv_draft.md`. On the 12 Fobs fragment_half rows, mapCC ≥ 0.7 on 8/12 and peak recovery ≥ 0.5 on 12/12; carbon-peak R1 ≤ 0.45 on 0/12. A side R1 that assigns deposited elements to those same peaks has minimum 0.477 and does not flip `solved` ([`r1_gate_diagnostic.md`](../data/processed/r1_gate_diagnostic.md)). The bench and solver share a 1e-9 d_min slack; that rescore filled 1544230’s R1 and peak recovery. Other panel cells had no reflection in the slack, so their rows were not rerun. partial_15 under-seeds. Not a 1505-structure Carrozzini panel | [`cod_stratified_bench.md`](../data/processed/cod_stratified_bench.md) |
 | C26 | `gps-generate` scores a random-plus-clash baseline, a small coordinate denoiser, and the existing experimental `diffusion_hybrid` flag on a frozen in-repo COD subset. The rates are whatever the scoreboard script wrote. Novelty and stability are not measured | [`generate_scoreboard.md`](../data/processed/generate_scoreboard.md) |
+| C27 | **Negative, real data:** on COD Fobs 2200239 / 2200001 / 2230859, `gps-solve --method auto` Q peaks within 0.5 Å of deposited non-H atoms are 3/22, 3/34, 0/17 against random baselines of 1.85, 2.73, 1.45 (1000 seeded draws, same alignment search), with 71–88% ghosts. All three FAIL the pre-registered bar (≥50% within 0.5 Å, ≥3× random, ≤40% ghosts). Planted deposited atoms score N/N | [`qpeak_benchmark.md`](../data/processed/qpeak_benchmark.md), `scripts/run_qpeak_benchmark.py` |
 
 **Strict success definition:** mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0.45 (`metrics/success.py`).
 
@@ -64,6 +67,7 @@ It is a **correct modular testbed and hybrid assistant**, not a claim of a gener
 | N3 | That GraphPhaseNet / hard-P1 priors currently clear the hard cliff without partial information (**v3–v11** scale/features do not change this; architecture frozen at v11 pending scale-xl) |
 | N4 | That free FOM proves a correct structure (it is a **truth-free ranking** score) |
 | N5 | Redistribution or equivalence of official SHELX, PhAI, or GraPhAI binaries/weights |
+| N10 | That `gps-solve` solves real small-molecule structures, or that its `trial.res` Q peaks are a usable starting model. They load in Olex2 but score at chance on COD Fobs (C27) |
 
 ### Generative track (research, not default)
 
@@ -86,7 +90,7 @@ See also: [math/uniqueness_and_bounds.md](math/uniqueness_and_bounds.md), [math/
 
 1. **Integrated open stack** — classical + hybrid + metrics + CLI in one reproducible package.  
 2. **Honest hard-region science** — seed-quality bar (30% / 20°) separates “extension works” from “prior insufficient.” GraphPhaseNet **v3–v11** is a documented negative.  
-3. **Product path** — `auto` → ensemble (easy); `partial_phaseed` / fragment / predicted model (hard + partial info); optional SHELXS±E; `trial.res` is Q peaks for Olex2 hand-build, not a SHELXL starting model.  
+3. **Product path** — `auto` → ensemble (easy); `partial_phaseed` / fragment / predicted model (hard + partial info); optional SHELXS±E; `trial.res` is Q peaks for Olex2 hand-build, not a SHELXL starting model. On COD Fobs those Q peaks currently score at chance (C27).  
 4. **External calibration** — SHELXS H2H; COD Fobs; two-cell fragment hard path (C16); **Vol-band panel** (C25).  
 
 ---
@@ -118,6 +122,9 @@ python scripts/run_experimental_scoreboard.py --quick
 
 # COD Vol-band panel (C25; needs local CIF+HKL under data/raw/cod/)
 python scripts/run_cod_stratified_bench.py --dmin 1.0
+
+# Q-peak benchmark: gps-solve trial.res vs deposited COD atoms (C27; ~2.5 min CPU)
+python scripts/run_qpeak_benchmark.py
 
 # Rebuild paper figures (Figs. 1–6)
 python scripts/plot_paper_figures.py
