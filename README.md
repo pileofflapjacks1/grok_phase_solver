@@ -3,7 +3,9 @@
 **Open physics / AI phasing assistant for X-ray crystallography**  
 Version **0.13.4** · Python ≥ 3.10 · MIT
 
-Recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$, write density maps and Q peaks for hand build in Olex2 (not a SHELXL start).
+Research code that attempts to recover phases $\varphi(hkl)$ from measured amplitudes $|F(hkl)|$. `gps-solve` writes density maps and correctly formatted SHELX Q-peak files (`trial.res`) that load in Olex2 for hand-build (not a SHELXL start).
+
+> **Status: `gps-solve` does not currently recover phases on real data.** On three COD Fobs sets (2200239, 2200001, 2230859), the strongest `trial.res` Q peaks land within 0.5 Å of 0/17 to 3/34 deposited atoms. Uniform random points score about the same (1.45–2.73), and 71–88% of the peaks are more than 1.0 Å from any atom. All three FAIL the pre-registered bar. See the [Q-peak benchmark](data/processed/qpeak_benchmark.md).
 
 $$
 \rho(\mathbf{r})
@@ -15,7 +17,7 @@ $$
 | | |
 |--|--|
 | **Audience** | Experimental crystallographers + method developers |
-| **Best at** | Small molecules, good resolution; transparent classical + hybrid pipelines |
+| **Is** | A research testbed: classical + hybrid phasing code and a SHELX Q-peak writer that loads in Olex2 |
 | **Not** | A general protein ab initio solver or a drop-in SHELXL replacement |
 | **Docs** | [User guide](docs/USER_GUIDE.md) · [**For reviewers**](docs/FOR_REVIEWERS.md) · [**Paper pack**](docs/paper/README.md) · [arXiv draft](docs/arxiv_draft.md) · [Math notes](docs/math/) · [Changelog](CHANGELOG.md) · [TODO](TODO.md) |
 | **Repo** | https://github.com/pileofflapjacks1/grok_phase_solver |
@@ -92,16 +94,16 @@ gps-solve --hkl mycrystal.hkl --ins mycrystal.ins \
 | **`olex2_handbuild.md`** | File → Open + **View → Work → Info** (Z / Z′) |
 | `phases.csv` | $h,k,l,\|F\|$, phase (°) |
 
-**This tool phases.** It does **not** replace least-squares refinement. Always check chemical sense and refinement R-factors.
+**The files are well formed. The phases are not yet right.** Olex2 opens `trial.res`, but on deposited COD structures the Q peaks score at chance ([Q-peak benchmark](data/processed/qpeak_benchmark.md)), so do not expect to build a molecule from them. The tool does **not** replace structure solution (SHELXT/SHELXS) or least-squares refinement.
 
 ### Demos (no lab data)
 
 ```bash
-# Easy: multistart ensemble (best open ab initio on easy cells in our benchmarks)
+# Easy synthetic demo cell: multistart ensemble
 gps-solve --hkl examples/demo_solve/demo.hkl --ins examples/demo_solve/demo.ins \
   --method ensemble --n-iter 100 --out examples/demo_solve/out
 
-# Hard-ish + partial phases (path that works when pure ab initio fails)
+# Hard-ish synthetic cell + oracle partial phases
 python scripts/run_partial_seed_demo.py
 ```
 
@@ -147,6 +149,7 @@ Full table and flags: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 
 ### It is not
 - A claim that the crystallographic phase problem is “solved”
+- A working structure solver: on COD Fobs data the `trial.res` Q peaks currently score at chance against the deposited atoms ([Q-peak benchmark](data/processed/qpeak_benchmark.md))
 - A general **protein** ab initio solver
 - A replacement for **SHELXL** refinement or industrial small-molecule pipelines (SHELXT/SHELXS + Olex2)
 - A redistributor of **SHELX** or **PhAI** binaries/weights (obtain under their licenses)
@@ -183,6 +186,7 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 
 | Finding | Where |
 |---------|--------|
+| **Q-peak benchmark (real data): FAIL on all three COD sets.** Strongest Q peaks within 0.5 Å of deposited atoms: 2200239 3/22 (random 1.85), 2200001 3/34 (random 2.73), 2230859 0/17 (random 1.45). Ghosts 71–88%. Planted true atoms score N/N, so the scorer can detect a real structure | [`qpeak_benchmark.md`](data/processed/qpeak_benchmark.md) |
 | **Solvability cliff** — classical success collapses with more atoms / worse resolution | [`solvability_diagram.md`](data/processed/solvability_diagram.md) |
 | **Ensemble** best open ab initio on **easy** cells (vs CF / SHELXS in-repo H2H) | [`shelxs_h2h.md`](data/processed/shelxs_h2h.md) |
 | **Hard ab initio** ~0% strict for CF, priors, dual-space, SHELXS (our panels) | same + [`strong_prior.md`](data/processed/strong_prior.md) |
@@ -285,6 +289,7 @@ python scripts/train_strong_prior.py --scale-xl --wilson-match
 python scripts/run_experimental_scoreboard.py
 python scripts/run_failure_taxonomy.py
 python scripts/run_generate_scoreboard.py   # coordinate track; needs .[generate]
+python scripts/run_qpeak_benchmark.py       # gps-solve Q peaks vs COD atoms (~2.5 min CPU)
 ```
 
 | Report | Output |
@@ -298,6 +303,7 @@ python scripts/run_generate_scoreboard.py   # coordinate track; needs .[generate
 | Solvability diagram | [`data/processed/solvability_diagram.md`](data/processed/solvability_diagram.md) |
 | Experimental HKL | [`data/processed/experimental_scoreboard.md`](data/processed/experimental_scoreboard.md) |
 | Coordinate generation | [`data/processed/generate_scoreboard.md`](data/processed/generate_scoreboard.md) |
+| Q-peak benchmark (COD Fobs) | [`data/processed/qpeak_benchmark.md`](data/processed/qpeak_benchmark.md) |
 | Full script list | [`scripts/`](scripts/) · [`TODO.md`](TODO.md) |
 
 ---
@@ -417,4 +423,4 @@ Plan → Code → Test → Analyze math → Refine → Commit
 - **Version notes:** [CHANGELOG.md](CHANGELOG.md)  
 - **Issues / PRs:** GitHub repository above  
 
-**Bottom line for a new reader:** clone → `pip install -e .` → run `gps-solve` on `examples/` → read `report.md` and `olex2_handbuild.md` → File → Open `trial.res` in Olex2 (View → Work → Info) → SHELXL after a real molecule. For hard structures, bring partial phases. Mid-band worked example: [`docs/examples/cod_midband_fragment_trail.md`](docs/examples/cod_midband_fragment_trail.md). For the science, start with §4 and the linked scoreboards.
+**Bottom line for a new reader:** clone → `pip install -e .` → run `gps-solve` on `examples/` → read `report.md` and `olex2_handbuild.md` → File → Open `trial.res` in Olex2 (View → Work → Info). The file loads, but on real data its peaks are not yet a structure ([Q-peak benchmark](data/processed/qpeak_benchmark.md)). For hard structures, bring partial phases. Mid-band worked example: [`docs/examples/cod_midband_fragment_trail.md`](docs/examples/cod_midband_fragment_trail.md). For the science, start with §4 and the linked scoreboards.
