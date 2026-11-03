@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Added
-- Opt-in `--method ab_initio`: cctbx.dmtbx weighted tangent (multisolution) + smtbx charge flipping; keep higher own FOM; plain peak search (top N_nonH, 1.2 Å). Requires cctbx or Olex2 `olex2c`.
+- Opt-in `--method ab_initio`: cctbx.dmtbx weighted tangent (multisolution) + smtbx charge flipping over a fixed multi-seed list (`CF_SEED_LIST = 0,1,7,42,2025`, K=5) inside the 60 s budget; select by method-independent E-map check `score = max(skew,0) + 0.5·(h_med/h_max) + 0.5·network_frac` (1.2–1.9 Å peak network; never vs known model; not CF own FOM); plain peak search (top N_nonH, 1.2 Å). Requires cctbx or Olex2 `olex2c`.
 
 ## Unreleased — main
 

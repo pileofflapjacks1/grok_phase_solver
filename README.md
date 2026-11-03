@@ -54,7 +54,7 @@ python -m pip install -e ".[gui]"
 gps-solve --help
 ```
 
-Optional **cctbx** path for `--method ab_initio` (not on PyPI): use Olex2's bundled `olex2c` (set `OLEX2_ROOT` to the bundle root that contains `olex2c`, e.g. `/workspace/olex2/olex2` on the shared box) or a cctbx conda env where `import cctbx` / `import smtbx` work. Missing cctbx raises a clear error; defaults stay frozen (60 s tangent budget, |E|>1.2, 10×N_nonH cap).
+Optional **cctbx** path for `--method ab_initio` (not on PyPI): use Olex2's bundled `olex2c` (set `OLEX2_ROOT` to the bundle root that contains `olex2c`, e.g. `/workspace/olex2/olex2` on the shared box) or a cctbx conda env where `import cctbx` / `import smtbx` work. Missing cctbx raises a clear error; defaults stay frozen (60 s budget with multi-seed CF offsets `0,1,7,42,2025`, |E|>1.2, 10×N_nonH cap). Candidate selection uses a method-independent E-map check (`max(skew,0) + 0.5·h_med/h_max + 0.5·network_frac`), not CF's own FOM.
 
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
 Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.13.4 notes](docs/RELEASE_NOTES_v0.13.4.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)

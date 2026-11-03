@@ -3,7 +3,8 @@
 Expects REQUEST_JSON / RESULT_JSON paths injected before exec, or argv:
   python _cctbx_ab_initio_worker.py request.json result.json
 
-Does not import grok_phase_solver. Ranking uses own FOM only (no model).
+Does not import grok_phase_solver. Returns all candidates with peaks;
+host ranks by method-independent E-map check (no model, not CF own FOM).
 """
 from __future__ import division, print_function
 
@@ -151,7 +152,8 @@ def run(req):
             large, amplitudes=large.data(), sigma_2_only=sigma2)
         nrel = triplets.n_relations()
         amps = large.data()
-        loop_budget = max(5.0, budget - 5.0)
+        cf_reserve = float(req.get("cf_time_reserve_s") or 12.0)
+        loop_budget = max(5.0, budget - cf_reserve)
         t_loop0 = time.time()
         n_trials = 0
         best = None
@@ -216,99 +218,128 @@ def run(req):
                         "traceback": traceback.format_exc()}
 
     # ----------------------------------------------------------- charge flipping
+    # Multi-seed CF: fixed documented seed list, within remaining wall time.
+    cf_seed_list = req.get("cf_seed_list") or [0, 1, 7, 42, 2025]
+    cf_runs = []
+    cf_deadline = t0 + budget  # hard stop inside overall budget
     try:
-        set_random_seed(seed + 17)
-        flipping = charge_flipping.weak_reflection_improved_iterator(delta=None)
-        extra = group_args(
-            max_attempts_to_get_phase_transition=int(
-                cf_params.get("max_attempts_to_get_phase_transition", 5)),
-            max_attempts_to_get_sharp_correlation_map=int(
-                cf_params.get("max_attempts_to_get_sharp_correlation_map", 5)),
-            max_solving_iterations=int(
-                cf_params.get("max_solving_iterations", 500)),
-            yield_solving_interval=int(
-                cf_params.get("flipping_interval", 60)),
-            yield_during_delta_guessing=True,
-        )
-        amp_type = cf_params.get("amplitude_type", "quasi-E")
-        if amp_type == "quasi-E":
-            extra.normalisations_for = charge_flipping.amplitude_quasi_normalisations
-        solving = charge_flipping.solving_iterator(
-            flipping, ma, **extra.__dict__)
-        # Drain iterator (smtbx.loop-compatible)
-        charge_flipping.loop(solving, verbose=False)
-        had = bool(getattr(solving, "had_phase_transition", False))
-        if solving.f_calc_solutions:
-            f_calc, shift, cc_peak_height = solving.f_calc_solutions[0]
-            fft_map = f_calc.fft_map(
-                symmetry_flags=maptbx.use_space_group_symmetry)
+        for cf_seed in cf_seed_list:
+            if time.time() >= cf_deadline:
+                cf_runs.append({"cf_seed": cf_seed, "skipped": True,
+                                "reason": "budget_exhausted"})
+                continue
             try:
-                fft_map.apply_volume_scaling()
-            except Exception:
-                pass
-            try:
-                fft_map.apply_sigma_scaling()
-            except Exception:
-                pass
-            skew = _map_skewness(fft_map)
-            fom = _combined_fom(1.0, skew)
-            sites, heights = _peak_list(fft_map, n_nonH, min_dist)
-            # phases on input
-            # f_calc is complex structure factors on some index set
-            phase_lookup = {}
-            pdata = f_calc.data()
-            for i in range(f_calc.size()):
-                idx = f_calc.indices()[i]
-                z = pdata[i]
-                phase_lookup[(int(idx[0]), int(idx[1]), int(idx[2]))] = math.atan2(
-                    z.imag, z.real)
-            phases_in = [phase_lookup.get(tuple(ix), 0.0) for ix in input_indices]
-            cand = {
-                "name": "charge_flip",
-                "fom": fom,
-                "cons": 1.0,
-                "skew": skew,
-                "cc_peak_height": float(cc_peak_height) if cc_peak_height is not None else None,
-                "had_phase_transition": had,
-                "peaks": [{"fract": s, "height": h} for s, h in zip(sites, heights)],
-                "phases_rad": phases_in,
-            }
-            candidates.append(cand)
-            cf_meta = {
-                "had_phase_transition": had,
-                "fom": fom,
-                "skew": skew,
-                "cc_peak_height": cand.get("cc_peak_height"),
-                "n_solutions": len(solving.f_calc_solutions),
-            }
-        else:
-            # Fall back to last flipping map if any
-            fl = solving.flipping_iterator
-            fft_map = fl.rho_map
-            skew = _map_skewness(fft_map)
-            fom = _combined_fom(1.0, skew)
-            sites, heights = _peak_list(fft_map, n_nonH, min_dist)
-            cand = {
-                "name": "charge_flip",
-                "fom": fom,
-                "cons": 1.0,
-                "skew": skew,
-                "had_phase_transition": had,
-                "peaks": [{"fract": s, "height": h} for s, h in zip(sites, heights)],
-                "phases_rad": [0.0] * len(input_indices),
-                "note": "no f_calc_solutions; used last flipping map",
-            }
-            candidates.append(cand)
-            cf_meta = {
-                "had_phase_transition": had,
-                "fom": fom,
-                "skew": skew,
-                "n_solutions": 0,
-                "note": cand["note"],
-            }
+                set_random_seed(int(seed) + 17 + int(cf_seed))
+                flipping = charge_flipping.weak_reflection_improved_iterator(
+                    delta=None)
+                extra = group_args(
+                    max_attempts_to_get_phase_transition=int(
+                        cf_params.get("max_attempts_to_get_phase_transition", 5)),
+                    max_attempts_to_get_sharp_correlation_map=int(
+                        cf_params.get(
+                            "max_attempts_to_get_sharp_correlation_map", 5)),
+                    max_solving_iterations=int(
+                        cf_params.get("max_solving_iterations", 500)),
+                    yield_solving_interval=int(
+                        cf_params.get("flipping_interval", 60)),
+                    yield_during_delta_guessing=True,
+                )
+                amp_type = cf_params.get("amplitude_type", "quasi-E")
+                if amp_type == "quasi-E":
+                    extra.normalisations_for = (
+                        charge_flipping.amplitude_quasi_normalisations)
+                solving = charge_flipping.solving_iterator(
+                    flipping, ma, **extra.__dict__)
+                charge_flipping.loop(solving, verbose=False)
+                had = bool(getattr(solving, "had_phase_transition", False))
+                note = None
+                if solving.f_calc_solutions:
+                    f_calc, shift, cc_peak_height = solving.f_calc_solutions[0]
+                    fft_map = f_calc.fft_map(
+                        symmetry_flags=maptbx.use_space_group_symmetry)
+                    try:
+                        fft_map.apply_volume_scaling()
+                    except Exception:
+                        pass
+                    try:
+                        fft_map.apply_sigma_scaling()
+                    except Exception:
+                        pass
+                    skew = _map_skewness(fft_map)
+                    fom = _combined_fom(1.0, skew)
+                    sites, heights = _peak_list(fft_map, n_nonH, min_dist)
+                    phase_lookup = {}
+                    pdata = f_calc.data()
+                    for i in range(f_calc.size()):
+                        idx = f_calc.indices()[i]
+                        z = pdata[i]
+                        phase_lookup[(int(idx[0]), int(idx[1]), int(idx[2]))] = (
+                            math.atan2(z.imag, z.real))
+                    phases_in = [
+                        phase_lookup.get(tuple(ix), 0.0) for ix in input_indices
+                    ]
+                    n_sol = len(solving.f_calc_solutions)
+                    cc_val = (
+                        float(cc_peak_height)
+                        if cc_peak_height is not None else None)
+                else:
+                    fl = solving.flipping_iterator
+                    fft_map = fl.rho_map
+                    skew = _map_skewness(fft_map)
+                    fom = _combined_fom(1.0, skew)
+                    sites, heights = _peak_list(fft_map, n_nonH, min_dist)
+                    phases_in = [0.0] * len(input_indices)
+                    n_sol = 0
+                    cc_val = None
+                    note = "no f_calc_solutions; used last flipping map"
+                cand = {
+                    "name": "charge_flip_seed_%s" % cf_seed,
+                    "method": "charge_flip",
+                    "cf_seed": int(cf_seed),
+                    "fom": fom,
+                    "cons": 1.0,
+                    "skew": skew,
+                    "cc_peak_height": cc_val,
+                    "had_phase_transition": had,
+                    "peaks": [
+                        {"fract": s, "height": h}
+                        for s, h in zip(sites, heights)
+                    ],
+                    "phases_rad": phases_in,
+                    "n_solutions": n_sol,
+                }
+                if note:
+                    cand["note"] = note
+                candidates.append(cand)
+                cf_runs.append({
+                    "cf_seed": int(cf_seed),
+                    "fom": fom,
+                    "skew": skew,
+                    "had_phase_transition": had,
+                    "n_solutions": n_sol,
+                    "n_peaks": len(sites),
+                    "cc_peak_height": cc_val,
+                })
+            except Exception as e:
+                cf_runs.append({
+                    "cf_seed": int(cf_seed),
+                    "error": "%s: %s" % (type(e).__name__, e),
+                    "traceback": traceback.format_exc(),
+                })
+        cf_meta = {
+            "n_seeds_requested": len(cf_seed_list),
+            "n_seeds_ok": sum(1 for r in cf_runs if "fom" in r),
+            "runs": cf_runs,
+        }
     except Exception as e:
         cf_meta = {"error": "%s: %s" % (type(e).__name__, e),
-                   "traceback": traceback.format_exc()}
+                   "traceback": traceback.format_exc(),
+                   "runs": cf_runs}
+
+    # Mark tangent method field
+    for c in candidates:
+        if c.get("name") == "tangent":
+            c["method"] = "tangent"
 
     if not candidates:
         return {
@@ -318,13 +349,15 @@ def run(req):
             "solver_time_s": round(time.time() - t0, 3),
         }
 
-    winner = max(candidates, key=lambda c: float(c.get("fom", float("-inf"))))
+    # Diagnostic only: own-FOM "winner" (host re-selects by E-map check)
+    fom_winner = max(candidates, key=lambda c: float(c.get("fom", float("-inf"))))
     return {
         "error": None,
-        "winner": winner["name"],
-        "fom": winner["fom"],
-        "peaks": winner.get("peaks") or [],
-        "phases_rad": winner.get("phases_rad"),
+        "winner": fom_winner["name"],  # diagnostic; host overrides via emap_check
+        "fom": fom_winner["fom"],
+        "peaks": fom_winner.get("peaks") or [],
+        "phases_rad": fom_winner.get("phases_rad"),
+        "candidates_full": candidates,
         "candidates": [
             {k: v for k, v in c.items() if k not in ("phases_rad", "peaks")}
             for c in candidates
@@ -337,6 +370,7 @@ def run(req):
         "n_triplets": tangent_meta.get("n_triplets"),
         "tangent": tangent_meta,
         "charge_flip": cf_meta,
+        "cf_seed_list": list(cf_seed_list),
         "solver_time_s": round(time.time() - t0, 3),
     }
 
