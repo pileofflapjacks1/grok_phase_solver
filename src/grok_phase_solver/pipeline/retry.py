@@ -22,6 +22,7 @@ _AB_INITIO = frozenset(
         "hio",
         "dual_space",
         "direct_methods",
+        "ab_initio",
         "recycle",
         "strong_prior_phaseed",
         "hard_p1_phaseed",

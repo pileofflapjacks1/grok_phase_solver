@@ -65,7 +65,7 @@ generate = [
   "torch>=2.0",
 ]
 cctbx = [
-  # optional advanced DM/FFT backend — install in a cctbx conda env separately
+  # Optional for --method ab_initio. Prefer Olex2 olex2c (OLEX2_ROOT) or a cctbx conda env.
 ]
 all = [
   "grok-phase-solver[ml,dev,gui,seed-quality,gpu]",

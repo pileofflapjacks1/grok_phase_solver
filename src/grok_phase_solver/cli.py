@@ -166,6 +166,7 @@ Next: pymol open_in_pymol.pml  (or coot); File → Open trial.res in Olex2
             "xdxd_structure",
             "recycle",
             "direct_methods",
+            "ab_initio",
             "hio",
             "dual_space",
             "shelxd",

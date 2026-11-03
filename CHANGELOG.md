@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Opt-in `--method ab_initio`: cctbx.dmtbx weighted tangent (multisolution) + smtbx charge flipping; keep higher own FOM; plain peak search (top N_nonH, 1.2 Å). Requires cctbx or Olex2 `olex2c`.
+
 ## Unreleased — main
 
 ### Q-peak benchmark (real data, negative result)

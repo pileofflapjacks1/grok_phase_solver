@@ -40,6 +40,7 @@ KNOWN_METHODS = (
     "strong_prior_phaseed",
     "recycle",
     "direct_methods",
+    "ab_initio",
     "hio",
     "dual_space",
     "shelxd",
@@ -388,6 +389,42 @@ def _run_phasing(
             hkl, amp * np.exp(1j * phases), cell_arr, d_min=d_use
         )
         history = dm.history
+        return method, phases, density, history
+
+    if method == "ab_initio":
+        from grok_phase_solver.solvers.ab_initio_cctbx import ab_initio_solve
+
+        # Prefer INS UNIT non-H count when available; else n_peaks as ASU proxy.
+        n_nonH = None
+        ins_obj = getattr(cfg, "_ins", None)
+        if ins_obj is not None and getattr(ins_obj, "unit", None) and getattr(ins_obj, "sfac", None):
+            try:
+                n_cell = 0
+                for el, u in zip(ins_obj.sfac, ins_obj.unit):
+                    if str(el).upper() in ("H", "D"):
+                        continue
+                    n_cell += int(round(float(u)))
+                # Rough ASU estimate from LATT/SYMM is deferred; use n_cell / Z if Z known.
+                z = float(getattr(ins_obj, "z", 1.0) or 1.0)
+                n_nonH = max(1, int(round(n_cell / max(z, 1.0))))
+            except Exception:
+                n_nonH = None
+        if n_nonH is None:
+            n_nonH = max(8, min(cfg.n_peaks, 80))
+        phases, density, history, ab_peaks = ab_initio_solve(
+            hkl,
+            amp,
+            cell_arr,
+            space_group=getattr(cfg, "_space_group", None),
+            n_nonH=n_nonH,
+            seed=cfg.seed,
+            time_budget_s=60.0,
+            d_min=d_use,
+            verbose=cfg.verbose,
+        )
+        history = dict(history or {})
+        history["ab_initio_peaks"] = ab_peaks
+        history["plain_peak_search"] = True
         return method, phases, density, history
 
     if method == "dual_space":
@@ -975,6 +1012,7 @@ def solve_structure(
 
     # Stash SG for predicted-model expansion inside _run_phasing
     cfg._space_group = sg  # type: ignore[attr-defined]
+    cfg._ins = ins  # type: ignore[attr-defined]
 
     # Report systematic absences (do not mutate working hkl — keeps export index aligned)
     try:
@@ -1114,9 +1152,13 @@ def solve_structure(
         )
         diagnostics["dm_R"] = (dm_hist.get("R") or [None])[-1]
 
-    peaks = pick_density_peaks(
-        density, n_peaks=cfg.n_peaks, min_sigma=cfg.min_peak_sigma
-    )
+    if history.get("plain_peak_search") and history.get("ab_initio_peaks") is not None:
+        peaks = list(history["ab_initio_peaks"])
+        diagnostics["peak_search"] = "plain_ab_initio_1.2A"
+    else:
+        peaks = pick_density_peaks(
+            density, n_peaks=cfg.n_peaks, min_sigma=cfg.min_peak_sigma
+        )
     diagnostics["n_peaks"] = len(peaks)
     diagnostics["map_sigma"] = float(density.std())
     diagnostics["map_max"] = float(density.max())

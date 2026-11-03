@@ -37,6 +37,7 @@ METHODS = [
     "shelxs+shelxe",
     "raar",
     "direct_methods",
+    "ab_initio",
     "hio",
     "dual_space",
 ]
