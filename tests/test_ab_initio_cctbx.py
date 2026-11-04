@@ -46,6 +46,7 @@ from grok_phase_solver.solvers.ab_initio_cctbx import (
     select_better_by_own_fom,
     select_better_by_r_check,
     sensible_peak_fraction,
+    run_cf_deadline_probe,
 )
 
 
@@ -434,3 +435,35 @@ def test_ab_initio_live_smoke():
     # Multi-seed CF should yield multiple CF candidates when budget allows
     names = [c.get("name") for c in (info.get("candidates") or [])]
     assert any(n == "tangent" or (n or "").startswith("charge_flip") for n in names)
+
+
+@pytest.mark.skipif(not cctbx_available(), reason="cctbx / olex2c not available")
+def test_loop_cf_with_deadline_real_smtbx_iterator():
+    """Regression: smtbx solving_iterator must be driven via iter()+next().
+
+    Runs a real CF solving_iterator through ``_loop_cf_with_deadline`` under
+    olex2c/cctbx. Must not raise TypeError; must complete a few cycles.
+    """
+    from pathlib import Path
+
+    from grok_phase_solver.io.experiment import load_experiment
+    from grok_phase_solver.metrics.qpeak_benchmark import read_cif_nonh
+
+    root = Path(__file__).resolve().parents[1]
+    cif = root / "data" / "raw" / "cod_qpeak" / "2200239.cif"
+    hkl_path = root / "data" / "raw" / "cod_qpeak" / "2200239.hkl"
+    cell, sg, _atoms = read_cif_nonh(cif)
+    table, _ins = load_experiment(str(hkl_path))
+    raw = run_cf_deadline_probe(
+        table.hkl,
+        table.amplitudes,
+        np.asarray(cell, dtype=np.float64),
+        space_group=sg or "P21/c",
+        seed=0,
+        time_budget_s=30.0,
+    )
+    assert raw.get("error") is None, raw
+    assert raw.get("first_yield_ok") is True
+    # Either finished inside budget or timed out cleanly — never TypeError crash.
+    assert "timed_out" in raw
+    assert float(raw.get("solver_time_s") or 0) > 0

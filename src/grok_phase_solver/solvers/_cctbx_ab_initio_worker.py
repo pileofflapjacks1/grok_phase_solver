@@ -115,19 +115,126 @@ def _phases_on_input(ma_phased, input_hkl):
 def _loop_cf_with_deadline(solving, deadline):
     """Iterate smtbx solving_iterator until finished or wall-clock deadline.
 
-    Mirrors charge_flipping.loop without verbose printing. Returns True if
-    aborted because time ran out (best-so-far left on *solving*). Checks the
-    deadline before each ``next`` so a new CF step is not started late.
+    Mirrors charge_flipping.loop: ``solving_iterator`` is iterable via
+    ``__iter__`` (generator) but is *not* itself an iterator, so we must
+    ``it = iter(solving)`` then ``next(it)``. Returns True if aborted because
+    time ran out (best-so-far left on *solving*). Checks the deadline before
+    each ``next`` so a new CF step is not started late.
     """
-    while True:
-        if time.time() >= deadline:
-            return True
+    it = iter(solving)
+    timed_out = False
+    try:
+        while True:
+            if time.time() >= deadline:
+                timed_out = True
+                break
+            try:
+                next(it)
+            except StopIteration:
+                timed_out = False
+                break
+            if solving.state is solving.finished:
+                timed_out = False
+                break
+    finally:
+        # Match for-break: close the generator so clean_up() runs.
         try:
-            next(solving)
-        except StopIteration:
-            return False
-        if solving.state is solving.finished:
-            return False
+            it.close()
+        except Exception:
+            pass
+    return timed_out
+
+
+def _cf_deadline_probe(req):
+    """Short real smtbx CF pass through _loop_cf_with_deadline (test hook)."""
+    from scitbx.random import set_random_seed
+    from smtbx.ab_initio import charge_flipping
+
+    t0 = time.time()
+    cell = req["cell"]
+    sg = req.get("space_group") or "P -1"
+    seed = int(req.get("seed") or 20251102)
+    budget = float(req.get("time_budget_s") or 20.0)
+    set_random_seed(seed)
+    ma = _build_miller(cell, sg, req["hkl"], req["amplitudes"])
+    # Match production defaults when requested; default to quasi-E.
+    amp_type = req.get("amplitude_type", "quasi-E")
+    kw = dict(
+        max_attempts_to_get_phase_transition=1,
+        max_attempts_to_get_sharp_correlation_map=1,
+        max_solving_iterations=int(req.get("max_solving_iterations") or 40),
+        yield_solving_interval=int(req.get("yield_solving_interval") or 5),
+        yield_during_delta_guessing=True,
+    )
+    if amp_type == "quasi-E":
+        kw["normalisations_for"] = charge_flipping.amplitude_quasi_normalisations
+
+    # Regression check: solving_iterator is iterable but not an iterator.
+    flipping = charge_flipping.weak_reflection_improved_iterator(delta=None)
+    solving = charge_flipping.solving_iterator(flipping, ma, **kw)
+    try:
+        iter(solving)  # must not fail
+    except TypeError as e:
+        return {
+            "error": "iter(solving) failed: %s" % e,
+            "first_yield_ok": False,
+            "solver_time_s": round(time.time() - t0, 3),
+        }
+    # Prove next(iter(...)) works (the e1e309fa bug was next(solving)).
+    flipping_a = charge_flipping.weak_reflection_improved_iterator(delta=None)
+    solving_a = charge_flipping.solving_iterator(flipping_a, ma, **kw)
+    it_a = iter(solving_a)
+    try:
+        first = next(it_a)
+    except TypeError as e:
+        it_a.close()
+        return {
+            "error": "next(iter(solving)) TypeError: %s" % e,
+            "first_yield_ok": False,
+            "solver_time_s": round(time.time() - t0, 3),
+        }
+    except Exception as e:
+        it_a.close()
+        return {
+            "error": "first yield failed: %s: %s" % (type(e).__name__, e),
+            "first_yield_ok": False,
+            "solver_time_s": round(time.time() - t0, 3),
+        }
+    it_a.close()
+
+    # Fresh CF run through the deadline helper (same path as production CF).
+    flipping2 = charge_flipping.weak_reflection_improved_iterator(delta=None)
+    solving2 = charge_flipping.solving_iterator(flipping2, ma, **kw)
+    deadline = t0 + budget
+    try:
+        timed_out = _loop_cf_with_deadline(solving2, deadline)
+    except TypeError as e:
+        return {
+            "error": "_loop_cf_with_deadline TypeError: %s" % e,
+            "first_yield_ok": True,
+            "first_yield_type": type(first).__name__,
+            "solver_time_s": round(time.time() - t0, 3),
+        }
+    n_peaks = 0
+    try:
+        fl = solving2.flipping_iterator
+        fft_map = fl.rho_map
+        sites, heights = _peak_list(fft_map, 8, 1.2)
+        n_peaks = len(sites)
+    except Exception:
+        n_peaks = 0
+    return {
+        "error": None,
+        "timed_out": bool(timed_out),
+        "first_yield_ok": True,
+        "first_yield_type": type(first).__name__,
+        "n_peaks": int(n_peaks),
+        "had_phase_transition": bool(
+            getattr(solving2, "had_phase_transition", False)),
+        "n_solutions": len(getattr(solving2, "f_calc_solutions", []) or []),
+        "solver_time_s": round(time.time() - t0, 3),
+    }
+
 
 
 def run(req):
@@ -136,6 +243,9 @@ def run(req):
     from scitbx.random import set_random_seed
     from smtbx.ab_initio import charge_flipping
     from libtbx import group_args
+
+    if req.get("action") == "cf_deadline_probe":
+        return _cf_deadline_probe(req)
 
     t0 = time.time()
     cell = req["cell"]

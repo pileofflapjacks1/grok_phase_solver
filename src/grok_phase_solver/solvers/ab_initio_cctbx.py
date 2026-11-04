@@ -680,6 +680,48 @@ def _run_via_import(request: Dict[str, Any], work_dir: Path) -> Dict[str, Any]:
     return json.loads(out_path.read_text())
 
 
+def run_cf_deadline_probe(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    *,
+    space_group: str = "P -1",
+    seed: int = 0,
+    time_budget_s: float = 20.0,
+    work_dir: Optional[PathLike] = None,
+) -> Dict[str, Any]:
+    """Run a short real smtbx CF through ``_loop_cf_with_deadline`` (test hook)."""
+    runner = require_cctbx()
+    cleanup = work_dir is None
+    if work_dir is None:
+        wdir = Path(tempfile.mkdtemp(prefix="gps_cf_probe_"))
+    else:
+        wdir = Path(work_dir).resolve()
+        wdir.mkdir(parents=True, exist_ok=True)
+    request = {
+        "action": "cf_deadline_probe",
+        "cell": [float(x) for x in np.asarray(cell, dtype=np.float64).tolist()],
+        "space_group": space_group,
+        "seed": int(BASE_SEED + (int(seed) % 100000)),
+        "time_budget_s": float(time_budget_s),
+        "max_solving_iterations": 40,
+        "yield_solving_interval": 5,
+        "hkl": [[int(h), int(k), int(l)] for h, k, l in np.asarray(hkl, dtype=int)],
+        "amplitudes": [float(a) for a in np.asarray(amplitudes, dtype=np.float64)],
+    }
+    try:
+        if runner.kind == "import":
+            raw = _run_via_import(request, wdir)
+        else:
+            raw = _run_via_olex2c(
+                runner, request, wdir, timeout_s=float(time_budget_s) + 60.0
+            )
+    finally:
+        if cleanup:
+            shutil.rmtree(wdir, ignore_errors=True)
+    return raw
+
+
 def ab_initio_solve(
     hkl: np.ndarray,
     amplitudes: np.ndarray,
@@ -963,4 +1005,5 @@ __all__ = [
     "cctbx_available",
     "require_cctbx",
     "ab_initio_solve",
+    "run_cf_deadline_probe",
 ]

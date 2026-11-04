@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- CF wall-clock loop: smtbx ``solving_iterator`` is iterable via ``__iter__`` but not itself an iterator; ``_loop_cf_with_deadline`` now uses ``it = iter(solving)`` then ``next(it)`` (mirrors ``charge_flipping.loop``). Regression test drives a real smtbx CF iterator under olex2c.
+
 ### Added
 - Opt-in `--method ab_initio`: cctbx.dmtbx weighted tangent (multisolution) + smtbx charge flipping over a fixed multi-seed list (`CF_SEED_LIST = 0,1,7,42,2025`, K=5) inside a hard 60 s wall-clock budget; centrosymmetric selection = E-map check `score = max(skew,0) + 0.5·(h_med/h_max) + 0.5·network_frac`; non-centrosymmetric selection = lowest top-N peak R1 (carbon peaks vs |F|, fitted scale) with E-map score as tiebreak; never vs known model; not CF own FOM; plain peak search (top N_nonH, 1.2 Å). CF aborts inside the solving loop at the deadline (olex2c subprocess grace as outer cap) and returns best-so-far. Requires cctbx or Olex2 `olex2c`.
 
