@@ -16,6 +16,7 @@ from grok_phase_solver.solvers.ab_initio_cctbx import (
     BENCH_OUTER_SEEDS,
     CF_N_SEEDS,
     CF_SEED_LIST,
+    CF_SUBPROCESS_GRACE_S,
     CF_TIME_RESERVE_S,
     E_CAP_MIN,
     E_CAP_PER_ATOM,
@@ -28,18 +29,22 @@ from grok_phase_solver.solvers.ab_initio_cctbx import (
     TIME_BUDGET_S,
     CctbxUnavailableError,
     annotate_emap_scores,
+    annotate_r_scores,
     cctbx_available,
     combined_map_fom,
     e_list_cap,
     emap_check_score,
     find_cctbx_runner,
+    iterate_until_deadline,
     min_distance_ok,
     peak_contrast,
     peak_network_fraction,
     plain_peak_pick,
     require_cctbx,
+    select_ab_initio_candidate,
     select_better_by_emap_check,
     select_better_by_own_fom,
+    select_better_by_r_check,
     sensible_peak_fraction,
 )
 
@@ -60,6 +65,7 @@ def test_budget_and_tangent_defaults_frozen():
     assert CF_SEED_LIST == (0, 1, 7, 42, 2025)
     assert CF_N_SEEDS == 5
     assert CF_TIME_RESERVE_S == 12.0
+    assert CF_SUBPROCESS_GRACE_S == 30.0
     assert BENCH_OUTER_SEEDS == (0, 1, 7, 42, 2025)
     assert EMAP_MIN_SEP_A == 1.1
     assert EMAP_BOND_LO_A == 1.2
@@ -224,6 +230,161 @@ def test_annotate_emap_scores_fills_fields():
     assert "emap_score" in out[0]
     assert "network_frac" in out[0]
     assert "contrast" in out[0]
+
+
+def test_select_better_by_r_check_prefers_lower_r1():
+    """Non-centro rule: lowest peak R1; emap is only a tiebreak."""
+    cell = np.array([10.0, 10.0, 10.0, 90.0, 90.0, 90.0])
+    # Two reflections; fabricate amplitudes and peak sets so R1 ordering is known.
+    hkl = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1]], dtype=float)
+    # Place a "good" 4-atom chain; compute Fo from it, then a scrambled bad set.
+    from grok_phase_solver.physics.structure_factors import compute_structure_factors
+
+    good_fracs = np.array([[i * 0.15, 0.0, 0.0] for i in range(4)], dtype=float)
+    bad_fracs = np.array(
+        [[0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [0.0, 0.5, 0.0], [0.5, 0.5, 0.0]],
+        dtype=float,
+    )
+    Fo = np.abs(
+        compute_structure_factors(
+            hkl, good_fracs, ["C"] * 4, cell, b_isos=np.full(4, 5.0)
+        )
+    )
+    good = {
+        "name": "good_r",
+        "skew": 1.0,  # deliberately lower skew than bad
+        "peaks": [
+            {"fract": list(f), "height": h}
+            for f, h in zip(good_fracs, [10.0, 9.0, 8.0, 7.0])
+        ],
+    }
+    bad = {
+        "name": "bad_r",
+        "skew": 5.0,  # would win emap_check
+        "peaks": [
+            {"fract": list(f), "height": h}
+            for f, h in zip(bad_fracs, [10.0, 9.5, 9.0, 8.5])
+        ],
+    }
+    assert select_better_by_emap_check([good, bad], cell, n_nonH=4)["name"] == "bad_r"
+    assert (
+        select_better_by_r_check([good, bad], hkl, Fo, cell, n_nonH=4)["name"]
+        == "good_r"
+    )
+
+
+def test_select_ab_initio_candidate_centro_keeps_emap():
+    cell = np.array([10.0, 10.0, 10.0, 90.0, 90.0, 90.0])
+    hkl = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
+    amp = np.array([10.0, 8.0, 6.0])
+    high_emap = {
+        "name": "high_emap",
+        "skew": 4.0,
+        "peaks": [
+            {"fract": [i * 0.15, 0.0, 0.0], "height": h}
+            for i, h in enumerate([10.0, 9.0, 8.0, 7.0])
+        ],
+    }
+    low_emap = {
+        "name": "low_emap",
+        "skew": 0.5,
+        "peaks": [
+            {"fract": [0.0, 0.0, 0.0], "height": 10.0},
+            {"fract": [0.5, 0.0, 0.0], "height": 2.0},
+            {"fract": [0.0, 0.5, 0.0], "height": 2.0},
+            {"fract": [0.5, 0.5, 0.0], "height": 2.0},
+        ],
+    }
+    winner = select_ab_initio_candidate(
+        [high_emap, low_emap],
+        cell,
+        n_nonH=4,
+        is_centrosymmetric=True,
+        hkl=hkl,
+        amplitudes=amp,
+    )
+    assert winner["name"] == "high_emap"
+
+
+def test_select_ab_initio_candidate_noncentro_uses_r():
+    cell = np.array([10.0, 10.0, 10.0, 90.0, 90.0, 90.0])
+    hkl = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1]], dtype=float)
+    from grok_phase_solver.physics.structure_factors import compute_structure_factors
+
+    good_fracs = np.array([[i * 0.15, 0.0, 0.0] for i in range(4)], dtype=float)
+    bad_fracs = np.array(
+        [[0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [0.0, 0.5, 0.0], [0.5, 0.5, 0.0]],
+        dtype=float,
+    )
+    Fo = np.abs(
+        compute_structure_factors(
+            hkl, good_fracs, ["C"] * 4, cell, b_isos=np.full(4, 5.0)
+        )
+    )
+    good = {
+        "name": "good_r",
+        "skew": 1.0,
+        "peaks": [
+            {"fract": list(f), "height": h}
+            for f, h in zip(good_fracs, [10.0, 9.0, 8.0, 7.0])
+        ],
+    }
+    bad = {
+        "name": "bad_r",
+        "skew": 5.0,
+        "peaks": [
+            {"fract": list(f), "height": h}
+            for f, h in zip(bad_fracs, [10.0, 9.5, 9.0, 8.5])
+        ],
+    }
+    winner = select_ab_initio_candidate(
+        [good, bad],
+        cell,
+        n_nonH=4,
+        is_centrosymmetric=False,
+        hkl=hkl,
+        amplitudes=Fo,
+    )
+    assert winner["name"] == "good_r"
+
+
+def test_iterate_until_deadline_stops_near_limit():
+    """Hard wall-clock abort: stop near the deadline, not far past it."""
+    import time as _time
+
+    def slow():
+        while True:
+            _time.sleep(0.05)
+            yield "tick"
+
+    limit_s = 0.25
+    t0 = _time.time()
+    n, timed_out = iterate_until_deadline(slow(), t0 + limit_s)
+    elapsed = _time.time() - t0
+    assert timed_out
+    assert n >= 1
+    # Must stop near the limit (allow a small sleep overshoot, not multi-second).
+    assert elapsed < limit_s + 0.35
+    assert elapsed >= limit_s
+
+
+def test_annotate_r_scores_fills_peak_r1():
+    cell = np.array([10.0, 10.0, 10.0, 90.0, 90.0, 90.0])
+    hkl = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
+    amp = np.array([5.0, 4.0, 3.0])
+    cands = [
+        {
+            "name": "t",
+            "skew": 1.0,
+            "peaks": [
+                {"fract": [0.0, 0.0, 0.0], "height": 10.0},
+                {"fract": [0.2, 0.0, 0.0], "height": 8.0},
+            ],
+        }
+    ]
+    out = annotate_r_scores(cands, hkl, amp, cell, n_nonH=2)
+    assert "peak_r1" in out[0]
+    assert 0.0 <= out[0]["peak_r1"] <= 2.0
 
 
 def test_require_cctbx_error_message_when_forced(monkeypatch):

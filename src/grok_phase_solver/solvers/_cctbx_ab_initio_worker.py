@@ -112,6 +112,24 @@ def _phases_on_input(ma_phased, input_hkl):
     return lookup  # unused fallback
 
 
+def _loop_cf_with_deadline(solving, deadline):
+    """Iterate smtbx solving_iterator until finished or wall-clock deadline.
+
+    Mirrors charge_flipping.loop without verbose printing. Returns True if
+    aborted because time ran out (best-so-far left on *solving*). Checks the
+    deadline before each ``next`` so a new CF step is not started late.
+    """
+    while True:
+        if time.time() >= deadline:
+            return True
+        try:
+            next(solving)
+        except StopIteration:
+            return False
+        if solving.state is solving.finished:
+            return False
+
+
 def run(req):
     from cctbx import dmtbx, maptbx, miller
     from cctbx.array_family import flex
@@ -223,7 +241,7 @@ def run(req):
     cf_runs = []
     cf_deadline = t0 + budget  # hard stop inside overall budget
     try:
-        for cf_seed in cf_seed_list:
+        for seed_i, cf_seed in enumerate(cf_seed_list):
             if time.time() >= cf_deadline:
                 cf_runs.append({"cf_seed": cf_seed, "skipped": True,
                                 "reason": "budget_exhausted"})
@@ -232,6 +250,11 @@ def run(req):
                 set_random_seed(int(seed) + 17 + int(cf_seed))
                 flipping = charge_flipping.weak_reflection_improved_iterator(
                     delta=None)
+                # yield often enough that the wall-clock check can abort near
+                # the deadline (flipping_interval stays the diagnostic step).
+                flip_interval = int(cf_params.get("flipping_interval", 60))
+                yield_every = int(cf_params.get("yield_solving_interval",
+                                                 min(10, max(1, flip_interval))))
                 extra = group_args(
                     max_attempts_to_get_phase_transition=int(
                         cf_params.get("max_attempts_to_get_phase_transition", 5)),
@@ -240,8 +263,7 @@ def run(req):
                             "max_attempts_to_get_sharp_correlation_map", 5)),
                     max_solving_iterations=int(
                         cf_params.get("max_solving_iterations", 500)),
-                    yield_solving_interval=int(
-                        cf_params.get("flipping_interval", 60)),
+                    yield_solving_interval=yield_every,
                     yield_during_delta_guessing=True,
                 )
                 amp_type = cf_params.get("amplitude_type", "quasi-E")
@@ -250,7 +272,7 @@ def run(req):
                         charge_flipping.amplitude_quasi_normalisations)
                 solving = charge_flipping.solving_iterator(
                     flipping, ma, **extra.__dict__)
-                charge_flipping.loop(solving, verbose=False)
+                seed_timed_out = _loop_cf_with_deadline(solving, cf_deadline)
                 had = bool(getattr(solving, "had_phase_transition", False))
                 note = None
                 if solving.f_calc_solutions:
@@ -307,6 +329,7 @@ def run(req):
                     ],
                     "phases_rad": phases_in,
                     "n_solutions": n_sol,
+                    "timed_out": bool(seed_timed_out),
                 }
                 if note:
                     cand["note"] = note
@@ -319,7 +342,17 @@ def run(req):
                     "n_solutions": n_sol,
                     "n_peaks": len(sites),
                     "cc_peak_height": cc_val,
+                    "timed_out": bool(seed_timed_out),
                 })
+                if seed_timed_out:
+                    # Stop starting further seeds; remaining wall time is gone.
+                    for skip_seed in cf_seed_list[seed_i + 1:]:
+                        cf_runs.append({
+                            "cf_seed": skip_seed,
+                            "skipped": True,
+                            "reason": "budget_exhausted",
+                        })
+                    break
             except Exception as e:
                 cf_runs.append({
                     "cf_seed": int(cf_seed),
@@ -329,6 +362,8 @@ def run(req):
         cf_meta = {
             "n_seeds_requested": len(cf_seed_list),
             "n_seeds_ok": sum(1 for r in cf_runs if "fom" in r),
+            "timed_out": any(r.get("timed_out") for r in cf_runs)
+            or any(r.get("skipped") for r in cf_runs),
             "runs": cf_runs,
         }
     except Exception as e:
@@ -371,6 +406,7 @@ def run(req):
         "tangent": tangent_meta,
         "charge_flip": cf_meta,
         "cf_seed_list": list(cf_seed_list),
+        "timed_out": bool((cf_meta or {}).get("timed_out")),
         "solver_time_s": round(time.time() - t0, 3),
     }
 

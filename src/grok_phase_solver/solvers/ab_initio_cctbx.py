@@ -2,10 +2,13 @@
 Opt-in cctbx/smtbx ab initio path (tangent formula + charge flipping).
 
 Runs (a) cctbx.dmtbx weighted tangent (multisolution) and (b) smtbx charge
-flipping with Olex2-like defaults over a fixed multi-seed list, then keeps the
-candidate with the highest *method-independent E-map check* score (skewness,
-peak contrast, peak-network fraction). Never ranks against a known model and
-does not use CF's own FOM for selection.
+flipping with Olex2-like defaults over a fixed multi-seed list, then ranks
+candidates. Centrosymmetric space groups keep the method-independent E-map
+check (skewness, peak contrast, peak-network fraction). Non-centrosymmetric
+groups add an R-type check: top-N peaks (N = N_nonH) as carbon, R1 on |F|
+with a fitted scale; lowest R1 wins, E-map score is the tiebreak. Never ranks
+against a known model and does not use CF's own FOM for selection. CF respects
+a hard wall-clock budget (iteration-loop abort + subprocess timeout).
 
 cctbx is an optional dependency. On this project's shared box it is provided by
 Olex2's bundled Python 3.8 (``olex2c``). See ``find_cctbx_runner`` /
@@ -50,6 +53,9 @@ CF_SEED_LIST = (0, 1, 7, 42, 2025)
 CF_N_SEEDS = len(CF_SEED_LIST)
 # Seconds reserved inside TIME_BUDGET_S for the CF multi-seed block.
 CF_TIME_RESERVE_S = 12.0
+# Extra wall-clock seconds beyond time_budget_s for olex2c process kill.
+# Worker self-limits first; this is the hard outer cap.
+CF_SUBPROCESS_GRACE_S = 30.0
 
 # Method-independent E-map check (selection; not CF own-FOM)
 EMAP_MIN_SEP_A = 1.1
@@ -322,6 +328,128 @@ def annotate_emap_scores(
     return out
 
 
+def candidate_peak_r1(
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    peaks: Sequence[Any],
+    n_nonH: int,
+) -> float:
+    """R1 of top-N peaks as carbon vs observed |F| (fitted scale).
+
+    N = n_nonH. Uses the same residual as ``metrics.success.r1_from_peaks``
+    (B = 5 Å²). Does not consult a known model.
+    """
+    from grok_phase_solver.metrics.success import r1_from_peaks
+
+    if not peaks or int(n_nonH) <= 0:
+        return 1.0
+    fracs = []
+    for p in peaks:
+        if isinstance(p, dict):
+            fracs.append(p["fract"])
+        else:
+            fracs.append(p.fract)
+    return float(
+        r1_from_peaks(
+            np.asarray(hkl, dtype=np.float64),
+            np.asarray(amplitudes, dtype=np.float64),
+            np.asarray(cell, dtype=np.float64),
+            np.asarray(fracs, dtype=np.float64),
+            n_atoms=int(n_nonH),
+        )
+    )
+
+
+def annotate_r_scores(
+    candidates: Sequence[Dict[str, Any]],
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    *,
+    n_nonH: int,
+) -> List[Dict[str, Any]]:
+    """Return copies with ``peak_r1`` filled from top-N peak R1."""
+    out: List[Dict[str, Any]] = []
+    for c in candidates:
+        cc = dict(c)
+        cc["peak_r1"] = candidate_peak_r1(
+            hkl, amplitudes, cell, cc.get("peaks") or [], n_nonH
+        )
+        out.append(cc)
+    return out
+
+
+def select_better_by_r_check(
+    candidates: Sequence[Dict[str, Any]],
+    hkl: np.ndarray,
+    amplitudes: np.ndarray,
+    cell: np.ndarray,
+    *,
+    n_nonH: int,
+) -> Dict[str, Any]:
+    """Non-centrosymmetric selection: lowest peak R1; E-map score tiebreak.
+
+    Centrosymmetric selection must keep using ``select_better_by_emap_check``.
+    """
+    if not candidates:
+        raise ValueError("no candidates to select")
+    annotated = annotate_emap_scores(candidates, cell, n_nonH=n_nonH)
+    annotated = annotate_r_scores(
+        annotated, hkl, amplitudes, cell, n_nonH=n_nonH
+    )
+    return min(
+        annotated,
+        key=lambda c: (
+            float(c.get("peak_r1", 1.0)),
+            -float(c.get("emap_score", float("-inf"))),
+            -float(c.get("skew", 0.0)),
+        ),
+    )
+
+
+def select_ab_initio_candidate(
+    candidates: Sequence[Dict[str, Any]],
+    cell: np.ndarray,
+    *,
+    n_nonH: int,
+    is_centrosymmetric: bool,
+    hkl: Optional[np.ndarray] = None,
+    amplitudes: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
+    """Dispatch selection: E-map check (centro) or R-check (non-centro)."""
+    if is_centrosymmetric:
+        return select_better_by_emap_check(candidates, cell, n_nonH=n_nonH)
+    if hkl is None or amplitudes is None:
+        raise ValueError("hkl and amplitudes required for non-centrosymmetric R-check")
+    return select_better_by_r_check(
+        candidates, hkl, amplitudes, cell, n_nonH=n_nonH
+    )
+
+
+def iterate_until_deadline(
+    iterable,
+    deadline: float,
+    *,
+    now=time.time,
+):
+    """Consume *iterable* until wall-clock *deadline*; return (n_items, timed_out).
+
+    Checks the deadline before each ``next`` so a slow step is not started
+    after the budget expires. Mirrored in the cctbx worker CF loop.
+    """
+    n = 0
+    it = iter(iterable)
+    while True:
+        if float(now()) >= float(deadline):
+            return n, True
+        try:
+            next(it)
+        except StopIteration:
+            return n, False
+        n += 1
+
+
 def min_distance_ok(
     site_frac: np.ndarray,
     accepted_frac: Sequence[np.ndarray],
@@ -566,10 +694,11 @@ def ab_initio_solve(
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any], List["DensityPeak"]]:
     """
-    Run tangent + multi-seed smtbx CF via cctbx; keep best E-map-check candidate.
+    Run tangent + multi-seed smtbx CF via cctbx; select best candidate.
 
     Returns phases, density, info, peaks (plain search, top N_nonH, 1.2 Å).
-    Selection uses ``emap_check_score`` (not CF own FOM; never vs known model).
+    Centrosymmetric: E-map check. Non-centrosymmetric: lowest peak R1 with
+    E-map score as tiebreak. Not CF own FOM; never vs known model.
     """
     runner = require_cctbx()
     hkl = np.asarray(hkl, dtype=int)
@@ -609,6 +738,8 @@ def ab_initio_solve(
     }
 
     t0 = time.time()
+    subprocess_timeout_s = float(time_budget_s) + float(CF_SUBPROCESS_GRACE_S)
+    timed_out = False
     if verbose:
         print(
             f"  ab_initio via {runner.kind}"
@@ -618,15 +749,30 @@ def ab_initio_solve(
         if runner.kind == "import":
             raw = _run_via_import(request, wdir)
         else:
-            raw = _run_via_olex2c(
-                runner, request, wdir, timeout_s=float(time_budget_s) + 180.0
-            )
+            try:
+                raw = _run_via_olex2c(
+                    runner, request, wdir, timeout_s=subprocess_timeout_s
+                )
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                out_path = wdir / "result.json"
+                if out_path.exists():
+                    raw = json.loads(out_path.read_text())
+                    raw["host_subprocess_timed_out"] = True
+                else:
+                    if cleanup:
+                        shutil.rmtree(wdir, ignore_errors=True)
+                    raise RuntimeError(
+                        "ab_initio olex2c exceeded wall-clock budget "
+                        "(%.1fs + %.1fs grace) with no partial result"
+                        % (float(time_budget_s), float(CF_SUBPROCESS_GRACE_S))
+                    )
     except Exception:
         if cleanup:
             shutil.rmtree(wdir, ignore_errors=True)
         raise
 
-    if raw.get("error"):
+    if raw.get("error") and not (raw.get("candidates_full") or raw.get("candidates")):
         if cleanup:
             shutil.rmtree(wdir, ignore_errors=True)
         raise RuntimeError(f"ab_initio worker error: {raw['error']}")
@@ -654,7 +800,25 @@ def ab_initio_solve(
         if cleanup:
             shutil.rmtree(wdir, ignore_errors=True)
         raise RuntimeError("ab_initio worker returned no candidates")
-    winner = select_better_by_emap_check(annotated, cell, n_nonH=n_atoms)
+
+    is_centro = raw.get("is_centrosymmetric")
+    if is_centro is None:
+        from grok_phase_solver.physics.symmetry import is_centrosymmetric as _is_centro
+        is_centro = bool(_is_centro(space_group))
+    else:
+        is_centro = bool(is_centro)
+
+    if is_centro:
+        winner = select_better_by_emap_check(annotated, cell, n_nonH=n_atoms)
+        selection_name = "emap_check"
+    else:
+        annotated = annotate_r_scores(
+            annotated, hkl, amp, cell, n_nonH=n_atoms
+        )
+        winner = select_better_by_r_check(
+            annotated, hkl, amp, cell, n_nonH=n_atoms
+        )
+        selection_name = "r_check"
 
     peak_rows = winner.get("peaks") or []
     if peak_rows:
@@ -690,7 +854,8 @@ def ab_initio_solve(
             for k in (
                 "name", "method", "cf_seed", "fom", "cons", "skew",
                 "emap_score", "skew_term", "contrast", "network_frac",
-                "sensible_frac", "cc_peak_height", "had_phase_transition",
+                "sensible_frac", "peak_r1", "cc_peak_height",
+                "had_phase_transition",
                 "n_trials", "n_e_used", "n_triplets", "best_trial",
             )
             if k in c or c.get(k) is not None
@@ -708,14 +873,23 @@ def ab_initio_solve(
             "charge_flip" if str(winner.get("name", "")).startswith("charge_flip") else winner.get("name")
         ),
         "emap_score": winner.get("emap_score"),
+        "peak_r1": winner.get("peak_r1"),
         "fom": winner.get("fom"),  # diagnostic only
-        "selection": "emap_check",
+        "selection": selection_name,
+        "is_centrosymmetric": bool(is_centro),
         "emap_check_formula": (
             "score = skew_term + 0.5*contrast + 0.5*network_frac; "
             "skew_term = max(skew,0); "
             "contrast = h_median/h_max (top-N height consistency); "
             "network_frac = |LCC|/N_nonH over peaks with NN>1.1Å "
             "and edges in [1.2,1.9]Å"
+        ),
+        "r_check_rule": (
+            None if is_centro else (
+                "non-centrosymmetric: lowest peak_r1 "
+                "(top-N carbon peaks vs |F|, fitted scale); "
+                "emap_score tiebreak; centrosymmetric unchanged (emap_check)"
+            )
         ),
         "candidates": cand_summary,
         "n_nonH": n_atoms,
@@ -727,6 +901,7 @@ def ab_initio_solve(
             "MIN_PEAK_DIST_A": MIN_PEAK_DIST_A,
             "CF_SEED_LIST": list(CF_SEED_LIST),
             "CF_TIME_RESERVE_S": CF_TIME_RESERVE_S,
+            "CF_SUBPROCESS_GRACE_S": CF_SUBPROCESS_GRACE_S,
             "EMAP_MIN_SEP_A": EMAP_MIN_SEP_A,
             "EMAP_BOND_LO_A": EMAP_BOND_LO_A,
             "EMAP_BOND_HI_A": EMAP_BOND_HI_A,
@@ -734,10 +909,16 @@ def ab_initio_solve(
         },
         "worker": {k: raw.get(k) for k in (
             "n_trials", "n_e_used", "n_triplets", "sg", "is_centrosymmetric",
-            "tangent", "charge_flip", "solver_time_s",
+            "tangent", "charge_flip", "solver_time_s", "timed_out",
         )},
         "seconds": time.time() - t0,
         "work_dir": None if cleanup else str(wdir),
+        "timed_out": bool(
+            timed_out
+            or raw.get("timed_out")
+            or raw.get("host_subprocess_timed_out")
+            or ((raw.get("charge_flip") or {}).get("timed_out"))
+        ),
         "status": "ok",
     }
     if cleanup:
@@ -755,6 +936,7 @@ __all__ = [
     "CF_SEED_LIST",
     "CF_N_SEEDS",
     "CF_TIME_RESERVE_S",
+    "CF_SUBPROCESS_GRACE_S",
     "EMAP_MIN_SEP_A",
     "EMAP_BOND_LO_A",
     "EMAP_BOND_HI_A",
@@ -766,6 +948,11 @@ __all__ = [
     "emap_check_score",
     "annotate_emap_scores",
     "select_better_by_emap_check",
+    "candidate_peak_r1",
+    "annotate_r_scores",
+    "select_better_by_r_check",
+    "select_ab_initio_candidate",
+    "iterate_until_deadline",
     "peak_contrast",
     "peak_network_fraction",
     "sensible_peak_fraction",
