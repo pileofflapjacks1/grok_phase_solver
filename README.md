@@ -54,6 +54,8 @@ python -m pip install -e ".[gui]"
 gps-solve --help
 ```
 
+Optional **cctbx** path for `--method ab_initio` (not on PyPI): use Olex2's bundled `olex2c` (set `OLEX2_ROOT` to the bundle root that contains `olex2c`, e.g. `/workspace/olex2/olex2` on the shared box) or a cctbx conda env where `import cctbx` / `import smtbx` work. Missing cctbx raises a clear error; defaults stay frozen (60 s budget with multi-seed CF offsets `0,1,7,42,2025`, |E|>1.2, 10×N_nonH cap). Centrosymmetric candidate selection uses a method-independent E-map check (`max(skew,0) + 0.5·h_med/h_max + 0.5·network_frac`), not CF's own FOM; non-centrosymmetric candidates are ranked by the wR2 of a short isotropic least-squares refinement of their top-N peaks against Fo² (4 cycles, unit weights, smtbx), similar in spirit to how SHELXD ranks trials. The whole phasing worker runs in a child process group that is killed at `time_budget_s + 30 s` (best result so far is returned, or `AbInitioTimeoutError`). The method *proposes a starting model*; it does not solve structures. Panel runner: `scripts/run_ab_initio_panel.py`.
+
 Optional PhAI weights (not on PyPI): see [`third_party/phai/README.md`](third_party/phai/README.md) and `pip install -e ".[ml]"`.  
 Release notes: [`docs/RELEASE.md`](docs/RELEASE.md) · [v0.13.4 notes](docs/RELEASE_NOTES_v0.13.4.md) · [Paper PDF](docs/paper/arxiv_draft.pdf)
 

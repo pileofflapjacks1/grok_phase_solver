@@ -111,6 +111,7 @@ gps-solve \
 | `strong_prior_phaseed` | GraphPhaseNet prior + PhaSeed (v5 features when trained) |
 | Predicted model seed | `--predicted-model model.cif` → partial_phaseed (AF/OpenFold3/Boltz) |
 | `raar` / `recycle` / `hio` / `direct_methods` | Projection / educational DM |
+| `ab_initio` | Opt-in cctbx tangent + multi-seed smtbx CF *proposes a starting model*; centro: E-map check, non-centro: refined-wR2 pick (4 LS cycles vs Fo²); worker killed at budget+30 s (needs cctbx/Olex2; plain 1.2 Å peak pick) |
 | Patterson map / peaks | **Not** a general phase solver. Map + peak helper (`solvers/patterson.py`); `--patterson-ha` for HA search |
 
 Examples:

@@ -11,6 +11,20 @@ seen and must not be tuned to make a run pass.
   minimum lattice image, so symmetry mates and lattice translations count.
   The best alignment maximises atoms within 0.5 A (ties: within 1.0 A, then
   smaller mean atom-to-Q distance).
+  **Polar axes (grader polar-shift-v1, added after the Nov 4 panels):** if a
+  fractional axis e_k is fixed by every rotation part of the space group
+  (R e_k = e_k for all operators: P2_1 -> b, Pna2_1 -> c, P1 -> a, b and c,
+  Pc -> a and c, ...), the origin is not fixed along it, so the discrete
+  {0, 1/2} choice along that axis is replaced by a *continuous* shift chosen
+  to maximise atoms within 0.5 A. One polar axis: exact (every atom/Q-orbit
+  pair gives an interval of shifts within 0.5 A; sweep the union per atom;
+  ties by 1.0 A count and mean distance, evaluated at the midpoint of each
+  maximal interval). Two or three polar axes: shift candidates = every
+  atom/Q-orbit pair offset along the polar axes, then 3 centroid refinement
+  steps (not exhaustive). Non-polar space groups keep the discrete search
+  exactly as before. The random baseline uses the identical search, so the
+  3x-random test does not get easier. ``polar_shift=False`` reproduces the
+  old (v0) grader.
 * Ghost = one of the N Q peaks that is more than 1.0 A from every image of
   every deposited non-H atom.
 * Random baseline: ``n_random`` sets of N uniform fractional points in the
@@ -43,6 +57,10 @@ _SHIFTS = np.array(list(itertools.product((-1, 0, 1), repeat=3)), float)
 _ORIGINS = np.array(list(itertools.product((0, 0.5), repeat=3)), float)
 
 Ops = List[Tuple[np.ndarray, np.ndarray]]
+
+GRADER_VERSION = "polar-shift-v1"
+MATCH_TOL_A = 0.5
+POLAR_REFINE_STEPS = 3
 
 
 def _num(s: str) -> float:
@@ -110,9 +128,151 @@ def min_dist(a: np.ndarray, b: np.ndarray, orth: np.ndarray) -> np.ndarray:
     return best
 
 
-def evaluate(atoms: np.ndarray, atoms_orbit: np.ndarray, q: np.ndarray, ops: Ops,
-             orth: np.ndarray) -> Dict:
-    """Best alignment of ``q`` onto the atoms over origin shifts x inversion."""
+def polar_axes(ops: Ops) -> List[int]:
+    """Fractional axes (0=a, 1=b, 2=c) fixed by every rotation part of *ops*.
+
+    R e_k = e_k for all operators means a translation along e_k leaves every
+    operator's translation part unchanged, i.e. the origin is free along it
+    (P2_1: b; Pna2_1: c; P1: a, b, c; Pc: a and c). Centrosymmetric groups
+    never qualify (inversion maps e_k to -e_k). Only the basis axes are tested.
+    """
+    axes = []
+    for k in range(3):
+        e = np.zeros(3)
+        e[k] = 1.0
+        if all(np.allclose(m @ e, e, atol=1e-9) for m, _t in ops):
+            axes.append(k)
+    return axes
+
+
+def _nearest(atoms: np.ndarray, pts: np.ndarray, orth: np.ndarray):
+    """Per atom: (distance, fractional displacement atom - nearest image of a point)."""
+    d0 = atoms[:, None, :] - pts[None, :, :]
+    d0 -= np.round(d0)
+    best_r = None
+    best_d = None
+    for sh in _SHIFTS:
+        dd = d0 + sh
+        r = np.sqrt(((dd @ orth.T) ** 2).sum(-1))
+        if best_r is None:
+            best_r, best_d = r, dd
+        else:
+            m = r < best_r
+            best_r = np.where(m, r, best_r)
+            best_d = np.where(m[..., None], dd, best_d)
+    j = best_r.argmin(1)
+    idx = np.arange(len(atoms))
+    return best_r[idx, j], best_d[idx, j]
+
+
+def _polar1_shifts(atoms: np.ndarray, pts: np.ndarray, orth: np.ndarray, k: int,
+                   max_candidates: int = 8):
+    """Exact 1-D search: shifts s along axis k maximising atoms within 0.5 A.
+
+    For atom i and orbit point p (all lattice images) the points of the shift
+    line within MATCH_TOL_A form one interval in s; per atom the union over
+    all (p, image) is merged, then the intervals of all atoms are swept.
+    Returns (max_count, [midpoints of maximal intervals]) with s in [0, 1).
+    """
+    v = orth[:, k]
+    vv = float(v @ v)
+    vn = vv ** 0.5
+    tol2 = MATCH_TOL_A ** 2
+    d0 = atoms[:, None, :] - pts[None, :, :]
+    d0 -= np.round(d0)
+    per_atom: List[List[Tuple[float, float]]] = [[] for _ in range(len(atoms))]
+    for sh in _SHIFTS:
+        u = (d0 + sh) @ orth.T
+        s0 = (u @ v) / vv
+        perp2 = (u * u).sum(-1) - s0 * s0 * vv
+        ok = perp2 <= tol2
+        if not ok.any():
+            continue
+        ii, _jj = np.nonzero(ok)
+        w = np.sqrt(np.maximum(tol2 - perp2[ok], 0.0)) / vn
+        c = s0[ok] - np.floor(s0[ok])
+        for a, ci, wi in zip(ii.tolist(), c.tolist(), w.tolist()):
+            for off in (-1.0, 0.0, 1.0):
+                lo, hi = ci + off - wi, ci + off + wi
+                if hi >= 0.0 and lo <= 1.0:
+                    per_atom[a].append((lo, hi))
+    events: List[Tuple[float, int]] = []
+    for ivs in per_atom:
+        if not ivs:
+            continue
+        ivs.sort()
+        cur_lo, cur_hi = ivs[0]
+        for lo, hi in ivs[1:]:
+            if lo <= cur_hi:
+                cur_hi = max(cur_hi, hi)
+            else:
+                events.append((cur_lo, 1))
+                events.append((cur_hi, -1))
+                cur_lo, cur_hi = lo, hi
+        events.append((cur_lo, 1))
+        events.append((cur_hi, -1))
+    if not events:
+        return 0, [0.0]
+    events.sort(key=lambda e: (e[0], -e[1]))  # starts before ends at ties
+    cnt = 0
+    best = 0
+    regions: List[Tuple[float, float]] = []
+    for n_ev, (x, dlt) in enumerate(events):
+        cnt += dlt
+        nxt = events[n_ev + 1][0] if n_ev + 1 < len(events) else x
+        if dlt > 0 and cnt >= best:
+            if cnt > best:
+                best = cnt
+                regions = []
+            regions.append((x, nxt))
+    mids = []
+    for lo, hi in regions:
+        lo, hi = max(lo, 0.0), min(hi, 1.0)
+        if hi >= lo:
+            mids.append(0.5 * (lo + hi))
+    if not mids:
+        mids = [0.0]
+    if len(mids) > max_candidates:
+        step = len(mids) / float(max_candidates)
+        mids = [mids[int(i * step)] for i in range(max_candidates)]
+    return best, mids
+
+
+def _polar_multi_shifts(atoms, pts, orth, axes):
+    """2-3 polar axes: pair-offset candidates + centroid refinement (not exhaustive)."""
+    d = atoms[:, None, :] - pts[None, :, :]
+    cand = np.round((d[..., axes] % 1.0).reshape(-1, len(axes)), 4)
+    cand = np.unique(cand, axis=0)
+    cand = np.vstack([np.zeros((1, len(axes))), cand])
+
+    def key_at(sv):
+        sh = np.zeros(3)
+        sh[axes] = sv
+        dd = min_dist(atoms, pts + sh, orth).min(1)
+        return (int((dd <= MATCH_TOL_A).sum()), int((dd <= 1.0).sum()), -float(dd.mean()))
+
+    best_s, best_k = None, None
+    for sv in cand:
+        kk = key_at(sv)
+        if best_k is None or kk > best_k:
+            best_k, best_s = kk, sv.copy()
+    for _ in range(POLAR_REFINE_STEPS):
+        sh = np.zeros(3)
+        sh[axes] = best_s
+        r, dfr = _nearest(atoms, pts + sh, orth)
+        m = r <= MATCH_TOL_A
+        if not m.any():
+            break
+        trial = best_s + dfr[m][:, axes].mean(0)
+        kk = key_at(trial)
+        if kk > best_k:
+            best_k, best_s = kk, trial
+        else:
+            break
+    return [best_s]
+
+
+def _evaluate_discrete(atoms, atoms_orbit, q, ops, orth):
     best = None
     for inv in (1, -1):
         for t in _ORIGINS:
@@ -128,6 +288,58 @@ def evaluate(atoms: np.ndarray, atoms_orbit: np.ndarray, q: np.ndarray, ops: Ops
                     shift=t.tolist(), meanNN=float(d_atom.mean()),
                     median_atom_to_Q=float(np.median(d_atom)),
                 ))
+    return best[1]
+
+
+def evaluate(atoms: np.ndarray, atoms_orbit: np.ndarray, q: np.ndarray, ops: Ops,
+             orth: np.ndarray, polar_shift: bool = True) -> Dict:
+    """Best alignment of ``q`` onto the atoms.
+
+    Non-polar groups (and ``polar_shift=False``): origin shifts {0,1/2}^3 x
+    inversion, exactly as before. Polar groups: continuous shift along each
+    polar axis (see module docstring), {0,1/2} along the other axes.
+    """
+    axes = polar_axes(ops) if polar_shift else []
+    if not axes:
+        return _evaluate_discrete(atoms, atoms_orbit, q, ops, orth)
+    others = [a for a in range(3) if a not in axes]
+    base_origins = []
+    for combo in itertools.product((0.0, 0.5), repeat=len(others)):
+        t = np.zeros(3)
+        for a, val in zip(others, combo):
+            t[a] = val
+        base_origins.append(t)
+    best = None
+    for inv in (1, -1):
+        for t in base_origins:
+            qa = inv * q + t
+            pts = orbit(qa, ops)
+            if len(axes) == 1:
+                _cnt, svals = _polar1_shifts(atoms, pts, orth, axes[0])
+                shifts = []
+                for sv in svals:
+                    sh = np.zeros(3)
+                    sh[axes[0]] = sv
+                    shifts.append(sh)
+            else:
+                shifts = []
+                for sv in _polar_multi_shifts(atoms, pts, orth, axes):
+                    sh = np.zeros(3)
+                    sh[axes] = sv
+                    shifts.append(sh)
+            for sh in shifts:
+                d_atom = min_dist(atoms, pts + sh, orth).min(1)
+                h05 = int((d_atom <= MATCH_TOL_A).sum())
+                h10 = int((d_atom <= 1.0).sum())
+                key = (h05, h10, -float(d_atom.mean()))
+                if best is None or key > best[0]:
+                    d_q = min_dist(qa + sh, atoms_orbit, orth).min(1)
+                    best = (key, dict(
+                        hit05=h05, hit10=h10, ghost=int((d_q > 1.0).sum()), inv=inv,
+                        shift=(t + sh).tolist(), meanNN=float(d_atom.mean()),
+                        median_atom_to_Q=float(np.median(d_atom)),
+                        polar_axes=list(axes),
+                    ))
     return best[1]
 
 
@@ -163,7 +375,8 @@ def verdict(rate05: float, ratio05: float, ghost_frac: float) -> str:
 
 
 def score_q_peaks(cid: str, cif: str | Path, res: str | Path, peaks_csv: str | Path | None,
-                  n_random: int = DEFAULT_N_RANDOM, seed: int = DEFAULT_SEED) -> Dict:
+                  n_random: int = DEFAULT_N_RANDOM, seed: int = DEFAULT_SEED,
+                  polar_shift: bool = True) -> Dict:
     """Score one ``trial.res`` against the deposited CIF. Returns a JSON-able dict."""
     cell, hm, atoms = read_cif_nonh(cif)
     orth = orth_matrix(cell)
@@ -175,19 +388,20 @@ def score_q_peaks(cid: str, cif: str | Path, res: str | Path, peaks_csv: str | P
     order, how = strength_order(peaks_csv, ops, q_all)
     n_use = min(n, len(q_all))
     q = q_all[order][:n_use]
-    real = evaluate(af, a_orb, q, ops, orth)
+    real = evaluate(af, a_orb, q, ops, orth, polar_shift=polar_shift)
 
     rng = np.random.default_rng(seed)
     r05, r10, rg = [], [], []
     for _ in range(n_random):
-        r = evaluate(af, a_orb, rng.random((n_use, 3)), ops, orth)
+        r = evaluate(af, a_orb, rng.random((n_use, 3)), ops, orth, polar_shift=polar_shift)
         r05.append(r["hit05"])
         r10.append(r["hit10"])
         rg.append(r["ghost"])
     r05, r10, rg = np.array(r05), np.array(r10), np.array(rg)
 
     out = dict(
-        id=cid, sg=hm, cell=cell, N_nonH=n, n_Q_in_res=len(q_all), n_Q_used=n_use,
+        id=cid, sg=hm, cell=cell, N_nonH=n,
+        grader=GRADER_VERSION if polar_shift else "discrete-v0", polar_axes=polar_axes(ops), n_Q_in_res=len(q_all), n_Q_used=n_use,
         strength=how, formula_atoms=sorted({a[1] for a in atoms}), real=real,
         rate05=real["hit05"] / n, rate10=real["hit10"] / n, ghost_frac=real["ghost"] / n_use,
         rand=dict(
