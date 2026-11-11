@@ -5,10 +5,17 @@ Runs (a) cctbx.dmtbx weighted tangent (multisolution) and (b) smtbx charge
 flipping with Olex2-like defaults over a fixed multi-seed list, then ranks
 candidates. Centrosymmetric space groups keep the method-independent E-map
 check (skewness, peak contrast, peak-network fraction). Non-centrosymmetric
-groups add an R-type check: top-N peaks (N = N_nonH) as carbon, R1 on |F|
-with a fitted scale; lowest R1 wins, E-map score is the tiebreak. Never ranks
-against a known model and does not use CF's own FOM for selection. CF respects
-a hard wall-clock budget (iteration-loop abort + subprocess timeout).
+groups rank candidates by a refined fit: top-N peaks (N = N_nonH) as isotropic
+carbon, a few least-squares cycles against Fo^2 (smtbx, in the worker), lowest
+wR2 wins (R1, then E-map score, break ties). If no refinement is available the
+older peak-R1 check is the fallback. Never ranks against a known model and does
+not use CF's own FOM for selection.
+
+Hard wall-clock limit: the whole phasing worker (tangent + CF + refinement) runs
+in a child process group that the host kills at ``time_budget_s + grace``
+(minus a small host reserve); the worker checkpoints after every candidate, so
+the best result so far is returned with ``timed_out`` / a ``timeout_partial``
+status, or ``AbInitioTimeoutError`` if nothing had finished.
 
 cctbx is an optional dependency. On this project's shared box it is provided by
 Olex2's bundled Python 3.8 (``olex2c``). See ``find_cctbx_runner`` /
@@ -17,11 +24,14 @@ docs/USER_GUIDE.md.
 
 from __future__ import annotations
 
+import functools
 import json
 import math
 import os
 import shutil
+import signal
 import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import dataclass
@@ -56,6 +66,17 @@ CF_TIME_RESERVE_S = 12.0
 # Extra wall-clock seconds beyond time_budget_s for olex2c process kill.
 # Worker self-limits first; this is the hard outer cap.
 CF_SUBPROCESS_GRACE_S = 30.0
+# Seconds before ``time_budget_s + grace`` at which the host kills the worker,
+# leaving room for the kill, reading the checkpoint and host-side selection so
+# the whole ``ab_initio_solve`` call stays within budget + grace.
+HOST_KILL_RESERVE_S = 3.0
+# Non-centrosymmetric refinement ranking (mirrors the worker constants).
+REFINE_CYCLES = 4
+REFINE_U_ISO = 0.05
+REFINE_TIME_RESERVE_S = 3.0
+# wall - monotonic above this many seconds ⇒ the machine was probably suspended
+# (or the clock stepped) while the worker ran; reported, not acted on.
+CLOCK_JUMP_SUSPECT_S = 5.0
 
 # Method-independent E-map check (selection; not CF own-FOM)
 EMAP_MIN_SEP_A = 1.1
@@ -75,6 +96,17 @@ CF_FLIPPING_INTERVAL = 60
 
 class CctbxUnavailableError(RuntimeError):
     """Raised when the ab_initio method is requested but cctbx cannot be run."""
+
+
+class AbInitioTimeoutError(RuntimeError):
+    """The worker was killed at the hard wall-clock limit with no candidate yet.
+
+    ``.info`` carries the timing/diagnostic fields (status ``timeout_no_result``).
+    """
+
+    def __init__(self, message: str, info: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.info = dict(info or {})
 
 
 def e_list_cap(n_nonH: int) -> int:
@@ -103,12 +135,24 @@ def select_better_by_own_fom(
     return max(candidates, key=lambda c: float(c.get(fom_key, float("-inf"))))
 
 
-def _orth_matrix(cell: np.ndarray) -> np.ndarray:
+@functools.lru_cache(maxsize=32)
+def _orth_matrix_cached(cell_key: Tuple[float, ...]) -> np.ndarray:
     from grok_phase_solver.io.cif import CrystalStructure
 
-    return CrystalStructure(
-        "t", np.asarray(cell, dtype=np.float64), "P1"
+    m = CrystalStructure(
+        "t", np.asarray(cell_key, dtype=np.float64), "P1"
     ).orth_matrix
+    m = np.array(m, dtype=np.float64)
+    m.setflags(write=False)
+    return m
+
+
+def _orth_matrix(cell: np.ndarray) -> np.ndarray:
+    # Cached per cell: the E-map check calls min_image_dist_A O(N^2) times, and
+    # rebuilding the matrix each call cost seconds of host time on larger cells.
+    return _orth_matrix_cached(
+        tuple(float(x) for x in np.asarray(cell, dtype=np.float64).ravel())
+    )
 
 
 def min_image_dist_A(
@@ -408,6 +452,51 @@ def select_better_by_r_check(
     )
 
 
+def has_refined_fit(candidates: Sequence[Dict[str, Any]]) -> bool:
+    """True if at least one candidate carries a finite ``refined_wR2``."""
+    for c in candidates:
+        v = c.get("refined_wR2")
+        if v is not None and math.isfinite(float(v)):
+            return True
+    return False
+
+
+def select_better_by_refined_fit(
+    candidates: Sequence[Dict[str, Any]],
+    cell: np.ndarray,
+    *,
+    n_nonH: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Non-centrosymmetric selection: lowest refined wR2 (SHELXD-style trial ranking).
+
+    Each candidate's top-N peaks were refined (isotropic C, a few cycles,
+    Fo^2, unit weights) in the worker; ``refined_wR2`` is the residual of that
+    refined model. Ties and unrefined candidates: lower ``refined_R1``, then
+    higher E-map score. Candidates without a finite ``refined_wR2`` rank last.
+    Never uses a known model or CF's own FOM.
+    """
+    if not candidates:
+        raise ValueError("no candidates to select")
+    annotated = annotate_emap_scores(candidates, cell, n_nonH=n_nonH)
+
+    def _f(c: Dict[str, Any], key: str) -> float:
+        v = c.get(key)
+        if v is None:
+            return float("inf")
+        v = float(v)
+        return v if math.isfinite(v) else float("inf")
+
+    return min(
+        annotated,
+        key=lambda c: (
+            _f(c, "refined_wR2"),
+            _f(c, "refined_R1"),
+            -float(c.get("emap_score", float("-inf"))),
+            -float(c.get("skew", 0.0)),
+        ),
+    )
+
+
 def select_ab_initio_candidate(
     candidates: Sequence[Dict[str, Any]],
     cell: np.ndarray,
@@ -417,9 +506,15 @@ def select_ab_initio_candidate(
     hkl: Optional[np.ndarray] = None,
     amplitudes: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
-    """Dispatch selection: E-map check (centro) or R-check (non-centro)."""
+    """Dispatch selection.
+
+    Centrosymmetric: E-map check (unchanged). Non-centrosymmetric: refined
+    wR2 when the candidates carry it, else the older peak-R1 check.
+    """
     if is_centrosymmetric:
         return select_better_by_emap_check(candidates, cell, n_nonH=n_nonH)
+    if has_refined_fit(candidates):
+        return select_better_by_refined_fit(candidates, cell, n_nonH=n_nonH)
     if hkl is None or amplitudes is None:
         raise ValueError("hkl and amplitudes required for non-centrosymmetric R-check")
     return select_better_by_r_check(
@@ -610,74 +705,163 @@ def _worker_path() -> Path:
     return Path(__file__).resolve().parent / "_cctbx_ab_initio_worker.py"
 
 
-def _run_via_olex2c(
+def run_killable_process(
+    cmd: Sequence[str],
+    *,
+    hard_timeout_s: float,
+    cwd: Optional[PathLike] = None,
+    env: Optional[Dict[str, str]] = None,
+    stdin_path: Optional[PathLike] = None,
+    log_path: Optional[PathLike] = None,
+    poll_s: float = 0.05,
+) -> Dict[str, Any]:
+    """Run *cmd* in its own process group; SIGKILL the whole group at the limit.
+
+    The limit is checked against both ``time.monotonic()`` and ``time.time()``
+    every *poll_s* seconds, so a stalled or hung worker (including a grandchild
+    such as Xvfb or olex2c behind ``xvfb-run``) cannot outlive it. Returns
+    ``returncode``, ``timed_out``, ``wall_s``, ``monotonic_s`` and
+    ``clock_jump_s`` (wall minus monotonic; a large value means the machine was
+    suspended or the clock stepped while the child ran).
+    """
+    hard = max(0.0, float(hard_timeout_s))
+    posix = os.name == "posix"
+    t_wall0 = time.time()
+    t_mono0 = time.monotonic()
+    log_fh = open(log_path, "wb") if log_path else subprocess.DEVNULL
+    in_fh = open(stdin_path, "rb") if stdin_path else subprocess.DEVNULL
+    try:
+        kwargs: Dict[str, Any] = {}
+        if posix:
+            kwargs["start_new_session"] = True
+        proc = subprocess.Popen(
+            list(cmd),
+            cwd=None if cwd is None else str(cwd),
+            env=env,
+            stdin=in_fh,
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            **kwargs,
+        )
+        timed_out = False
+        while True:
+            try:
+                proc.wait(timeout=poll_s)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+            if (
+                time.monotonic() - t_mono0 >= hard
+                or time.time() - t_wall0 >= hard
+            ):
+                timed_out = True
+                try:
+                    if posix:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    else:  # pragma: no cover - non-POSIX fallback
+                        proc.kill()
+                except (ProcessLookupError, PermissionError):
+                    pass
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+                try:
+                    proc.wait(timeout=10.0)
+                except subprocess.TimeoutExpired:  # pragma: no cover
+                    pass
+                break
+    finally:
+        if log_path:
+            log_fh.close()
+        if stdin_path:
+            in_fh.close()
+    wall_s = time.time() - t_wall0
+    mono_s = time.monotonic() - t_mono0
+    return {
+        "returncode": proc.returncode,
+        "timed_out": bool(timed_out),
+        "wall_s": float(wall_s),
+        "monotonic_s": float(mono_s),
+        "clock_jump_s": float(wall_s - mono_s),
+    }
+
+
+def _read_json_or_none(path: Path) -> Optional[Dict[str, Any]]:
+    try:
+        return json.loads(Path(path).read_text())
+    except Exception:
+        return None
+
+
+def _run_worker(
     runner: CctbxRunner,
     request: Dict[str, Any],
     work_dir: Path,
-    timeout_s: float,
+    hard_timeout_s: float,
 ) -> Dict[str, Any]:
-    assert runner.olex2_root is not None and runner.olex2c is not None
+    """Run the worker as a killable child; return its (maybe partial) result.
+
+    The worker checkpoints to ``result.json`` after every candidate, so after a
+    kill the best result so far is read back. The returned dict always carries
+    ``_proc`` (timing / kill info) and ``_result_found``.
+    """
     work_dir = Path(work_dir).resolve()
     req_path = work_dir / "request.json"
     out_path = work_dir / "result.json"
     log_path = work_dir / "olex2c.log"
+    if out_path.exists():
+        out_path.unlink()  # never read a stale result from a reused work_dir
     worker = _worker_path()
     shutil.copy2(worker, work_dir / "worker.py")
+    request = dict(request, checkpoint_path=str(out_path))
     req_path.write_text(json.dumps(request) + "\n")
 
-    py = (
-        "REQUEST_JSON=%r; RESULT_JSON=%r; exec(open(%r).read())"
-        % (str(req_path), str(out_path), str(work_dir / "worker.py"))
-    )
-    py_escaped = py.replace("\\", "\\\\").replace('"', '\\"')
-    cmdfile = work_dir / "cmds.txt"
-    cmdfile.write_text('@py "%s"\nquit\n' % py_escaped)
-
-    xvfb = shutil.which("xvfb-run")
-    cmd: List[str]
-    if xvfb:
-        cmd = [xvfb, "-a", str(runner.olex2c)]
-    else:
-        cmd = [str(runner.olex2c)]
-
-    with open(log_path, "w") as fh:
-        proc = subprocess.run(
+    if runner.kind == "olex2c":
+        assert runner.olex2_root is not None and runner.olex2c is not None
+        py = (
+            "REQUEST_JSON=%r; RESULT_JSON=%r; exec(open(%r).read())"
+            % (str(req_path), str(out_path), str(work_dir / "worker.py"))
+        )
+        py_escaped = py.replace("\\", "\\\\").replace('"', '\\"')
+        cmdfile = work_dir / "cmds.txt"
+        cmdfile.write_text('@py "%s"\nquit\n' % py_escaped)
+        xvfb = shutil.which("xvfb-run")
+        cmd = [xvfb, "-a", str(runner.olex2c)] if xvfb else [str(runner.olex2c)]
+        proc_info = run_killable_process(
             cmd,
-            cwd=str(runner.olex2_root),
+            hard_timeout_s=hard_timeout_s,
+            cwd=runner.olex2_root,
             env=_olex2_env(runner.olex2_root),
-            stdin=open(cmdfile),
-            stdout=fh,
-            stderr=subprocess.STDOUT,
-            timeout=timeout_s,
+            stdin_path=cmdfile,
+            log_path=log_path,
         )
-    if not out_path.exists():
-        tail = log_path.read_text(errors="replace")[-2000:]
-        raise RuntimeError(
-            "olex2c ab_initio worker produced no result.json "
-            "(rc=%s). Log tail:\n%s" % (proc.returncode, tail)
+    else:
+        # cctbx importable in this interpreter: still a separate process, so
+        # the same hard kill applies.
+        proc_info = run_killable_process(
+            [sys.executable, str(work_dir / "worker.py"),
+             str(req_path), str(out_path)],
+            hard_timeout_s=hard_timeout_s,
+            cwd=work_dir,
+            env=os.environ.copy(),
+            log_path=log_path,
         )
-    result = json.loads(out_path.read_text())
-    result["olex2c_returncode"] = proc.returncode
+
+    result = _read_json_or_none(out_path)
+    found = result is not None
+    if result is None:
+        tail = ""
+        try:
+            tail = log_path.read_text(errors="replace")[-2000:]
+        except Exception:
+            pass
+        result = {"error": "worker produced no result.json", "log_tail": tail}
+    result["olex2c_returncode"] = proc_info["returncode"]
     result["olex2c_log"] = str(log_path)
+    result["_proc"] = proc_info
+    result["_result_found"] = found
     return result
-
-
-def _run_via_import(request: Dict[str, Any], work_dir: Path) -> Dict[str, Any]:
-    """Execute worker body in-process when cctbx is importable."""
-    req_path = work_dir / "request.json"
-    out_path = work_dir / "result.json"
-    req_path.write_text(json.dumps(request) + "\n")
-    # Inject paths and exec worker (worker is py3.8-safe and uses only cctbx)
-    g = {
-        "REQUEST_JSON": str(req_path),
-        "RESULT_JSON": str(out_path),
-        "__name__": "__cctbx_worker__",
-    }
-    code = _worker_path().read_text()
-    exec(compile(code, str(_worker_path()), "exec"), g)
-    if not out_path.exists():
-        raise RuntimeError("in-process cctbx worker wrote no result.json")
-    return json.loads(out_path.read_text())
 
 
 def run_cf_deadline_probe(
@@ -710,12 +894,9 @@ def run_cf_deadline_probe(
         "amplitudes": [float(a) for a in np.asarray(amplitudes, dtype=np.float64)],
     }
     try:
-        if runner.kind == "import":
-            raw = _run_via_import(request, wdir)
-        else:
-            raw = _run_via_olex2c(
-                runner, request, wdir, timeout_s=float(time_budget_s) + 60.0
-            )
+        raw = _run_worker(
+            runner, request, wdir, hard_timeout_s=float(time_budget_s) + 60.0
+        )
     finally:
         if cleanup:
             shutil.rmtree(wdir, ignore_errors=True)
@@ -734,13 +915,21 @@ def ab_initio_solve(
     d_min: Optional[float] = None,
     work_dir: Optional[PathLike] = None,
     verbose: bool = False,
+    grace_s: float = CF_SUBPROCESS_GRACE_S,
 ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Any], List["DensityPeak"]]:
     """
     Run tangent + multi-seed smtbx CF via cctbx; select best candidate.
 
     Returns phases, density, info, peaks (plain search, top N_nonH, 1.2 Å).
-    Centrosymmetric: E-map check. Non-centrosymmetric: lowest peak R1 with
-    E-map score as tiebreak. Not CF own FOM; never vs known model.
+    Centrosymmetric: E-map check (unchanged). Non-centrosymmetric: lowest
+    refined wR2 (top-N peaks refined a few cycles against Fo^2), peak-R1 check
+    as fallback. Not CF own FOM; never vs known model.
+
+    Hard time limit: the worker runs in a child process group killed at
+    ``time_budget_s + grace_s`` (minus ``HOST_KILL_RESERVE_S``). The best result
+    so far is used (``info["timed_out"]``, ``info["status"] ==
+    "timeout_partial"``); if no candidate had finished,
+    ``AbInitioTimeoutError`` is raised.
     """
     runner = require_cctbx()
     hkl = np.asarray(hkl, dtype=int)
@@ -768,6 +957,7 @@ def ab_initio_solve(
         "sigma2_only": SIGMA2_ONLY,
         "cf_seed_list": list(CF_SEED_LIST),
         "cf_time_reserve_s": float(CF_TIME_RESERVE_S),
+        "refine": True,
         "cf": {
             "amplitude_type": CF_AMPLITUDE_TYPE,
             "max_attempts_to_get_phase_transition": CF_MAX_ATTEMPTS_PHASE_TRANSITION,
@@ -780,44 +970,63 @@ def ab_initio_solve(
     }
 
     t0 = time.time()
-    subprocess_timeout_s = float(time_budget_s) + float(CF_SUBPROCESS_GRACE_S)
-    timed_out = False
+    hard_timeout_s = max(
+        1.0,
+        float(time_budget_s) + float(grace_s) - float(HOST_KILL_RESERVE_S),
+    )
     if verbose:
         print(
             f"  ab_initio via {runner.kind}"
             + (f" ({runner.olex2_root})" if runner.olex2_root else "")
         )
     try:
-        if runner.kind == "import":
-            raw = _run_via_import(request, wdir)
-        else:
-            try:
-                raw = _run_via_olex2c(
-                    runner, request, wdir, timeout_s=subprocess_timeout_s
-                )
-            except subprocess.TimeoutExpired:
-                timed_out = True
-                out_path = wdir / "result.json"
-                if out_path.exists():
-                    raw = json.loads(out_path.read_text())
-                    raw["host_subprocess_timed_out"] = True
-                else:
-                    if cleanup:
-                        shutil.rmtree(wdir, ignore_errors=True)
-                    raise RuntimeError(
-                        "ab_initio olex2c exceeded wall-clock budget "
-                        "(%.1fs + %.1fs grace) with no partial result"
-                        % (float(time_budget_s), float(CF_SUBPROCESS_GRACE_S))
-                    )
+        raw = _run_worker(runner, request, wdir, hard_timeout_s=hard_timeout_s)
     except Exception:
         if cleanup:
             shutil.rmtree(wdir, ignore_errors=True)
         raise
+    proc_info = dict(raw.pop("_proc", {}) or {})
+    host_killed = bool(proc_info.get("timed_out"))
+    raw.pop("_result_found", None)
+    partial = bool(raw.get("partial"))
+    timing = {
+        "child_wall_s": proc_info.get("wall_s"),
+        "child_monotonic_s": proc_info.get("monotonic_s"),
+        "clock_jump_s": proc_info.get("clock_jump_s"),
+        "hard_timeout_s": hard_timeout_s,
+        "host_killed": host_killed,
+        "suspend_suspected": bool(
+            (proc_info.get("clock_jump_s") or 0.0) > CLOCK_JUMP_SUSPECT_S
+        ),
+    }
 
-    if raw.get("error") and not (raw.get("candidates_full") or raw.get("candidates")):
+    has_cands = bool(raw.get("candidates_full") or raw.get("candidates"))
+    if host_killed and not has_cands:
+        if cleanup:
+            shutil.rmtree(wdir, ignore_errors=True)
+        info_fail = dict(
+            timing, status="timeout_no_result", timed_out=True,
+            seconds=time.time() - t0,
+        )
+        raise AbInitioTimeoutError(
+            "ab_initio worker killed at the hard wall-clock limit "
+            "(%.1fs; budget %.1fs + grace %.1fs - reserve %.1fs) before any "
+            "candidate finished" % (
+                hard_timeout_s, float(time_budget_s), float(grace_s),
+                HOST_KILL_RESERVE_S),
+            info_fail,
+        )
+    if raw.get("error") and not has_cands:
         if cleanup:
             shutil.rmtree(wdir, ignore_errors=True)
         raise RuntimeError(f"ab_initio worker error: {raw['error']}")
+    if host_killed:
+        status = "timeout_partial"
+    elif partial:
+        status = "worker_exit_partial"  # worker died after some candidates
+    else:
+        status = "ok"
+    timed_out = host_killed
 
     # Host-side selection by method-independent E-map check (not worker FOM).
     raw_cands = list(raw.get("candidates_full") or raw.get("candidates") or [])
@@ -853,6 +1062,15 @@ def ab_initio_solve(
     if is_centro:
         winner = select_better_by_emap_check(annotated, cell, n_nonH=n_atoms)
         selection_name = "emap_check"
+    elif has_refined_fit(annotated):
+        # Also keep the old peak-R1 as a diagnostic column.
+        annotated = annotate_r_scores(
+            annotated, hkl, amp, cell, n_nonH=n_atoms
+        )
+        winner = select_better_by_refined_fit(
+            annotated, cell, n_nonH=n_atoms
+        )
+        selection_name = "refined_wR2"
     else:
         annotated = annotate_r_scores(
             annotated, hkl, amp, cell, n_nonH=n_atoms
@@ -896,7 +1114,8 @@ def ab_initio_solve(
             for k in (
                 "name", "method", "cf_seed", "fom", "cons", "skew",
                 "emap_score", "skew_term", "contrast", "network_frac",
-                "sensible_frac", "peak_r1", "cc_peak_height",
+                "sensible_frac", "peak_r1", "refined_wR2", "refined_R1",
+                "refine_error", "cc_peak_height",
                 "had_phase_transition",
                 "n_trials", "n_e_used", "n_triplets", "best_trial",
             )
@@ -916,6 +1135,9 @@ def ab_initio_solve(
         ),
         "emap_score": winner.get("emap_score"),
         "peak_r1": winner.get("peak_r1"),
+        "refined_wR2": winner.get("refined_wR2"),
+        "refined_R1": winner.get("refined_R1"),
+        "refine": raw.get("refine"),
         "fom": winner.get("fom"),  # diagnostic only
         "selection": selection_name,
         "is_centrosymmetric": bool(is_centro),
@@ -928,9 +1150,11 @@ def ab_initio_solve(
         ),
         "r_check_rule": (
             None if is_centro else (
-                "non-centrosymmetric: lowest peak_r1 "
-                "(top-N carbon peaks vs |F|, fitted scale); "
-                "emap_score tiebreak; centrosymmetric unchanged (emap_check)"
+                "non-centrosymmetric: lowest refined_wR2 (top-N isotropic "
+                "carbon peaks, %d least-squares cycles vs Fo^2, unit weights, "
+                "smtbx); refined_R1 then emap_score break ties; fallback to "
+                "lowest peak_r1 if no candidate was refined; centrosymmetric "
+                "unchanged (emap_check)" % REFINE_CYCLES
             )
         ),
         "candidates": cand_summary,
@@ -943,7 +1167,11 @@ def ab_initio_solve(
             "MIN_PEAK_DIST_A": MIN_PEAK_DIST_A,
             "CF_SEED_LIST": list(CF_SEED_LIST),
             "CF_TIME_RESERVE_S": CF_TIME_RESERVE_S,
-            "CF_SUBPROCESS_GRACE_S": CF_SUBPROCESS_GRACE_S,
+            "CF_SUBPROCESS_GRACE_S": float(grace_s),
+            "HOST_KILL_RESERVE_S": HOST_KILL_RESERVE_S,
+            "REFINE_CYCLES": REFINE_CYCLES,
+            "REFINE_U_ISO": REFINE_U_ISO,
+            "REFINE_TIME_RESERVE_S": REFINE_TIME_RESERVE_S,
             "EMAP_MIN_SEP_A": EMAP_MIN_SEP_A,
             "EMAP_BOND_LO_A": EMAP_BOND_LO_A,
             "EMAP_BOND_HI_A": EMAP_BOND_HI_A,
@@ -958,10 +1186,10 @@ def ab_initio_solve(
         "timed_out": bool(
             timed_out
             or raw.get("timed_out")
-            or raw.get("host_subprocess_timed_out")
             or ((raw.get("charge_flip") or {}).get("timed_out"))
         ),
-        "status": "ok",
+        "status": status,
+        **timing,
     }
     if cleanup:
         shutil.rmtree(wdir, ignore_errors=True)
@@ -979,11 +1207,20 @@ __all__ = [
     "CF_N_SEEDS",
     "CF_TIME_RESERVE_S",
     "CF_SUBPROCESS_GRACE_S",
+    "HOST_KILL_RESERVE_S",
+    "REFINE_CYCLES",
+    "REFINE_U_ISO",
+    "REFINE_TIME_RESERVE_S",
+    "CLOCK_JUMP_SUSPECT_S",
     "EMAP_MIN_SEP_A",
     "EMAP_BOND_LO_A",
     "EMAP_BOND_HI_A",
     "BENCH_OUTER_SEEDS",
     "CctbxUnavailableError",
+    "AbInitioTimeoutError",
+    "has_refined_fit",
+    "select_better_by_refined_fit",
+    "run_killable_process",
     "e_list_cap",
     "combined_map_fom",
     "select_better_by_own_fom",

@@ -4,7 +4,19 @@ Expects REQUEST_JSON / RESULT_JSON paths injected before exec, or argv:
   python _cctbx_ab_initio_worker.py request.json result.json
 
 Does not import grok_phase_solver. Returns all candidates with peaks;
-host ranks by method-independent E-map check (no model, not CF own FOM).
+host ranks by method-independent E-map check (centrosymmetric) or by the
+refined fit below (non-centrosymmetric); no model, not CF own FOM.
+
+Checkpoints: after the tangent block and after every CF seed the full result
+(``"partial": true``) is atomically written to ``req["checkpoint_path"]`` (the
+same file as RESULT_JSON), so a host that kills this process at the hard
+wall-clock limit still has every candidate finished so far.
+
+Non-centrosymmetric only: after phasing, each candidate's top-N peaks
+(N = N_nonH) are taken as isotropic carbon (U = 0.05 A^2) and refined for a few
+least-squares cycles against Fo^2 (smtbx, unit weights, scale factor optimised
+out); wR2 / R1 of the refined model are returned as ``refined_wR2`` /
+``refined_R1``. The model never enters.
 """
 from __future__ import division, print_function
 
@@ -14,6 +26,13 @@ import os
 import sys
 import time
 import traceback
+
+# Fixed (not tuned).
+REFINE_CYCLES = 4
+REFINE_U_ISO = 0.05
+# Seconds of the budget kept for the refinement stage (non-centrosymmetric
+# only); CF stops this much earlier so refinement still fits in time_budget_s.
+REFINE_TIME_RESERVE_S = 3.0
 
 
 def _combined_fom(consistency, skew):
@@ -110,6 +129,141 @@ def _phases_on_input(ma_phased, input_hkl):
     # Prefer phases from phase_transfer source if amplitudes-only: caller passes
     # a complex array via .data() as complex — handle both.
     return lookup  # unused fallback
+
+
+def _write_checkpoint(path, result):
+    """Atomically write *result* as JSON (tmp file + rename)."""
+    if not path:
+        return
+    out_dir = os.path.dirname(path)
+    if out_dir and not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+    tmp = "%s.tmp.%d" % (path, os.getpid())
+    with open(tmp, "w") as fh:
+        json.dump(result, fh, indent=2)
+        fh.write("\n")
+    os.replace(tmp, path)
+
+
+def _refine_candidate(fo_sq_obs, symmetry, peaks, n_nonH, n_cycles):
+    """Refine top-N peaks (isotropic C) against Fo^2; return (wR2, R1).
+
+    smtbx least squares, unit weights (no sigmas are carried into ab_initio),
+    overall scale optimised out. Same procedure for every candidate.
+    """
+    from cctbx import crystal, xray
+    from scitbx.lstbx import normal_eqns_solving
+    from smtbx.refinement import constraints, least_squares
+    import smtbx.utils
+
+    xs = xray.structure(crystal.special_position_settings(symmetry))
+    for i, p in enumerate(peaks[: int(n_nonH)]):
+        sc = xray.scatterer(
+            "C%d" % (i + 1), tuple(float(x) for x in p["fract"]),
+            u=REFINE_U_ISO, scattering_type="C")
+        sc.flags.set_use_u_iso(True).set_use_u_aniso(False)
+        sc.flags.set_grad_site(True).set_grad_u_iso(True)
+        xs.add_scatterer(sc)
+    if xs.scatterers().size() == 0:
+        raise ValueError("no peaks to refine")
+    reparam = constraints.reparametrisation(
+        structure=xs, constraints=[],
+        connectivity_table=smtbx.utils.connectivity_table(xs))
+    ls = least_squares.crystallographic_ls(
+        fo_sq_obs, reparam, weighting_scheme=least_squares.unit_weighting())
+    normal_eqns_solving.levenberg_marquardt_iterations(
+        ls, n_max_iterations=int(n_cycles), track_all=True)
+    wr2 = float(ls.wR2(cutoff_factor=-1e30))
+    r1 = float(ls.r1_factor()[0])
+    if not (math.isfinite(wr2) and math.isfinite(r1)):
+        raise ValueError("non-finite refinement statistics")
+    return wr2, r1
+
+
+def _refine_candidates(ma, candidates, n_nonH, deadline, n_cycles=None):
+    """Fill refined_wR2 / refined_R1 on every candidate (in place).
+
+    Stops starting new refinements after *deadline* (wall clock); candidates
+    not refined keep ``refined_wR2 = None``. Returns a metadata dict.
+    """
+    from cctbx.array_family import flex
+
+    n_cycles = int(REFINE_CYCLES if n_cycles is None else n_cycles)
+    t_start = time.time()
+    meta = {"n_cycles": n_cycles, "u_iso": REFINE_U_ISO,
+            "weights": "unit", "target": "Fo^2", "n_refined": 0,
+            "n_failed": 0, "n_skipped_deadline": 0, "errors": []}
+    try:
+        fo_sq = ma.customized_copy(
+            data=ma.data() * ma.data(),
+            sigmas=flex.double(ma.size(), 1.0),
+        ).set_observation_type_xray_intensity()
+        obs = fo_sq.as_xray_observations()
+        symmetry = ma.crystal_symmetry()
+    except Exception as e:
+        meta["errors"].append("setup: %s: %s" % (type(e).__name__, e))
+        meta["n_failed"] = len(candidates)
+        meta["time_s"] = round(time.time() - t_start, 3)
+        return meta
+    for c in candidates:
+        c["refined_wR2"] = None
+        c["refined_R1"] = None
+        if time.time() >= deadline:
+            meta["n_skipped_deadline"] += 1
+            continue
+        try:
+            wr2, r1 = _refine_candidate(
+                obs, symmetry, c.get("peaks") or [], n_nonH, n_cycles)
+            c["refined_wR2"] = wr2
+            c["refined_R1"] = r1
+            meta["n_refined"] += 1
+        except Exception as e:
+            c["refine_error"] = "%s: %s" % (type(e).__name__, e)
+            meta["n_failed"] += 1
+            meta["errors"].append(
+                "%s: %s: %s" % (c.get("name"), type(e).__name__, e))
+    meta["time_s"] = round(time.time() - t_start, 3)
+    return meta
+
+
+def _assemble_result(candidates, tangent_meta, cf_meta, cf_seed_list, n_nonH,
+                     ma, is_centric, t0, partial, refine_meta=None):
+    """Build the result dict (final, or a checkpoint when *partial*)."""
+    if not candidates:
+        return {
+            "error": "both tangent and charge_flip failed",
+            "tangent": tangent_meta,
+            "charge_flip": cf_meta,
+            "partial": bool(partial),
+            "solver_time_s": round(time.time() - t0, 3),
+        }
+    # Diagnostic only: own-FOM "winner" (host re-selects)
+    fom_winner = max(candidates, key=lambda c: float(c.get("fom", float("-inf"))))
+    return {
+        "error": None,
+        "partial": bool(partial),
+        "winner": fom_winner["name"],  # diagnostic; host overrides
+        "fom": fom_winner["fom"],
+        "peaks": fom_winner.get("peaks") or [],
+        "phases_rad": fom_winner.get("phases_rad"),
+        "candidates_full": candidates,
+        "candidates": [
+            {k: v for k, v in c.items() if k not in ("phases_rad", "peaks")}
+            for c in candidates
+        ],
+        "n_nonH": n_nonH,
+        "sg": str(ma.space_group_info()),
+        "is_centrosymmetric": bool(is_centric),
+        "n_trials": (tangent_meta or {}).get("n_trials"),
+        "n_e_used": (tangent_meta or {}).get("n_e_used"),
+        "n_triplets": (tangent_meta or {}).get("n_triplets"),
+        "tangent": tangent_meta,
+        "charge_flip": cf_meta,
+        "refine": refine_meta,
+        "cf_seed_list": list(cf_seed_list),
+        "timed_out": bool((cf_meta or {}).get("timed_out")),
+        "solver_time_s": round(time.time() - t0, 3),
+    }
 
 
 def _loop_cf_with_deadline(solving, deadline):
@@ -262,11 +416,27 @@ def run(req):
 
     ma = _build_miller(cell, sg, req["hkl"], req["amplitudes"])
     is_centric = ma.space_group().is_centric()
+    # Refinement-based ranking is non-centrosymmetric only; centrosymmetric
+    # selection (E-map check) and its time accounting are unchanged.
+    refine_on = (not is_centric) and bool(req.get("refine", True))
+    ckpt_path = req.get("checkpoint_path")
     input_indices = [(int(h), int(k), int(l)) for h, k, l in req["hkl"]]
 
     candidates = []
     tangent_meta = {"error": None}
     cf_meta = {"error": None}
+    cf_seed_list = req.get("cf_seed_list") or [0, 1, 7, 42, 2025]
+
+    def checkpoint():
+        for c in candidates:
+            if c.get("name") == "tangent":
+                c["method"] = "tangent"
+        try:
+            _write_checkpoint(ckpt_path, _assemble_result(
+                candidates, tangent_meta, cf_meta, cf_seed_list, n_nonH, ma,
+                is_centric, t0, partial=True))
+        except Exception:
+            pass  # a failed checkpoint must never abort phasing
 
     # ------------------------------------------------------------------ tangent
     try:
@@ -341,15 +511,17 @@ def run(req):
             "fom": best["fom"],
             "loop_time_s": round(time.time() - t_loop0, 3),
         }
+        checkpoint()
     except Exception as e:
         tangent_meta = {"error": "%s: %s" % (type(e).__name__, e),
                         "traceback": traceback.format_exc()}
 
     # ----------------------------------------------------------- charge flipping
     # Multi-seed CF: fixed documented seed list, within remaining wall time.
-    cf_seed_list = req.get("cf_seed_list") or [0, 1, 7, 42, 2025]
     cf_runs = []
-    cf_deadline = t0 + budget  # hard stop inside overall budget
+    # hard stop inside overall budget; non-centro keeps a small slice for the
+    # refinement stage so the whole worker stays inside time_budget_s
+    cf_deadline = t0 + budget - (REFINE_TIME_RESERVE_S if refine_on else 0.0)
     try:
         for seed_i, cf_seed in enumerate(cf_seed_list):
             if time.time() >= cf_deadline:
@@ -444,6 +616,12 @@ def run(req):
                 if note:
                     cand["note"] = note
                 candidates.append(cand)
+                cf_meta = {"n_seeds_requested": len(cf_seed_list),
+                           "n_seeds_ok": len(cf_runs) + 1,
+                           "timed_out": bool(seed_timed_out),
+                           "runs": list(cf_runs),
+                           "checkpoint": True}
+                checkpoint()
                 cf_runs.append({
                     "cf_seed": int(cf_seed),
                     "fom": fom,
@@ -486,39 +664,13 @@ def run(req):
         if c.get("name") == "tangent":
             c["method"] = "tangent"
 
-    if not candidates:
-        return {
-            "error": "both tangent and charge_flip failed",
-            "tangent": tangent_meta,
-            "charge_flip": cf_meta,
-            "solver_time_s": round(time.time() - t0, 3),
-        }
-
-    # Diagnostic only: own-FOM "winner" (host re-selects by E-map check)
-    fom_winner = max(candidates, key=lambda c: float(c.get("fom", float("-inf"))))
-    return {
-        "error": None,
-        "winner": fom_winner["name"],  # diagnostic; host overrides via emap_check
-        "fom": fom_winner["fom"],
-        "peaks": fom_winner.get("peaks") or [],
-        "phases_rad": fom_winner.get("phases_rad"),
-        "candidates_full": candidates,
-        "candidates": [
-            {k: v for k, v in c.items() if k not in ("phases_rad", "peaks")}
-            for c in candidates
-        ],
-        "n_nonH": n_nonH,
-        "sg": str(ma.space_group_info()),
-        "is_centrosymmetric": bool(is_centric),
-        "n_trials": tangent_meta.get("n_trials"),
-        "n_e_used": tangent_meta.get("n_e_used"),
-        "n_triplets": tangent_meta.get("n_triplets"),
-        "tangent": tangent_meta,
-        "charge_flip": cf_meta,
-        "cf_seed_list": list(cf_seed_list),
-        "timed_out": bool((cf_meta or {}).get("timed_out")),
-        "solver_time_s": round(time.time() - t0, 3),
-    }
+    refine_meta = None
+    if candidates and refine_on:
+        refine_meta = _refine_candidates(
+            ma, candidates, n_nonH, deadline=t0 + budget)
+    return _assemble_result(
+        candidates, tangent_meta, cf_meta, cf_seed_list, n_nonH, ma,
+        is_centric, t0, partial=False, refine_meta=refine_meta)
 
 
 def main():
@@ -537,12 +689,7 @@ def main():
             "error": "%s: %s" % (type(e).__name__, e),
             "traceback": traceback.format_exc(),
         }
-    out_dir = os.path.dirname(out_path)
-    if out_dir and not os.path.isdir(out_dir):
-        os.makedirs(out_dir)
-    with open(out_path, "w") as fh:
-        json.dump(result, fh, indent=2)
-        fh.write("\n")
+    _write_checkpoint(out_path, result)  # atomic: never a half-written file
 
 
 if __name__ == "__main__":
