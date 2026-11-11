@@ -20,9 +20,14 @@ Outputs in ``--out``: ``results_raw.json`` (one row per COD x seed),
     wrong picks       1/40   bar <=2    OK
     runs > budget+30s 0/40   bar 0      OK
 
-Scorer = the unchanged ``metrics.qpeak_benchmark`` (top-N, 0.5 A, PASS needs
->=50% hits, >=3x random, ghosts <=40%). **Wrong pick** = chosen candidate FAILs
-while at least one candidate of that run PASSes. Re-runs are resumable
+Scorer = ``metrics.qpeak_benchmark`` (top-N, 0.5 A, PASS needs >=50% hits,
+>=3x random, ghosts <=40%) with the polar-axis rule (grader polar-shift-v1;
+``--grader old`` reproduces the discrete v0 grader). **Wrong pick** = chosen
+candidate FAILs while at least one candidate of that run PASSes.
+Suspend rule: a run is an overrun if wall > budget + grace, UNLESS the child
+process time (monotonic) is < budget: then it is flagged "suspected suspend",
+re-run once unchanged, and listed in the report (the re-run replaces it; if the
+re-run is also over the limit it counts as an overrun). Runs are resumable
 (finished COD x seed rows in ``results_raw.json`` are skipped).
 
 This script never selects, swaps or tunes COD entries: it runs exactly the
@@ -102,7 +107,8 @@ def _write_peaks(out_dir: Path, peaks, cell, sg: str, tag: str):
     return res, csv
 
 
-def score_peaks(cid, cif: Path, cell, sg, peaks, out_dir: Path, tag: str, n_nonH: int):
+def score_peaks(cid, cif: Path, cell, sg, peaks, out_dir: Path, tag: str, n_nonH: int,
+                polar_shift: bool = True):
     """Unchanged qpeak_benchmark scoring of the top-N peaks (plain 1.2 A pick)."""
     if not peaks:
         return {"verdict": "FAIL", "hit05": 0, "error": "no peaks"}
@@ -116,12 +122,13 @@ def score_peaks(cid, cif: Path, cell, sg, peaks, out_dir: Path, tag: str, n_nonH
     order, _how = strength_order(csv, g["ops"], q_all)
     n_use = min(g["n"], len(q_all))
     q = q_all[order][:n_use]
-    real = evaluate(g["af"], g["a_orb"], q, g["ops"], g["orth"])
-    ck = (str(cid), int(n_use), int(DEFAULT_N_RANDOM), int(DEFAULT_SEED))
+    real = evaluate(g["af"], g["a_orb"], q, g["ops"], g["orth"], polar_shift=polar_shift)
+    ck = (str(cid), int(n_use), int(DEFAULT_N_RANDOM), int(DEFAULT_SEED), bool(polar_shift))
     if ck not in _RAND:
         rng = np.random.default_rng(DEFAULT_SEED)
         _RAND[ck] = np.array([
-            evaluate(g["af"], g["a_orb"], rng.random((n_use, 3)), g["ops"], g["orth"])["hit05"]
+            evaluate(g["af"], g["a_orb"], rng.random((n_use, 3)), g["ops"], g["orth"],
+                     polar_shift=polar_shift)["hit05"]
             for _ in range(DEFAULT_N_RANDOM)])
     r05 = _RAND[ck]
     n = g["n"]
@@ -130,11 +137,13 @@ def score_peaks(cid, cif: Path, cell, sg, peaks, out_dir: Path, tag: str, n_nonH
     ratio05 = rate05 / base if base > 0 else float("inf")
     ghost_frac = real["ghost"] / n_use
     return {"hit05": real["hit05"], "ghost": real["ghost"], "N_nonH": n,
+            "rand_hit05_mean": float(r05.mean()),
             "rate05": rate05, "ratio05": ratio05, "ghost_frac": ghost_frac,
             "verdict": verdict(rate05, ratio05, ghost_frac)}
 
 
-def run_one(panel: Path, out: Path, meta: dict, seed: int, budget: float, grace: float):
+def run_one(panel: Path, out: Path, meta: dict, seed: int, budget: float, grace: float,
+            polar_shift: bool = True):
     cid = str(meta["id"])
     cod = panel / "data" / "cod_qpeak"
     cif, hkl = cod / f"{cid}.cif", cod / f"{cid}.hkl"
@@ -176,15 +185,17 @@ def run_one(panel: Path, out: Path, meta: dict, seed: int, budget: float, grace:
 
     win = score_peaks(cid, cif, cell, sg,
                       [{"fract": list(p.fract), "height": p.height} for p in peaks],
-                      run_dir, "winner", n_nonH)
+                      run_dir, "winner", n_nonH, polar_shift=polar_shift)
     cands = []
     for c in (info.get("candidates") or []):
         sc = score_peaks(cid, cif, cell, sg, c.get("peaks") or [], run_dir,
-                         "cand_" + str(c.get("name")).replace("/", "_"), n_nonH)
+                         "cand_" + str(c.get("name")).replace("/", "_"), n_nonH,
+                         polar_shift=polar_shift)
         cands.append({"name": c.get("name"), "verdict": sc.get("verdict"),
                       "hit05": sc.get("hit05"), "refined_wR2": c.get("refined_wR2"),
                       "peak_r1": c.get("peak_r1"), "emap_score": c.get("emap_score")})
     any_pass = any(c["verdict"] == "PASS" for c in cands)
+    row["grader"] = "polar-shift-v1" if polar_shift else "discrete-v0"
     row["winner_score"] = win
     row["candidates"] = cands
     row["pass"] = win.get("verdict") == "PASS"
@@ -194,6 +205,20 @@ def run_one(panel: Path, out: Path, meta: dict, seed: int, budget: float, grace:
           f"winner={row['winner']} sel={row['selection']} wrong_pick={row['wrong_pick']} "
           f"timed_out={row['timed_out']} wall={wall:.1f}s over_limit={row['over_limit']} "
           f"clock_jump={row['clock_jump_s']}", flush=True)
+    return row
+
+
+def run_with_suspend_rule(panel, out, meta, seed, budget, grace, polar_shift):
+    """run_one + suspend rule (see module docstring)."""
+    row = run_one(panel, out, meta, seed, budget, grace, polar_shift)
+    mono = row.get("child_monotonic_s")
+    if row.get("over_limit") and mono is not None and mono < budget:
+        first = {k: row.get(k) for k in ("wall_s", "child_wall_s", "child_monotonic_s",
+                                         "clock_jump_s", "status", "host_killed")}
+        print(f"  FLAG suspected suspend: wall {row['wall_s']}s > {row['limit_s']}s but child "
+              f"monotonic {mono:.1f}s < budget {budget:g}s -> re-running once unchanged", flush=True)
+        row = run_one(panel, out, meta, seed, budget, grace, polar_shift)
+        row["suspend_flag"] = {"first_attempt": first, "rerun_over_limit": bool(row.get("over_limit"))}
     return row
 
 
@@ -209,6 +234,8 @@ def summarize(rows, ids_order, bar, budget, grace):
     monos = [r["child_monotonic_s"] for r in ok if r.get("child_monotonic_s") is not None]
     susp = sum(bool(r.get("suspend_suspected")) for r in ok)
     killed = sum(bool(r.get("host_killed")) for r in ok)
+    flagged = [r for r in ok if r.get("suspend_flag")]
+    grader = sorted({r.get("grader", "?") for r in ok})
     errs = sum(1 for r in ok if r.get("status") in ("error", "timeout_no_result"))
     res = {
         "centro": (c_pass, len(c)), "noncentro": (n_pass, len(n)),
@@ -223,7 +250,7 @@ def summarize(rows, ids_order, bar, budget, grace):
     res["overall_pass"] = all(res["checks"].values())
     f = lambda b: "OK" if b else "FAIL"  # noqa: E731
     lines = [
-        f"PANEL RESULT  (budget {budget:g}s + grace {grace:g}s = {limit:g}s limit)",
+        f"PANEL RESULT  (budget {budget:g}s + grace {grace:g}s = {limit:g}s limit; grader {'/'.join(grader)})",
         f"  centro PASS        {c_pass:>2}/{len(c):<3} bar >= {bar['centro']:<2}  {f(res['checks']['centro'])}",
         f"  non-centro PASS    {n_pass:>2}/{len(n):<3} bar >= {bar['noncentro']:<2}  {f(res['checks']['noncentro'])}",
         f"  wrong picks        {wrong:>2}/{len(ok):<3} bar <= {bar['wrong']:<2}  {f(res['checks']['wrong_picks'])}",
@@ -235,6 +262,10 @@ def summarize(rows, ids_order, bar, budget, grace):
         f"  host-killed runs: {killed}; error/no-result runs: {errs}; "
         f"runs with wall-vs-monotonic clock jump > {ab.CLOCK_JUMP_SUSPECT_S:g}s (machine suspended?): {susp}",
         "  (bar is defined for 20 centro / 20 non-centro / 40 runs; counts above are actual)",
+        f"  suspected-suspend runs re-run once: {len(flagged)}" + "".join(
+            f"\n    - {r['id']} seed {r['seed']}: first wall {r['suspend_flag']['first_attempt']['wall_s']}s, "
+            f"child monotonic {r['suspend_flag']['first_attempt']['child_monotonic_s']:.1f}s -> re-run wall "
+            f"{r['wall_s']}s, re-run over limit: {r['suspend_flag']['rerun_over_limit']}" for r in flagged),
     ]
     block = "\n".join(l for l in lines if l != "")
     md = ["# ab_initio panel summary", "", "```", block, "```", "",
@@ -260,6 +291,8 @@ def main(argv=None):
     ap.add_argument("--ids", nargs="*", default=None, help="subset of SELECTION.json ids (default: all)")
     ap.add_argument("--budget", type=float, default=ab.TIME_BUDGET_S)
     ap.add_argument("--grace", type=float, default=ab.CF_SUBPROCESS_GRACE_S)
+    ap.add_argument("--grader", choices=("new", "old"), default="new",
+                    help="new = polar-shift-v1 (default); old = discrete v0")
     ap.add_argument("--bar-centro", type=int, default=18)
     ap.add_argument("--bar-noncentro", type=int, default=12)
     ap.add_argument("--bar-wrong", type=int, default=2)
@@ -272,13 +305,16 @@ def main(argv=None):
     a.out.mkdir(parents=True, exist_ok=True)
     raw_path = a.out / "results_raw.json"
     rows = json.loads(raw_path.read_text()) if raw_path.exists() else []
-    done = {(r["id"], r["seed"]) for r in rows if r.get("status") not in (None,)}
+    want = "polar-shift-v1" if a.grader == "new" else "discrete-v0"
+    done = {(r["id"], r["seed"]) for r in rows
+            if r.get("status") not in (None,) and r.get("grader", "polar-shift-v1") == want}
     for m in metas:
         for seed in a.seeds:
             if (str(m["id"]), seed) in done:
                 print(f"skip done {m['id']} seed={seed}", flush=True)
                 continue
-            row = run_one(a.panel, a.out, m, seed, a.budget, a.grace)
+            row = run_with_suspend_rule(a.panel, a.out, m, seed, a.budget, a.grace,
+                                        a.grader == "new")
             rows = [r for r in rows if not (r["id"] == row["id"] and r["seed"] == seed)] + [row]
             raw_path.write_text(json.dumps(rows, indent=2, default=str) + "\n")
     bar = {"centro": a.bar_centro, "noncentro": a.bar_noncentro,
