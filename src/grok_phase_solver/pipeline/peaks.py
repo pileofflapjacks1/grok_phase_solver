@@ -27,9 +27,15 @@ def pick_density_peaks(
     n_peaks: int = 30,
     min_fract_dist: float = 0.08,
     min_sigma: float = 2.5,
+    subvoxel: bool = True,
 ) -> List[DensityPeak]:
     """
     Greedy NMS peak pick on a periodic density grid.
+
+    With ``subvoxel`` (default), each peak position is refined per axis by a
+    3-point parabola through the neighbouring voxels (periodic). Grid-point
+    positions alone carry up to half a voxel (~0.15 Å at sampling 3, 0.9 Å)
+    of error per axis, which on its own inflates peak-model R1 by ~0.1.
     """
     rho = np.asarray(rho, dtype=np.float64)
     sigma = float(rho.std()) + 1e-16
@@ -50,7 +56,20 @@ def pick_density_peaks(
         if h <= mean + min_sigma * sigma:
             break
         i, j, k = np.unravel_index(idx, work.shape)
-        fract = np.array([i / nx, j / ny, k / nz], dtype=np.float64)
+        pos = np.array([i, j, k], dtype=np.float64)
+        if subvoxel:
+            c = rho[i, j, k]
+            base = (i, j, k)
+            for ax, n_ax in enumerate((nx, ny, nz)):
+                lo = list(base)
+                hi = list(base)
+                lo[ax] = (base[ax] - 1) % n_ax
+                hi[ax] = (base[ax] + 1) % n_ax
+                m, p = rho[tuple(lo)], rho[tuple(hi)]
+                curv = m - 2.0 * c + p
+                if curv < 0:  # proper local maximum along this axis
+                    pos[ax] += float(np.clip(0.5 * (m - p) / curv, -0.5, 0.5))
+        fract = (pos / np.array([nx, ny, nz], dtype=np.float64)) % 1.0
         peaks.append(
             DensityPeak(
                 rank=rank,

@@ -22,6 +22,8 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 
 from grok_phase_solver.physics.density import (
+    density_from_grid,
+    grid_from_density,
     density_from_structure_factors,
     place_reflections_on_grid,
     grid_shape_from_resolution,
@@ -188,7 +190,7 @@ def density_modification_cycle(
             solvent_fraction=sf,
             protein_mode=protein_mode,
         )
-        F_grid = np.fft.fftn(rho_mod) * (V / N)
+        F_grid = grid_from_density(rho_mod, V)
         F_new = _extract_F(F_grid, hkl)
         phases = np.angle(F_new)
         # modulus projection

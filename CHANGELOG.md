@@ -13,6 +13,28 @@
 
 ## Unreleased — main
 
+### Scoring fixes (scoreboards in `data/processed/` predate these; re-run before quoting)
+- **Map sign convention.** Maps were ρ(−r): F used e^{+2πi h·x} and maps used
+  `ifftn` (also +). Peaks of a true-phase map sat at −x. New canonical pair
+  `density_from_grid` / `grid_from_density` (`physics/density.py`) gives
+  ρ(r) = (1/V) Σ F e^{−2πi h·r}. All solvers and `structure_factors_from_density`
+  use it. mapCC was inversion-invariant and is unchanged. Peak recovery, exported
+  peaks/`trial.res` (chiral space groups) and peak recycling were affected.
+- **Peak recovery** (`match_peaks_to_atoms`): Å tolerance (0.5 Å) through the
+  metric tensor, one-to-one (Hungarian) matching, continuous P1 origin, both
+  hands. The old fractional 0.15 tolerance passed random peak sets (0.60–0.86
+  vs gate 0.50); random peaks now score ~0.25–0.4. Cell-free
+  `peak_recovery_score` keeps the legacy behaviour for old scripts.
+- **Origin-invariant phase error / strong-seed fraction**: continuous origin
+  search (`best_origin_shift`, FFT + L-BFGS) instead of only {0,¼,½,¾}³.
+  Perfect P1 phases at a random origin scored frac ≤ 20° ≈ 0.20 (random ≈ 0.15);
+  they now score 1.0. Measured random-phase floor is ~0.17–0.19, not 0.11.
+  GraphPhaseNet v3–v11 seed-quality numbers were measured with the old search.
+- **Sub-voxel peak positions** (`pick_density_peaks(subvoxel=True)`): 3-point
+  parabola per axis. True-phase peak-model R1 drops from ~0.30 to ~0.17–0.27.
+- `tests/test_metric_nulls.py`: perfect answers (shifted, inverted) must solve;
+  random peaks and random phases must not.
+
 ### Q-peak benchmark (real data, negative result)
 - `gps-solve` does not currently recover phases on real data. README and FOR_REVIEWERS now say so (C27, N10).
 - `python scripts/run_qpeak_benchmark.py` runs `gps-solve` on COD 2200239 / 2200001 / 2230859 (CC0, in `data/raw/cod_qpeak/`) and scores `trial.res` Q peaks against the deposited atoms: pre-registered bar, seeded 1000-draw random baseline, planted-atom self-test. Writes `data/processed/qpeak_benchmark.md`.

@@ -18,6 +18,8 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 
 from grok_phase_solver.physics.density import (
+    density_from_grid,
+    grid_from_density,
     charge_flip,
     density_from_structure_factors,
     grid_shape_from_resolution,
@@ -115,7 +117,7 @@ def charge_flipping_solve(
     for it in range(n_iter):
         F = amp * np.exp(1j * phases)
         F_grid = place_reflections_on_grid(hkl, F, shape, friedel_complete=True)
-        rho = np.real(np.fft.ifftn(F_grid) * (np.prod(shape) / V))
+        rho = density_from_grid(F_grid, V)
 
         sigma = float(rho.std()) + 1e-16
         delta = delta_sigma * 0.0  # classic CF uses δ near 0; use small floor
@@ -124,7 +126,7 @@ def charge_flipping_solve(
         rho_flip = charge_flip(rho, delta=delta)
 
         # FFT back
-        F_new_grid = np.fft.fftn(rho_flip) * (V / np.prod(shape))
+        F_new_grid = grid_from_density(rho_flip, V)
         F_new = _extract_F_from_grid(F_new_grid, hkl)
 
         # Fourier modulus projection

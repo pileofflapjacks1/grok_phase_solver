@@ -54,7 +54,7 @@ def parseval_check(
     )
     N = rho.size
     # Discrete Plancherel for our embedding:
-    # ρ = ifftn(F_grid) * (N/V) with F_grid carrying structure factors
+    # ρ = fftn(F_grid) / V  (density_from_grid) with F_grid carrying structure factors
     # ⇒ ⟨|ρ|²⟩ * V  ≈  (1/V) Σ_h |F(h)|²   in continuum limit
     E_real = float(np.mean(np.abs(rho) ** 2) * V)
     # Sum only unique observed F (with Friedel already in list if expand)

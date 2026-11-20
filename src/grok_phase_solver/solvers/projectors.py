@@ -4,8 +4,8 @@ Real- and reciprocal-space projectors for iterative phase retrieval.
 Shared Fourier conventions with charge_flipping / phase_recycle:
 
   F_grid = place(hkl, |F| e^{iφ})
-  ρ = Re(ifftn(F_grid)) * (N / V)
-  F' = fftn(ρ) * (V / N)
+  ρ = Re(fftn(F_grid)) / V      (density_from_grid)
+  F' = ifftn(ρ) * V             (grid_from_density)
   modulus projection: F ← |F_obs| * F' / |F'|
 
 References
@@ -23,6 +23,8 @@ from typing import Optional, Tuple
 import numpy as np
 
 from grok_phase_solver.physics.density import (
+    density_from_grid,
+    grid_from_density,
     grid_shape_from_resolution,
     place_reflections_on_grid,
 )
@@ -65,7 +67,7 @@ def density_from_phases(
     N = float(np.prod(shape))
     F = np.asarray(amplitudes) * np.exp(1j * np.asarray(phases))
     F_grid = place_reflections_on_grid(hkl, F, shape, friedel_complete=True)
-    return np.real(np.fft.ifftn(F_grid) * (N / V))
+    return density_from_grid(F_grid, V)
 
 
 def density_to_F(
@@ -75,7 +77,7 @@ def density_to_F(
 ) -> np.ndarray:
     V = unit_cell_volume(cell)
     N = float(np.prod(rho.shape))
-    F_grid = np.fft.fftn(rho) * (V / N)
+    F_grid = grid_from_density(rho, V)
     return extract_F_from_grid(F_grid, hkl)
 
 
