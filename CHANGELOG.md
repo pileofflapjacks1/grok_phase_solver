@@ -52,7 +52,13 @@
   expansion, CF solved COD 2200239 from 3/3 starts (map CC 0.83–0.86) but not
   2230859 or 2200001. Expansion and symmetry-origin location are not
   implemented yet.
-- README / FOR_REVIEWERS: C1 and C3 revised, C2 withdrawn, C27 updated.
+- `cod_stratified_bench` (16 COD, Fobs + Fcalc; ~4 h CPU): mid-band pooled
+  auto 0.164 → 0.223, partial_30 0.743 → 0.765, fragment_half 0.724
+  (unchanged). Fobs fragment_half gates: mapCC 8/12, peak 11/12, R1 1/12.
+  That gives one strict solve (COD 1543227), where there had been none. The
+  takeaway numbers are now computed from the run's rows; the script had
+  hardcoded them, so re-runs published stale values.
+- README / FOR_REVIEWERS: C1 and C3 revised, C2 withdrawn, C25 and C27 updated.
 - Not re-run: GraphPhaseNet / strong-prior scoreboards (need torch).
 - Known, pre-existing on main: importing `grok_phase_solver.solvers` before
   `grok_phase_solver.metrics` fails on a circular import
