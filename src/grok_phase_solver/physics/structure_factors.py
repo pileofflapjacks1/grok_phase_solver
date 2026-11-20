@@ -89,13 +89,13 @@ def structure_factors_from_density(
     volume: float,
 ) -> np.ndarray:
     """
-    Discrete Fourier transform: F(h) ≈ V/N * FFT(ρ).
+    Discrete Fourier transform: F(h) = (V/N) Σ_r ρ(r) exp(+2πi h·r) = V · ifftn(ρ).
 
-    Convention: numpy FFT with reciprocal-lattice indexing.
+    Exact inverse of ``density_from_structure_factors`` (same sign convention as
+    ``compute_structure_factors``), with reciprocal-lattice FFT indexing.
     ``density`` is on a periodic real-space grid covering the unit cell.
     """
-    n = density.size
-    return (volume / n) * np.fft.fftn(density)
+    return np.fft.ifftn(density) * volume
 
 
 def scale_to_observed(

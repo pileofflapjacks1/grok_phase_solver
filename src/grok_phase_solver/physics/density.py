@@ -34,6 +34,28 @@ def grid_shape_from_resolution(
     return nx, ny, nz
 
 
+def density_from_grid(F_grid: np.ndarray, volume: float, real: bool = True) -> np.ndarray:
+    """
+    ρ(r) = (1/V) Σ_h F(h) exp(−2πi h·r) on the grid r = (i/nx, j/ny, k/nz).
+
+    numpy ``fftn`` carries the exp(−2πi …) kernel, so this is ``fftn(F)/V``.
+    This is the single source of truth for the F → ρ sign convention; it must
+    stay the exact inverse of :func:`grid_from_density`.
+    """
+    rho = np.fft.fftn(F_grid) / volume
+    return np.real(rho) if real else rho
+
+
+def grid_from_density(rho: np.ndarray, volume: float) -> np.ndarray:
+    """
+    F(h) = (V/N) Σ_r ρ(r) exp(+2πi h·r) on the FFT grid — i.e. ``V · ifftn(ρ)``.
+
+    Exact inverse of :func:`density_from_grid`; matches the
+    ``compute_structure_factors`` convention F = Σ f exp(+2πi h·x).
+    """
+    return np.fft.ifftn(rho) * volume
+
+
 def place_reflections_on_grid(
     hkl: np.ndarray,
     F: np.ndarray,
@@ -82,21 +104,11 @@ def density_from_structure_factors(
     device: str = "cpu",
 ) -> np.ndarray:
     """
-    Compute ρ(r) on a real-space grid via inverse FFT.
+    Compute ρ(r) on a real-space grid (see :func:`density_from_grid`).
 
-    Convention: ρ = (1/V) * IFFT(F_grid) * N  with numpy ifftn normalization,
-    which is equivalent to ρ = ifftn(F_grid) after embedding F without 1/N,
-    since ifftn divides by N: we embed F and use ifftn * (N/V)... 
-
-    Standard crystallographic discrete form used here:
-        ρ = (1/V) * Σ F(h) exp(−2π i h·r)
-    With numpy: ρ = real( ifftn( F_embedded ) ) * (N / V) ... wait:
-
-    numpy ifftn(X)[n] = (1/N) Σ X[k] exp(+2π i k n / N)  — sign/phase conventions
-    differ; for real maps of centrosymmetric structures phases are 0/π and
-    density is real. We use:
-        ρ = real(ifftn(F_grid)) * (nx*ny*nz) / V
-    so that Parseval is approximately conserved for dense sampling.
+    Grid voxel (i, j, k) is fractional position (i/nx, j/ny, k/nz), with the
+    crystallographic sign convention matching ``compute_structure_factors``
+    (F = Σ f exp(+2πi h·x)), so peaks of a map from true phases sit at +x.
     """
     from .reciprocal import d_spacing
 
@@ -117,13 +129,13 @@ def density_from_structure_factors(
     # Optional torch FFT on cuda/mps (same formula; falls back to NumPy)
     if device and device not in ("cpu", "numpy", ""):
         try:
-            from grok_phase_solver.physics.device import ifftn as _ifftn, resolve_device
+            from grok_phase_solver.physics.device import fftn as _fftn, resolve_device
 
-            rho = _ifftn(F_grid, device=resolve_device(device)) * (np.prod(shape) / V)
+            rho = _fftn(F_grid, device=resolve_device(device)) / V
         except Exception:
-            rho = np.fft.ifftn(F_grid) * (np.prod(shape) / V)
+            rho = density_from_grid(F_grid, V, real=False)
     else:
-        rho = np.fft.ifftn(F_grid) * (np.prod(shape) / V)
+        rho = density_from_grid(F_grid, V, real=False)
     if real_part_only:
         return np.real(rho)
     return rho

@@ -28,6 +28,8 @@ from typing import Callable, Dict, Optional, Tuple
 import numpy as np
 
 from grok_phase_solver.physics.density import (
+    density_from_grid,
+    grid_from_density,
     density_from_structure_factors,
     grid_shape_from_resolution,
     place_reflections_on_grid,
@@ -89,10 +91,10 @@ def fourier_modulus_projection(
 
     F = amp * np.exp(1j * phases)
     F_grid = place_reflections_on_grid(hkl, F, shape, friedel_complete=True)
-    rho = np.real(np.fft.ifftn(F_grid) * (N / V))
+    rho = density_from_grid(F_grid, V)
     if density_op is not None:
         rho = density_op(rho)
-    F_new_grid = np.fft.fftn(rho) * (V / N)
+    F_new_grid = grid_from_density(rho, V)
     F_new = _extract_F(F_new_grid, hkl)
     return np.angle(F_new), rho
 
@@ -165,7 +167,7 @@ def phase_recycle(
     shape = rho.shape
     V = _volume(cell)
     N = float(np.prod(shape))
-    F_grid = np.fft.fftn(rho) * (V / N)
+    F_grid = grid_from_density(rho, V)
     Fc = np.abs(_extract_F(F_grid, hkl))
     k = np.sum(amp * Fc) / (np.sum(Fc * Fc) + 1e-16)
     R = float(np.sum(np.abs(amp - k * Fc)) / (np.sum(amp) + 1e-16))

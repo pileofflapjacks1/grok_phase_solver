@@ -15,6 +15,8 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 
 from grok_phase_solver.physics.density import (
+    density_from_grid,
+    grid_from_density,
     density_from_structure_factors,
     grid_shape_from_resolution,
     place_reflections_on_grid,
@@ -85,20 +87,20 @@ def hio_solve(
 
     F = amp * np.exp(1j * phases)
     F_grid = place_reflections_on_grid(hkl, F, shape, friedel_complete=True)
-    rho = np.real(np.fft.ifftn(F_grid) * (N / V))
+    rho = density_from_grid(F_grid, V)
     rho_in = rho.copy()
 
     history = {"R": [], "neg_frac": []}
 
     for it in range(n_iter):
         # Fourier projection of current estimate
-        F_grid = np.fft.fftn(rho) * (V / N)
+        F_grid = grid_from_density(rho, V)
         F_ext = _extract_F_from_grid(F_grid, hkl)
         phases = np.angle(F_ext)
         # Enforce observed moduli
         F_proj = amp * np.exp(1j * phases)
         F_grid_proj = place_reflections_on_grid(hkl, F_proj, shape, friedel_complete=True)
-        rho_F = np.real(np.fft.ifftn(F_grid_proj) * (N / V))
+        rho_F = density_from_grid(F_grid_proj, V)
 
         # Support / positivity constraint
         if support_fraction is not None:
