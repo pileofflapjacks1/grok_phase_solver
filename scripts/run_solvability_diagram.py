@@ -49,6 +49,12 @@ def _subsample(hkl, amp, phases, completeness, seed):
     return hkl[idx], amp[idx], phases[idx]
 
 
+# Ab initio CF cap (early stop ~200 cycles after the R phase transition).
+# The pre-v0.13.5 diagram ran CF for only 80 cycles, which mostly measured
+# the plateau, not the method.
+CF_MAX_ITER = 2000
+
+
 def run_one(n_atoms, d_min, completeness, method, seed=0, n_iter=80):
     st = generate_random_organic(n_atoms=n_atoms, seed=seed, space_group="P1")
     data = structure_to_fcalc(st, d_min=d_min, expand_symmetry=True)
@@ -59,7 +65,7 @@ def run_one(n_atoms, d_min, completeness, method, seed=0, n_iter=80):
     t0 = time.time()
     if method == "charge_flipping":
         ph, rho, hist = charge_flipping_solve(
-            hkl, amp, st.cell, n_iter=n_iter, seed=seed, d_min=d_min, verbose=False
+            hkl, amp, st.cell, n_iter=CF_MAX_ITER, seed=seed, d_min=d_min, verbose=False
         )
     elif method == "phase_recycle":
         ph, rho, hist = phase_recycle(

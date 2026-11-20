@@ -156,7 +156,7 @@ Full table and flags: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 - A replacement for **SHELXL** refinement or industrial small-molecule pipelines (SHELXT/SHELXS + Olex2)
 - A redistributor of **SHELX** or **PhAI** binaries/weights (obtain under their licenses)
 
-**Honest hard-region result:** pure ab initio (CF, ensemble, GraphPhaseNet, even SHELXS on our hard panel) remains **~0% strict success** for harder synthetic cells ($n\gtrsim 12$, $d_{\min}\gtrsim 1.5\,\text{Å}$). With **≥ ~30% correct strong-|E| phases** (≲20° error), AI-PhaSeed **can** strict-solve those cells — so the open path for hard data is **partial information**, not more polish alone.
+**Hard-region result (revised after the scoring and charge-flipping fixes):** on synthetic P1 cells, in-repo charge flipping now strict-solves most cells up to n = 20 at d ≤ 1.5 Å, and the success cliff sits at 2.0 Å ([`solvability_diagram.md`](data/processed/solvability_diagram.md)). The earlier "~0% strict success" came from broken scoring and CF bugs. On **real** data `gps-solve` still fails, because it phases the unique reflection wedge without expanding it to P1 (see C27 in [FOR_REVIEWERS](docs/FOR_REVIEWERS.md)). With **≥ ~30% correct strong-|E| phases** (≲20° error), AI-PhaSeed **can** strict-solve those cells — so the open path for hard data is **partial information**, not more polish alone.
 
 ---
 
@@ -189,9 +189,9 @@ Strict success = mapCC_OI ≥ 0.7 **and** peak recovery ≥ 0.5 **and** R1 ≤ 0
 | Finding | Where |
 |---------|--------|
 | **Q-peak benchmark (real data): FAIL on all three COD sets.** Strongest Q peaks within 0.5 Å of deposited atoms: 2200239 3/22 (random 1.85), 2200001 3/34 (random 2.73), 2230859 0/17 (random 1.45). Ghosts 71–88%. Planted true atoms score N/N, so the scorer can detect a real structure | [`qpeak_benchmark.md`](data/processed/qpeak_benchmark.md) |
-| **Solvability cliff** — classical success collapses with more atoms / worse resolution | [`solvability_diagram.md`](data/processed/solvability_diagram.md) |
-| **Ensemble** best open ab initio on **easy** cells (vs CF / SHELXS in-repo H2H) | [`shelxs_h2h.md`](data/processed/shelxs_h2h.md) |
-| **Hard ab initio** ~0% strict for CF, priors, dual-space, SHELXS (our panels) | same + [`strong_prior.md`](data/processed/strong_prior.md) |
+| **Solvability cliff** — after the CF and scoring fixes, CF strict-solves n ≤ 20 synthetic P1 cells to 1.5 Å; success collapses at 2.0 Å | [`solvability_diagram.md`](data/processed/solvability_diagram.md) |
+| **CF and ensemble** 4/4 easy, 3/4 hard on the synthetic H2H (n = 4 per panel). SHELXS rows there are a scoring-harness issue, not a SHELXS result | [`shelxs_h2h.md`](data/processed/shelxs_h2h.md) |
+| **Hard ab initio (synthetic)** CF / ensemble 3/4; dual-space and strong-prior PhaSeed 0/4. GraphPhaseNet scoreboards predate the scoring fix | same + [`strong_prior.md`](data/processed/strong_prior.md) |
 | **Partial-φ bar** — ≥30% strong φ within 20° → hard strict solves | [`partial_seed_benchmark.md`](data/processed/partial_seed_benchmark.md), [math](docs/math/partial_seed.md) |
 | **Measured-φ budget** (simulator; hardware does not exist) — σ_φ × strong-|E| fraction vs C4 30%/20° | [math](docs/math/measured_phase_budget.md), [`measured_phase_budget.md`](data/processed/measured_phase_budget.md) |
 | Graph prior strong-seed quality ~**21–24%** ≤20° (below 30% bar) through **v11** pilots | [`strong_prior_v11.md`](data/processed/strong_prior_v11.md) |
@@ -216,7 +216,7 @@ Pedagogy: [Cowtan ELS notes](docs/cowtan_phase_problem_notes.md) · [Phase probl
 ### What `auto` does
 1. **Easy / high-res** ($d_{\min} \le 1.15\,\text{Å}$) → **ensemble** (CF+RAAR multistart, free-FOM pick)  
 2. **P2₁/c + PhAI weights** → AI-PhaSeed  
-3. **Harder res / sparse** → last-resort charge flipping (GraphPhaseNet is **not** auto; ~0% strict success). Use `partial_phaseed` + a seed.  
+3. **Harder res / sparse** → last-resort charge flipping (GraphPhaseNet is **not** auto). Synthetic success falls off by 2.0 Å. Use `partial_phaseed` + a seed.  
 4. Partial phases are **never auto-detected** unless you pass a seed source (`--phase-seed-csv` / `.res` / `--predicted-model` / HA) — then auto upgrades to `partial_phaseed`  
 
 ### Core algorithms (in-repo)

@@ -40,6 +40,11 @@ from grok_phase_solver.solvers.free_fom import free_fom
 from grok_phase_solver.solvers.shelxs_runner import find_shelxs, shelxs_solve
 
 
+
+# Ab initio CF cap for charge_flipping / ensemble rows (early stop after
+# the R phase transition). Earlier runs used n_iter (tens of cycles).
+CF_MAX_ITER = 2000
+
 def _score(hkl, amp, ph, ph_t, cell, fracs, elements, rho, d_min) -> Dict[str, Any]:
     rho_t = density_from_structure_factors(
         hkl, amp * np.exp(1j * ph_t), cell, shape=rho.shape
@@ -87,7 +92,7 @@ def _eval_method(
             }
         elif name == "charge_flipping":
             ph, rho, info = charge_flipping_solve(
-                hkl, amp, cell, n_iter=n_iter, seed=seed, d_min=d_min
+                hkl, amp, cell, n_iter=CF_MAX_ITER, seed=seed, d_min=d_min
             )
         elif name == "dual_space":
             ph, rho, info = dual_space_solve(
@@ -106,6 +111,7 @@ def _eval_method(
                 hkl, amp, cell,
                 n_starts=max(2, n_starts),
                 n_iter=n_iter,
+                cf_n_iter=CF_MAX_ITER,
                 base_seed=seed,
                 d_min=d_min,
             )

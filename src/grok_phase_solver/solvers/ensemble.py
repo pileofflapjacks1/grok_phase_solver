@@ -34,16 +34,18 @@ def _run_one(
     **method_kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, Dict]:
     if method == "cf":
+        cf_n_iter = method_kwargs.get("cf_n_iter")
         return charge_flipping_solve(
             hkl,
             amplitudes,
             cell,
-            n_iter=n_iter,
+            n_iter=int(cf_n_iter) if cf_n_iter else n_iter,
             seed=seed,
             d_min=d_min,
             phase_init=phase_init,
             **{k: v for k, v in method_kwargs.items() if k in (
                 "delta_sigma", "weak_fraction", "centrosymmetric", "sampling", "verbose",
+                "include_f000", "stop_after_transition", "polish_iter",
             )},
         )
     if method == "raar":
@@ -97,6 +99,8 @@ def ensemble_solve(
     methods : sequence of ``"cf"``, ``"raar"``, ``"diffmap"``
     n_starts : independent random seeds per method
     n_iter : iterations per trial
+    cf_n_iter (keyword) : max iterations for ``"cf"`` trials only (charge
+        flipping needs far more cycles than RAAR/DiffMap); defaults to n_iter
     base_seed : first seed; trial *i* uses ``base_seed + i``
     phase_init : optional shared seed phases (still varies CF weak-phase RNG)
     n_jobs : if >1, run trials with ``concurrent.futures`` (process pool when
@@ -142,6 +146,8 @@ def ensemble_solve(
             "skewness": fom["skewness"],
             "R_after_ER": fom["R_after_ER"],
             "final_R": hist.get("final_R", hist.get("R", [None])[-1] if hist.get("R") else None),
+            "converged": hist.get("converged"),
+            "n_iter_run": hist.get("n_iter"),
         }
         return ph, rho, hist, meta, fom
 

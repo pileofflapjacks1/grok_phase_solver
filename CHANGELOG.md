@@ -13,6 +13,51 @@
 
 ## Unreleased — main
 
+### In-repo charge flipping (`solvers/charge_flipping.py`)
+- **Flip threshold** was δ = 0.1·delta_sigma·σ (with a dead `delta_sigma * 0.0`
+  line). It is now δ = delta_sigma·σ with default **0.8**, chosen on a held-out
+  synthetic panel (16 P1 cells, n = 12–20, d = 0.9–1.2 Å, one start, 1500
+  cycles): 15/16 solved at 0.8, 12/16 at 1.0, 7/16 at 1.1, 8/16 at 0.65.
+  δ ≈ 0.5σ collapses into false single-peak solutions.
+- **F(000)** is carried from the flipped map into the next cycle instead of
+  being reset to 0 each cycle (11/12 vs 4–5/12 solved on the tuning panel).
+- **Weak reflections**: the old code re-randomized the weakest 20% of phases.
+  They now keep the flipped map's amplitude with a π/2 phase shift
+  (Oszlányi & Sütő 2005), applied as ±π/2 by Friedel hemisphere so
+  F(−h) = F(h)* still holds. A uniform +π/2 makes those terms cancel in Re ρ.
+- **Phase transition / early stop**: `history["converged"]` /
+  `["transition_iter"]` flag R falling below 0.4× a one-cycle random-phase
+  reference R. This is truth-free and calibrated at the default δ (it agreed
+  with ground truth on 16/16 held-out cells); it is a hint, not proof. Runs
+  stop `polish_iter` (200) cycles after the transition.
+- **Budget**: new `SolveConfig.cf_max_iter` / `gps-solve --cf-max-iter`
+  (default 2000) for ab initio CF in `charge_flipping` and `ensemble` (via
+  `cf_n_iter`). `--n-iter` (120) still governs polish, HIO/RAAR and the other
+  methods. The solvability diagram and the SHELXS H2H had been running CF for
+  80 and 50 cycles; both scripts now use the 2000 cap.
+- `place_reflections_on_grid` is vectorized (~9× faster), with the new
+  `extract_reflections_from_grid`. The results are identical on properly sized grids.
+- `tests/test_charge_flipping.py`: easy P1 cells must strict-solve and flag
+  convergence; early stop, centrosymmetric signs, and seeded starts.
+
+### Re-run scoreboards (fixed scoring + fixed CF)
+- `solvability_diagram`: CF 42/64 strict (was 18/64); n = 20 at 0.9–1.5 Å
+  goes 0% → 100%. The cliff is now at 2.0 Å.
+- `shelxs_h2h`: CF and ensemble 4/4 on the easy panel and 3/4 on the hard
+  panel (were 0/4 and 2/4 easy, 0/4 hard). SHELXS still scores 0/4 on both
+  panels. That is treated as a harness issue, and C2 is withdrawn.
+- `qpeak_benchmark` (real COD Fobs): still FAIL on all three
+  (1/22, 2/34, 2/17). **Root cause:** `gps-solve` phases the measured unique
+  wedge without expanding it to the P1 sphere. In an offline test with P1
+  expansion, CF solved COD 2200239 from 3/3 starts (map CC 0.83–0.86) but not
+  2230859 or 2200001. Expansion and symmetry-origin location are not
+  implemented yet.
+- README / FOR_REVIEWERS: C1 and C3 revised, C2 withdrawn, C27 updated.
+- Not re-run: GraphPhaseNet / strong-prior scoreboards (need torch).
+- Known, pre-existing on main: importing `grok_phase_solver.solvers` before
+  `grok_phase_solver.metrics` fails on a circular import
+  (physics → metrics → pipeline → solvers).
+
 ### Scoring fixes (scoreboards in `data/processed/` predate these; re-run before quoting)
 - **Map sign convention.** Maps were ρ(−r): F used e^{+2πi h·x} and maps used
   `ifftn` (also +). Peaks of a true-phase map sat at −x. New canonical pair
