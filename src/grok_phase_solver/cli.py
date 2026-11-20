@@ -182,7 +182,12 @@ Next: pymol open_in_pymol.pml  (or coot); File → Open trial.res in Olex2
         ),
     )
     p.add_argument("--dmin", type=float, default=None, help="High-resolution cutoff Å (optional)")
-    p.add_argument("--n-iter", type=int, default=120, help="Iterations for CF/HIO/polish")
+    p.add_argument("--n-iter", type=int, default=120, help="Iterations for HIO/RAAR/polish and seeded CF")
+    p.add_argument(
+        "--cf-max-iter", type=int, default=2000,
+        help="Max cycles for ab initio charge flipping (charge_flipping / ensemble); "
+        "stops ~200 cycles after the R phase transition",
+    )
     p.add_argument("--n-recycle", type=int, default=8, help="Cycles for recycle/PhAI")
     p.add_argument("--n-extend", type=int, default=12, help="AI-PhaSeed extension cycles")
     p.add_argument("--n-starts", type=int, default=2, help="Multistart trials (ensemble / PhaSeed)")
@@ -395,6 +400,7 @@ Next: pymol open_in_pymol.pml  (or coot); File → Open trial.res in Olex2
         method=args.method,
         d_min=args.dmin,
         n_iter=args.n_iter,
+        cf_max_iter=args.cf_max_iter,
         n_recycle=args.n_recycle,
         n_extend=args.n_extend,
         n_starts=args.n_starts,

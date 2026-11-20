@@ -70,6 +70,10 @@ class SolveConfig:
     method: str = "auto"
     d_min: Optional[float] = None
     n_iter: int = 120
+    # Ab initio charge flipping (methods charge_flipping / ensemble) needs
+    # hundreds to thousands of cycles; runs stop ~200 cycles after the R
+    # phase transition, so this is a cap, not a fixed cost.
+    cf_max_iter: int = 2000
     n_recycle: int = 8
     n_extend: int = 12
     n_starts: int = 2
@@ -280,7 +284,7 @@ def _run_phasing(
 
     if method == "charge_flipping":
         phases, density, history = charge_flipping_solve(
-            hkl, amp, cell_arr, n_iter=cfg.n_iter, seed=cfg.seed, d_min=d_use,
+            hkl, amp, cell_arr, n_iter=cfg.cf_max_iter, seed=cfg.seed, d_min=d_use,
             centrosymmetric=centro, verbose=cfg.verbose,
         )
         return method, phases, density, history
@@ -292,6 +296,7 @@ def _run_phasing(
             hkl, amp, cell_arr,
             n_starts=max(2, cfg.n_starts),
             n_iter=cfg.n_iter,
+            cf_n_iter=cfg.cf_max_iter,
             base_seed=cfg.seed,
             d_min=d_use,
             verbose=cfg.verbose,

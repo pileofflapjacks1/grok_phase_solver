@@ -12,7 +12,7 @@ Trials: 192 (including seeds). JSON: `data/processed/solvability_diagram.json`
 
 | Method | Solved | Total | Rate |
 |--------|--------|-------|------|
-| `charge_flipping` | 18 | 64 | 28% |
+| `charge_flipping` | 42 | 64 | 66% |
 | `phase_recycle` | 2 | 64 | 3% |
 | `direct_methods` | 1 | 64 | 2% |
 
@@ -20,10 +20,10 @@ Trials: 192 (including seeds). JSON: `data/processed/solvability_diagram.json`
 
 | n_atoms \ d_min | 0.9 | 1.2 | 1.5 | 2.0 |
 |---|---|---|---|---|
-| **4** | 50% (CC=0.85) | 50% (CC=0.85) | 50% (CC=0.83) | 50% (CC=0.67) |
-| **8** | 50% (CC=0.78) | 0% (CC=0.56) | 0% (CC=0.49) | 0% (CC=0.45) |
-| **12** | 100% (CC=0.89) | 50% (CC=0.68) | 0% (CC=0.51) | 0% (CC=0.47) |
-| **20** | 0% (CC=0.49) | 0% (CC=0.44) | 0% (CC=0.39) | 0% (CC=0.44) |
+| **4** | 100% (CC=0.79) | 100% (CC=0.90) | 100% (CC=0.87) | 100% (CC=0.81) |
+| **8** | 100% (CC=0.87) | 100% (CC=0.88) | 100% (CC=0.85) | 0% (CC=0.60) |
+| **12** | 100% (CC=0.87) | 100% (CC=0.84) | 50% (CC=0.74) | 0% (CC=0.58) |
+| **20** | 100% (CC=0.88) | 100% (CC=0.86) | 100% (CC=0.82) | 0% (CC=0.58) |
 
 ## Interpretation
 
