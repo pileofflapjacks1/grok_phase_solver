@@ -68,29 +68,47 @@ def place_reflections_on_grid(
     Uses numpy FFT frequency order: index h → h if h>=0 else nx+h.
     If friedel_complete, enforces F(−h) = F(h)* for real density.
     """
-    nx, ny, nz = shape
     grid = np.zeros(shape, dtype=np.complex128)
-    hkl = np.asarray(hkl, dtype=int).reshape(-1, 3)
+    hkl = np.asarray(hkl, dtype=np.int64).reshape(-1, 3)
     F = np.asarray(F, dtype=np.complex128).reshape(-1)
-
-    def idx(h, n):
-        h = int(h)
-        if h < 0:
-            h = n + h
-        if h < 0 or h >= n:
-            return None
-        return h
-
-    for (h, k, l), fval in zip(hkl, F):
-        ih, ik, il = idx(h, nx), idx(k, ny), idx(l, nz)
-        if ih is None or ik is None or il is None:
-            continue
-        grid[ih, ik, il] = fval
-        if friedel_complete and not (h == 0 and k == 0 and l == 0):
-            jh, jk, jl = idx(-h, nx), idx(-k, ny), idx(-l, nz)
-            if jh is not None and jk is not None and jl is not None:
-                grid[jh, jk, jl] = np.conj(fval)
+    if len(hkl) == 0:
+        return grid
+    if friedel_complete:
+        # Mates first, so a reflection given explicitly in the list wins over
+        # the conjugate implied by its partner.
+        mates = -hkl
+        ok = _in_grid(mates, shape) & np.any(hkl != 0, axis=1)
+        grid[_grid_index(mates[ok], shape)] = np.conj(F[ok])
+    ok = _in_grid(hkl, shape)
+    grid[_grid_index(hkl[ok], shape)] = F[ok]
     return grid
+
+
+def _in_grid(hkl: np.ndarray, shape: Tuple[int, int, int]) -> np.ndarray:
+    """Indices representable on an FFT grid of this shape: −n ≤ h < n."""
+    n = np.asarray(shape, dtype=np.int64)
+    return np.all((hkl >= -n) & (hkl < n), axis=1)
+
+
+def _grid_index(hkl: np.ndarray, shape: Tuple[int, int, int]):
+    """numpy FFT frequency order: h → h mod n, as a fancy-index tuple."""
+    return (hkl[:, 0] % shape[0], hkl[:, 1] % shape[1], hkl[:, 2] % shape[2])
+
+
+def extract_reflections_from_grid(F_grid: np.ndarray, hkl: np.ndarray) -> np.ndarray:
+    """
+    Read F(hkl) back from an FFT-ordered grid (inverse of placement).
+
+    Reflections outside the grid return 0, as the loop versions in the
+    solvers do.
+    """
+    hkl = np.asarray(hkl, dtype=np.int64).reshape(-1, 3)
+    out = np.zeros(len(hkl), dtype=np.complex128)
+    if len(hkl) == 0:
+        return out
+    ok = _in_grid(hkl, F_grid.shape)
+    out[ok] = F_grid[_grid_index(hkl[ok], F_grid.shape)]
+    return out
 
 
 def density_from_structure_factors(
